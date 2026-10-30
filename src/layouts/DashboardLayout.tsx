@@ -32,8 +32,8 @@ export const DashboardLayout: React.FC = () => {
         {/* Top Header */}
         <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-        {/* Page View with Smooth 180ms Page Transition */}
-        <main className="flex-1 p-4 sm:p-5 lg:p-6 max-w-[1650px] w-full mx-auto">
+        {/* Page View with Smooth 180ms Page Transition & Bottom Clearance for Floating Assistant */}
+        <main className="flex-1 p-4 sm:p-5 lg:p-6 pb-24 sm:pb-28 max-w-[1650px] w-full mx-auto">
           <div key={location.pathname} className="animate-page-fade w-full">
             <Outlet />
           </div>

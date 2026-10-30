@@ -56,18 +56,16 @@ export const RecentApplicationsTable: React.FC = () => {
         </button>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto flex-1 min-w-0">
+      {/* Table Container - Zero horizontal scrollbar, clean responsive columns */}
+      <div className="overflow-x-auto scrollbar-none flex-1 min-w-0">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-400 whitespace-nowrap">
-              <th className="pb-2.5 pr-3 font-semibold">Application ID</th>
-              <th className="pb-2.5 pr-3 font-semibold">Institution</th>
-              <th className="pb-2.5 pr-3 font-semibold">Type</th>
-              <th className="pb-2.5 pr-3 font-semibold">Region</th>
-              <th className="pb-2.5 pr-3 font-semibold">Stage</th>
-              <th className="pb-2.5 pr-3 font-semibold">Status</th>
-              <th className="pb-2.5 text-right font-semibold">Updated</th>
+              <th className="pb-2.5 pr-2.5 font-semibold">Application ID</th>
+              <th className="pb-2.5 pr-2.5 font-semibold">Institution</th>
+              <th className="pb-2.5 pr-2.5 font-semibold hidden xl:table-cell">Region</th>
+              <th className="pb-2.5 pr-2.5 font-semibold">Stage</th>
+              <th className="pb-2.5 text-right font-semibold">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100/80 text-xs">
@@ -77,26 +75,20 @@ export const RecentApplicationsTable: React.FC = () => {
                 onClick={() => navigate('/applications')}
                 className="hover:bg-slate-50/70 cursor-pointer transition-colors duration-150 group whitespace-nowrap"
               >
-                <td className="py-2.5 pr-3 text-blue-600 font-semibold group-hover:underline">
+                <td className="py-2.5 pr-2.5 text-blue-600 font-semibold group-hover:underline">
                   {app.id}
                 </td>
-                <td className="py-2.5 pr-3 text-slate-900 font-medium max-w-[180px] truncate">
+                <td className="py-2.5 pr-2.5 text-slate-900 font-medium max-w-[140px] sm:max-w-[170px] truncate">
                   {app.instituteName}
                 </td>
-                <td className="py-2.5 pr-3 text-slate-500 font-normal">
-                  {app.type}
-                </td>
-                <td className="py-2.5 pr-3 text-slate-600 font-medium">
+                <td className="py-2.5 pr-2.5 text-slate-600 font-medium hidden xl:table-cell">
                   {app.region}
                 </td>
-                <td className="py-2.5 pr-3 text-slate-600 font-medium">
+                <td className="py-2.5 pr-2.5 text-slate-600 font-medium">
                   {app.stage}
                 </td>
-                <td className="py-2.5 pr-3">
+                <td className="py-2.5 text-right">
                   <StatusBadge status={app.status} size="sm" />
-                </td>
-                <td className="py-2.5 text-right text-slate-400 font-normal tabular-nums">
-                  {app.lastUpdated}
                 </td>
               </tr>
             ))}

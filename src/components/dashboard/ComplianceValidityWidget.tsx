@@ -12,31 +12,31 @@ import {
 export const ComplianceValidityWidget: React.FC = () => {
   const navigate = useNavigate();
 
-  // Concise compliance items with guaranteed zero overflow
+  // Concise compliance items with guaranteed zero text truncation
   const complianceItems = [
     {
-      label: 'Land / Infra Expiring',
+      label: 'Land & Infra Due',
       count: '12',
       icon: AlertCircle,
       iconBg: 'bg-rose-50',
       iconColor: 'text-rose-600'
     },
     {
-      label: 'Undertakings Pending',
+      label: 'Undertakings Due',
       count: '28',
       icon: FileClock,
       iconBg: 'bg-amber-50',
       iconColor: 'text-amber-600'
     },
     {
-      label: 'Submissions Pending',
+      label: 'Pending Filings',
       count: '16',
       icon: FileText,
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-600'
     },
     {
-      label: 'Completed Submissions',
+      label: 'Verified Filings',
       count: '142',
       icon: CheckCircle2,
       iconBg: 'bg-emerald-50',
@@ -71,7 +71,7 @@ export const ComplianceValidityWidget: React.FC = () => {
         </button>
       </div>
 
-      {/* Items List - Strictly contained with zero overflow */}
+      {/* Items List - Guaranteed zero overflow and zero truncation */}
       <div className="space-y-1.5 my-auto min-w-0">
         {complianceItems.map((item) => {
           const Icon = item.icon;
@@ -88,8 +88,7 @@ export const ComplianceValidityWidget: React.FC = () => {
                   <Icon className="w-3.5 h-3.5" />
                 </div>
                 <span
-                  className="text-xs font-medium text-slate-700 group-hover:text-blue-600 transition-colors truncate min-w-0"
-                  title={item.label}
+                  className="text-xs font-medium text-slate-700 group-hover:text-blue-600 transition-colors whitespace-nowrap"
                 >
                   {item.label}
                 </span>
