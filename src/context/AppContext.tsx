@@ -20,6 +20,7 @@ import {
 } from '../data/initialData';
 import { getRandomFullName, getRandomAcademicName, getInitials } from '../utils/nameGenerator';
 import { authService } from '../services/authService';
+import { dbService } from '../services/dbService';
 
 interface ToastInfo {
   id: string;
@@ -134,6 +135,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedInstitute, setSelectedInstitute] = useState<Institute | null>(null);
   const [activeModal, setActiveModal] = useState<'schedule-evc' | 'track-app' | 'upload-compliance' | 'app-detail' | 'inst-detail' | 'generate-report' | null>(null);
   const [toasts, setToasts] = useState<ToastInfo[]>([]);
+
+  // Load live data from Supabase PostgreSQL on mount if configured
+  useEffect(() => {
+    if (!dbService.isConnected()) return;
+    let isMounted = true;
+    const loadSupabaseData = async () => {
+      try {
+        const [apps, insts, evcs, compliances] = await Promise.all([
+          dbService.fetchApplications(),
+          dbService.fetchInstitutes(),
+          dbService.fetchEVCVisits(),
+          dbService.fetchComplianceRecords()
+        ]);
+        if (!isMounted) return;
+        if (apps && apps.length > 0) setApplications(apps);
+        if (insts && insts.length > 0) setInstitutes(insts);
+        if (evcs && evcs.length > 0) setEvcVisits(evcs);
+        if (compliances && compliances.length > 0) setComplianceRecords(compliances);
+      } catch (e) {
+        console.warn('Supabase initial fetch failed, using fallback cache', e);
+      }
+    };
+    loadSupabaseData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Sync state to local storage
   useEffect(() => {
@@ -288,7 +316,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         }
 
-        return {
+        const updatedApp = {
           ...app,
           stage: newStage,
           status: newStatus,
@@ -296,6 +324,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           timeline: updatedTimeline,
           remarks: note || app.remarks
         };
+        dbService.upsertApplication(updatedApp);
+        return updatedApp;
       })
     );
     try {
@@ -477,6 +507,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setApplications((prev) => [newApp, ...prev]);
+    dbService.upsertApplication(newApp);
     try {
       authService.addAuditLog({
         userId: 'USR-INST-001',
@@ -504,6 +535,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id
     };
     setEvcVisits((prev) => [newVisit, ...prev]);
+    dbService.upsertEVCVisit(newVisit);
     try {
       authService.addAuditLog({
         userId: 'USR-AICTE-001',
@@ -566,6 +598,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id
     };
     setComplianceRecords((prev) => [newRecord, ...prev]);
+    dbService.upsertComplianceRecord(newRecord);
     showToast(`Compliance submission uploaded for ${recordData.instituteName}`, 'success');
   };
 
