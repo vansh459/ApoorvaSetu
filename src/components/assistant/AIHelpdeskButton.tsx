@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface AIHelpdeskButtonProps {
   isOpen: boolean;
@@ -17,7 +17,7 @@ export const AIHelpdeskButton: React.FC<AIHelpdeskButtonProps> = ({
       {/* Tooltip on hover */}
       {!isOpen && isHovered && (
         <div className="mr-3 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-xl border border-slate-700/80 animate-in fade-in slide-in-from-right-2 duration-150 whitespace-nowrap hidden sm:flex items-center space-x-1.5">
-          <Sparkles className="w-3 h-3 text-teal-400" />
+          <Sparkles className="w-3.5 h-3.5 text-teal-400" />
           <span>Ask ApoorvaSetu Assistant</span>
         </div>
       )}
@@ -38,17 +38,10 @@ export const AIHelpdeskButton: React.FC<AIHelpdeskButtonProps> = ({
         {/* Glow Ring Effect */}
         <span className="absolute inset-0 rounded-full bg-blue-500 opacity-20 blur-md group-hover:opacity-40 transition-opacity" />
 
-        {/* Icon */}
+        {/* Icon: Sleek Modern AI Sparkles */}
         <div className="relative flex items-center justify-center">
-          <Bot className="w-6 h-6 transition-transform group-hover:scale-110" />
-          <Sparkles className="w-3 h-3 text-teal-200 absolute -top-1.5 -right-1.5 animate-pulse" />
+          <Sparkles className="w-6 h-6 text-white transition-all duration-300 group-hover:scale-110 group-hover:rotate-12" />
         </div>
-
-        {/* Active Online / Notification Pulse Indicator */}
-        <span className="absolute top-0 right-0 flex h-3.5 w-3.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white" />
-        </span>
       </button>
     </div>
   );
