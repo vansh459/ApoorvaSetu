@@ -75,7 +75,7 @@ class AssistantService {
   // --- Local Conversation History Storage (User-Isolated) ---
 
   getStorageKey(userId?: string): string {
-    return `apoorvasetu_ai_chat_v1_${userId || 'guest'}`;
+    return `apoorvasetu_ai_chat_v2_${userId || 'guest'}`;
   }
 
   loadHistory(userId?: string): ChatMessageItem[] {

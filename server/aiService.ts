@@ -185,7 +185,20 @@ export class AIService {
       };
     }
 
-    // 2. Strict Role Boundary RBAC Check
+    // 2. Ultra-concise greeting intercept (instant response without verbose essays)
+    const isGreeting = /^(hi|hello|hey|namaste|good\s+(morning|afternoon|evening)|greetings|howdy)[\s!.]*$/i.test(message.trim());
+    if (isGreeting) {
+      const roleDisplay = userRole ? userRole.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : 'there';
+      return {
+        text: `Hello, **${roleDisplay}**! How can I assist you with ApoorvaSetu today?`,
+        actionLinks: [
+          { label: 'Applications', path: '/applications' },
+          { label: 'Workflow', path: '/workflow' }
+        ]
+      };
+    }
+
+    // 3. Strict Role Boundary RBAC Check
     const rbacViolation = this.checkRBACOverreach(message, userRole);
     if (rbacViolation) {
       return {
@@ -193,7 +206,7 @@ export class AIService {
       };
     }
 
-    // 3. Verify Gemini API Key configuration
+    // 4. Verify Gemini API Key configuration
     const aiClient = this.getClient();
     if (!aiClient) {
       return {
@@ -203,22 +216,22 @@ export class AIService {
       };
     }
 
-    // 4. Retrieve RAG platform documentation
+    // 5. Retrieve RAG platform documentation
     const { contextText, actionLinks } = this.retrieveKnowledge(message, userRole, currentPath);
 
-    // 5. Build System Instruction for Gemini
-    const systemInstruction = `You are the official AI Helpdesk Assistant for ApoorvaSetu – AICTE Approval Workflow Automation, Compliance Monitoring and Alert Management System (developed for Smart India Hackathon 2026).
-Your job is to assist users with understanding portal workflows, submitting/reviewing applications, EVC inspections, compliance undertakings, and navigating platform features.
+    // 6. Build Ultra-Concise System Instruction for Gemini
+    const systemInstruction = `You are the AI Helpdesk Assistant for ApoorvaSetu – AICTE Approval Workflow Automation and Compliance Monitoring System.
 
-STRICT INSTRUCTIONS:
-1. DOMAIN BOUNDARY: ONLY answer questions about the ApoorvaSetu platform, AICTE approvals, and technical education governance.
-   Never write generic computer programs (e.g. Python scripts, sorting algorithms), solve homework, explain world trivia, or give investment/sports advice. If asked anything unrelated, respond with:
-   "${STANDARD_REFUSAL_MESSAGE}"
-2. ROLE-BASED ACCESS CONTROL (RBAC):
-   The user's currently authenticated role is: "${userRole}".
-   Tailor your answers strictly to this role's authority and responsibilities. Never guide users to bypass access controls or access modules unauthorized for their role.
-3. GROUNDING: Base your explanations on the provided ApoorvaSetu Platform Documentation. Do not invent or hallucinate non-existent features. If a detail is not in the documentation, clearly state that you don't have verified information and advise contacting the system administrator.
-4. TONE & FORMAT: Professional, clear, concise, and helpful. Use bullet points and bold key terms for readability.`;
+MANDATORY RULES:
+1. EXTREME BREVITY (HIGHEST PRIORITY):
+   - Keep ALL answers SHORT, DIRECT, and PUNCHY.
+   - Limit responses to 2–3 brief sentences or maximum 3 compact bullet points.
+   - NEVER include introductory pleasantries ("I would be happy to help", "As an administrator, you have oversight..."), role summaries, or concluding filler ("Please let me know if you need anything else!").
+   - Cut straight to the actionable answer immediately.
+2. DOMAIN BOUNDARY: ONLY answer questions about ApoorvaSetu platform features, AICTE approval stages, EVC inspections, and compliance.
+   If unrelated, reply strictly with: "${STANDARD_REFUSAL_MESSAGE}"
+3. USER ROLE: "${userRole}". Respect role boundaries; do not advise unauthorized actions.
+4. GROUNDING: Use the provided platform context. Do not invent features.`;
 
     // 6. Assemble Multi-turn Contents
     const contents: any[] = [];
@@ -261,7 +274,7 @@ STRICT INSTRUCTIONS:
           config: {
             systemInstruction,
             temperature: 0.2,
-            maxOutputTokens: 800
+            maxOutputTokens: 250
           }
         });
 

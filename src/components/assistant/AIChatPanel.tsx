@@ -41,16 +41,11 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
       setMessages(saved);
     } else {
       const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const roleTitle = user?.roleTitle || 'User';
       const initialGreeting: ChatMessageItem = {
         id: `msg-init-${Date.now()}`,
         sender: 'assistant',
-        text: `Hello, **${user?.name || 'User'}**! 👋\n\nI can help you with approval applications, inspection checklists, compliance filings, and navigating the portal.\n\nWhat would you like to know?`,
-        timestamp: now,
-        actionLinks: [
-          { label: 'View Applications', path: '/applications' },
-          { label: 'Approval Workflow', path: '/workflow' }
-        ]
+        text: `Hello, **${user?.name || 'User'}**! How can I assist you with ApoorvaSetu today?`,
+        timestamp: now
       };
       setMessages([initialGreeting]);
       assistantService.saveHistory([initialGreeting], user?.id);
