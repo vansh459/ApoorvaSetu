@@ -3,14 +3,16 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 import dotenv from 'dotenv';
+import { aiService } from './server/aiService.ts';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 function aiAssistantBackendPlugin(): Plugin {
   return {
     name: 'ai-assistant-backend-plugin',
     configureServer(server) {
-      server.middlewares.use(async (req, res, next) => {
+      server.middlewares.use((req, res, next) => {
+        dotenv.config({ override: true });
         // Handle AI chat endpoint
         if (req.url?.startsWith('/api/assistant/chat') && req.method === 'POST') {
           let body = '';
@@ -19,7 +21,6 @@ function aiAssistantBackendPlugin(): Plugin {
           });
           req.on('end', async () => {
             try {
-              const { aiService } = await import('./server/aiService.ts');
               const data = JSON.parse(body || '{}');
               const result = await aiService.generateResponse(data);
               res.setHeader('Content-Type', 'application/json');
@@ -50,7 +51,7 @@ function aiAssistantBackendPlugin(): Plugin {
           res.end(JSON.stringify({
             isConfigured: hasKey,
             provider: process.env.AI_PROVIDER || 'gemini',
-            model: process.env.AI_MODEL || 'gemini-2.5-flash'
+            model: process.env.AI_MODEL || 'gemini-3-flash-preview'
           }));
           return;
         }

@@ -27,7 +27,7 @@ app.get('/api/assistant/status', (_req, res) => {
   res.json({
     isConfigured: hasKey,
     provider: process.env.AI_PROVIDER || 'gemini',
-    model: process.env.AI_MODEL || 'gemini-2.5-flash'
+    model: process.env.AI_MODEL || 'gemini-3-flash-preview'
   });
 });
 
@@ -70,7 +70,7 @@ app.listen(PORT, () => {
   console.log(`[ApoorvaSetu AI Backend] Running on http://localhost:${PORT}`);
   const hasKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here');
   if (hasKey) {
-    console.log(`[ApoorvaSetu AI Backend] Google Gemini API Key configured. Model: ${process.env.AI_MODEL || 'gemini-2.5-flash'}`);
+    console.log(`[ApoorvaSetu AI Backend] Google Gemini API Key configured. Model: ${process.env.AI_MODEL || 'gemini-3-flash-preview'}`);
   } else {
     console.warn(`[ApoorvaSetu AI Backend] WARNING: GEMINI_API_KEY is not set in .env! Configure it to enable live AI responses.`);
   }

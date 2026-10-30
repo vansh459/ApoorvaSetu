@@ -242,50 +242,63 @@ STRICT INSTRUCTIONS:
       parts: [{ text: userPromptWithContext }]
     });
 
-    // 7. Invoke Gemini API
-    const modelName = process.env.AI_MODEL || 'gemini-2.5-flash';
+    // 7. Invoke Gemini API with automatic high-availability fallback
+    const primaryModel = process.env.AI_MODEL || 'gemini-3-flash-preview';
+    const candidateModels = Array.from(new Set([
+      primaryModel,
+      'gemini-3-flash-preview',
+      'gemini-3.8-flash',
+      'gemini-3.1-flash-lite-preview'
+    ]));
 
-    try {
-      const response = await aiClient.models.generateContent({
-        model: modelName,
-        contents,
-        config: {
-          systemInstruction,
-          temperature: 0.2,
-          maxOutputTokens: 800
-        }
-      });
+    let lastError: any = null;
 
-      const responseText = response.text?.trim() || "I couldn't generate a response for this query. Please rephrase your question.";
+    for (const modelName of candidateModels) {
+      try {
+        const response = await aiClient.models.generateContent({
+          model: modelName,
+          contents,
+          config: {
+            systemInstruction,
+            temperature: 0.2,
+            maxOutputTokens: 800
+          }
+        });
 
-      return {
-        text: responseText,
-        actionLinks: actionLinks.length > 0 ? actionLinks : undefined
-      };
-    } catch (err: any) {
-      console.error('Gemini API execution error:', err);
+        const responseText = response.text?.trim() || "I couldn't generate a response for this query. Please rephrase your question.";
 
-      // Handle specific API errors
-      if (err.message?.includes('API_KEY_INVALID') || err.status === 400) {
         return {
-          text: "⚠️ **Invalid Gemini API Key**: The configured `GEMINI_API_KEY` was rejected by Google Gemini API. Please check your key in `.env`.",
-          isConfigError: true,
-          error: "INVALID_API_KEY"
+          text: responseText,
+          actionLinks: actionLinks.length > 0 ? actionLinks : undefined
         };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[ApoorvaSetu AI] Model ${modelName} returned status ${err.status || err.message?.slice(0, 40)}. Trying fallback...`);
       }
+    }
 
-      if (err.status === 429 || err.message?.includes('RESOURCE_EXHAUSTED')) {
-        return {
-          text: "⚠️ **Rate Limit Exceeded**: Google Gemini API quota limit reached. Please wait a moment before trying again.",
-          error: "RATE_LIMITED"
-        };
-      }
+    console.error('All Gemini candidate models failed:', lastError);
 
+    // Handle specific API errors
+    if (lastError?.message?.includes('API_KEY_INVALID') || lastError?.status === 400) {
       return {
-        text: `⚠️ **AI Service Error**: Unable to reach Google Gemini API (${err.message || 'Network error'}). Please try again.`,
-        error: "AI_SERVICE_ERROR"
+        text: "⚠️ **Invalid Gemini API Key**: The configured `GEMINI_API_KEY` was rejected by Google Gemini API. Please check your key in `.env`.",
+        isConfigError: true,
+        error: "INVALID_API_KEY"
       };
     }
+
+    if (lastError?.status === 429 || lastError?.message?.includes('RESOURCE_EXHAUSTED')) {
+      return {
+        text: "⚠️ **Rate Limit Exceeded**: Google Gemini API quota limit reached. Please wait a moment before trying again.",
+        error: "RATE_LIMITED"
+      };
+    }
+
+    return {
+      text: `⚠️ **AI Service Error**: Unable to reach Google Gemini API (${lastError?.message || 'Network error'}). Please try again.`,
+      error: "AI_SERVICE_ERROR"
+    };
   }
 }
 
