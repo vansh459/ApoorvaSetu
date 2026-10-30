@@ -1,5 +1,4 @@
-import React from 'react';
-import { Sparkles } from 'lucide-react';
+import React, { useRef } from 'react';
 import { SUGGESTED_QUESTIONS_BY_ROUTE } from '../../data/platformKnowledgeBase';
 
 interface SuggestedQuestionsProps {
@@ -11,6 +10,8 @@ export const SuggestedQuestions: React.FC<SuggestedQuestionsProps> = ({
   currentPath,
   onSelectQuestion
 }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   // Find questions matching current route, or fallback to root dashboard questions
   const questions =
     SUGGESTED_QUESTIONS_BY_ROUTE[currentPath] ||
@@ -20,19 +21,26 @@ export const SuggestedQuestions: React.FC<SuggestedQuestionsProps> = ({
       'What documents are required for compliance?'
     ];
 
+  // Enable mouse wheel horizontal scrolling
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (scrollRef.current && e.deltaY !== 0) {
+      scrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
   return (
-    <div className="px-3 py-2 border-t border-slate-100 bg-slate-50/70">
-      <div className="flex items-center space-x-1.5 mb-1.5 text-[11px] font-semibold text-slate-500">
-        <Sparkles className="w-3 h-3 text-teal-600" />
-        <span>Suggested Questions</span>
-      </div>
-      <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar">
+    <div className="px-3 py-1.5 bg-white border-t border-slate-100 shrink-0">
+      <div
+        ref={scrollRef}
+        onWheel={handleWheel}
+        className="flex items-center space-x-1.5 overflow-x-auto whitespace-nowrap no-scrollbar py-0.5 cursor-grab active:cursor-grabbing"
+      >
         {questions.map((q, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => onSelectQuestion(q)}
-            className="text-[11px] text-left px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-700 text-slate-600 transition-all cursor-pointer shadow-2xs whitespace-normal"
+            className="shrink-0 text-xs px-3 py-1 rounded-full bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200/80 hover:border-blue-200 transition-colors cursor-pointer shadow-2xs"
           >
             {q}
           </button>

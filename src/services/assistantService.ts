@@ -283,21 +283,22 @@ class AssistantService {
     try {
       const saved = localStorage.getItem(this.getStorageKey(userId));
       if (saved) return JSON.parse(saved);
-    } catch {}
+    } catch { }
     return [];
   }
 
   saveHistory(messages: ChatMessageItem[], userId?: string): void {
     try {
       localStorage.setItem(this.getStorageKey(userId), JSON.stringify(messages));
-    } catch {}
+    } catch { }
   }
 
   clearHistory(userId?: string): void {
     try {
       localStorage.removeItem(this.getStorageKey(userId));
-    } catch {}
+    } catch { }
   }
 }
 
 export const assistantService = new AssistantService();
+

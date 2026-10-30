@@ -8,17 +8,17 @@ export interface ActionLink {
 
 export interface KnowledgeArticle {
   id: string;
-  category: 
-    | 'general'
-    | 'applications'
-    | 'workflow'
-    | 'institutes'
-    | 'evc'
-    | 'compliance'
-    | 'documents'
-    | 'regional'
-    | 'admin'
-    | 'institution';
+  category:
+  | 'general'
+  | 'applications'
+  | 'workflow'
+  | 'institutes'
+  | 'evc'
+  | 'compliance'
+  | 'documents'
+  | 'regional'
+  | 'admin'
+  | 'institution';
   title: string;
   keywords: string[];
   allowedRoles?: UserRole[]; // If specified, only available to these roles
@@ -446,3 +446,4 @@ export const SUGGESTED_QUESTIONS_BY_ROUTE: Record<string, string[]> = {
     'Where do I view accredited programs and approved intake?'
   ]
 };
+

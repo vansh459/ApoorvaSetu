@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SendHorizontal } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -37,38 +37,34 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
-    // Auto-adjust textarea height up to 100px
+    // Auto-adjust textarea height up to 96px
     const target = e.target;
     target.style.height = 'auto';
-    target.style.height = `${Math.min(target.scrollHeight, 100)}px`;
+    target.style.height = `${Math.min(target.scrollHeight, 96)}px`;
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-3 bg-white border-t border-slate-200/90">
-      <div className="relative flex items-end bg-slate-50 border border-slate-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 rounded-2xl p-1.5 transition-all">
+    <form onSubmit={handleSubmit} className="px-3 py-2 bg-white border-t border-slate-100 shrink-0">
+      <div className="relative flex items-center bg-slate-50 border border-slate-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 rounded-2xl px-3 py-1.5 transition-all">
         <textarea
           ref={textareaRef}
           rows={1}
           value={text}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about approvals, EVC, compliance..."
+          placeholder="Ask ApoorvaSetu..."
           disabled={disabled}
-          className="w-full bg-transparent resize-none outline-none text-xs text-slate-800 placeholder-slate-400 px-2.5 py-1.5 max-h-24 leading-relaxed"
+          className="w-full bg-transparent resize-none outline-none text-xs text-slate-800 placeholder-slate-400 py-1 pr-2 max-h-24 leading-relaxed"
         />
 
         <button
           type="submit"
           disabled={!text.trim() || disabled}
           aria-label="Send message"
-          className="shrink-0 p-2 rounded-xl bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 disabled:opacity-40 disabled:hover:from-blue-600 disabled:hover:to-teal-600 text-white transition-all cursor-pointer disabled:cursor-not-allowed shadow-2xs"
+          className="shrink-0 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:hover:bg-blue-600 text-white flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed shadow-2xs"
         >
-          <SendHorizontal className="w-3.5 h-3.5" />
+          <ArrowUp className="w-4 h-4 stroke-[2.5]" />
         </button>
-      </div>
-      <div className="flex items-center justify-between mt-1 px-1 text-[10px] text-slate-400">
-        <span>Enter to send • Shift+Enter for new line</span>
-        <span>ApoorvaSetu AI</span>
       </div>
     </form>
   );

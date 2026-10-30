@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-  Bot,
   X,
   Minus,
-  RotateCcw,
-  Sparkles,
-  ShieldCheck
+  RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -44,11 +41,11 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
       setMessages(saved);
     } else {
       const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const roleTitle = user?.roleTitle || 'Authorized User';
+      const roleTitle = user?.roleTitle || 'User';
       const initialGreeting: ChatMessageItem = {
         id: `msg-init-${Date.now()}`,
         sender: 'assistant',
-        text: `Hello, **${user?.name || 'User'}**! 👋\n\nI am your **ApoorvaSetu Helpdesk Assistant**. You are signed in as **${roleTitle}**.\n\nAsk me anything about approval workflows, inspection checklists, compliance undertakings, or platform navigation!`,
+        text: `Hello, **${user?.name || 'User'}**! 👋\n\nI can help you with approval applications, inspection checklists, compliance filings, and navigating the portal.\n\nWhat would you like to know?`,
         timestamp: now,
         actionLinks: [
           { label: 'View Applications', path: '/applications' },
@@ -84,9 +81,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
     setIsThinking(true);
 
     try {
-      // Small simulated natural latency (350 - 650ms)
-      await new Promise((resolve) => setTimeout(resolve, 450));
-
+      await new Promise((resolve) => setTimeout(resolve, 350));
       const response = await assistantService.processMessage(text, user, location.pathname);
 
       const assistantMsg: ChatMessageItem = {
@@ -104,7 +99,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
       const errorMsg: ChatMessageItem = {
         id: `msg-err-${Date.now()}`,
         sender: 'assistant',
-        text: "I encountered a temporary issue retrieving the guideline. Please try asking again.",
+        text: "I encountered a temporary issue. Please try asking again.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -119,7 +114,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
     const freshGreeting: ChatMessageItem = {
       id: `msg-init-${Date.now()}`,
       sender: 'assistant',
-      text: `Conversation reset. How can I help you with **ApoorvaSetu** today?`,
+      text: `Conversation reset. How can I help you today?`,
       timestamp: now
     };
     setMessages([freshGreeting]);
@@ -131,74 +126,47 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
   return (
     <div
       role="dialog"
-      aria-label="ApoorvaSetu Helpdesk Assistant"
-      className="fixed bottom-20 right-4 sm:right-6 z-50 w-[92vw] sm:w-[420px] h-[580px] max-h-[82vh] bg-white rounded-3xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+      aria-label="ApoorvaSetu Assistant"
+      className="fixed bottom-20 right-4 sm:right-6 z-50 w-[92vw] sm:w-[390px] h-[540px] max-h-[80vh] bg-white rounded-2xl shadow-xl border border-slate-200/90 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
     >
-      {/* Premium Header */}
-      <div className="px-4 py-3 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white flex items-center justify-between shrink-0 shadow-xs">
-        <div className="flex items-center space-x-2.5">
-          <div className="relative">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-teal-400 p-0.5 flex items-center justify-center text-white shadow-xs">
-              <Bot className="w-5 h-5" />
-            </div>
-            {/* Pulsing online status indicator */}
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-900 rounded-full animate-pulse" />
-          </div>
-
-          <div>
-            <div className="flex items-center space-x-1.5">
-              <h3 className="text-xs font-bold tracking-tight text-white">ApoorvaSetu Assistant</h3>
-              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-teal-500/20 text-teal-300 font-semibold border border-teal-500/30">
-                AICTE AI
-              </span>
-            </div>
-            <div className="flex items-center space-x-1 text-[10px] text-slate-300">
-              <ShieldCheck className="w-2.5 h-2.5 text-teal-400" />
-              <span>Role: {user?.roleTitle || 'Authorized Officer'}</span>
-            </div>
-          </div>
+      {/* Minimal Header */}
+      <div className="px-4 py-2.5 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-100" />
+          <h3 className="text-sm font-semibold tracking-tight text-slate-900">ApoorvaSetu</h3>
         </div>
 
-        {/* Header Action Buttons */}
-        <div className="flex items-center space-x-1 text-slate-300">
+        {/* Essential Window Controls */}
+        <div className="flex items-center space-x-0.5 text-slate-400">
           <button
             onClick={handleResetConversation}
-            title="Start New Conversation"
-            className="p-1.5 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-            aria-label="Reset conversation"
+            title="New Conversation"
+            className="p-1.5 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            aria-label="New conversation"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onMinimize}
             title="Minimize"
-            className="p-1.5 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-            aria-label="Minimize chat"
+            className="p-1.5 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            aria-label="Minimize"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onClose}
-            title="Close Assistant"
-            className="p-1.5 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
-            aria-label="Close chat"
+            title="Close"
+            className="p-1.5 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            aria-label="Close"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Domain restriction banner */}
-      <div className="px-3 py-1 bg-blue-50/70 border-b border-blue-100/60 flex items-center justify-between text-[10px] text-blue-800">
-        <span className="flex items-center space-x-1">
-          <Sparkles className="w-3 h-3 text-teal-600" />
-          <span>Strictly restricted to ApoorvaSetu portal guidelines</span>
-        </span>
-        <span className="text-slate-400 font-mono">v2.6</span>
-      </div>
-
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto px-3.5 py-2 space-y-1 bg-slate-50/40">
+      <div className="flex-1 overflow-y-auto px-3.5 py-2.5 space-y-1 bg-white">
         {messages.map((msg) => (
           <ChatMessage key={msg.id} message={msg} />
         ))}
@@ -206,13 +174,13 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested Questions */}
+      {/* Compact Horizontal Suggested Questions Carousel */}
       <SuggestedQuestions
         currentPath={location.pathname}
         onSelectQuestion={handleSendMessage}
       />
 
-      {/* Chat Input */}
+      {/* Clean Message Input Area */}
       <ChatInput onSendMessage={handleSendMessage} disabled={isThinking} />
     </div>
   );
