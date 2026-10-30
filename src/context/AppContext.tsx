@@ -15,8 +15,10 @@ import {
   initialEVCVisits,
   initialComplianceRecords,
   initialDocuments,
-  initialNotifications
+  initialNotifications,
+  regionalOffices
 } from '../data/initialData';
+import { getRandomFullName, getRandomAcademicName, getInitials } from '../utils/nameGenerator';
 
 interface ToastInfo {
   id: string;
@@ -24,7 +26,17 @@ interface ToastInfo {
   type: 'success' | 'info' | 'warning' | 'error';
 }
 
+export interface UserProfile {
+  name: string;
+  role: string;
+  email: string;
+  initials: string;
+}
+
 interface AppContextType {
+  currentUser: UserProfile;
+  randomizeCurrentUser: () => void;
+  randomizeAllNames: () => void;
   applications: Application[];
   institutes: Institute[];
   evcVisits: EVCVisit[];
@@ -69,9 +81,23 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'aicte_approval_system_data_v2';
+const STORAGE_KEY = 'aicte_approval_system_data_v3';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_user`);
+    if (saved) return JSON.parse(saved);
+    const initialName = getRandomFullName();
+    const initials = getInitials(initialName);
+    const slug = initialName.toLowerCase().replace(/\s+/g, '.');
+    return {
+      name: initialName,
+      role: 'Regional Officer',
+      email: `${slug}@aicte-india.org`,
+      initials
+    };
+  });
+
   const [applications, setApplications] = useState<Application[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_apps`);
     return saved ? JSON.parse(saved) : initialApplications;
@@ -110,6 +136,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Sync state to local storage
   useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_user`, JSON.stringify(currentUser));
+  }, [currentUser]);
+
+  useEffect(() => {
     localStorage.setItem(`${STORAGE_KEY}_apps`, JSON.stringify(applications));
   }, [applications]);
 
@@ -143,6 +173,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const randomizeCurrentUser = () => {
+    const newName = getRandomFullName();
+    const initials = getInitials(newName);
+    const slug = newName.toLowerCase().replace(/\s+/g, '.');
+    const newUser: UserProfile = {
+      name: newName,
+      role: 'Regional Officer',
+      email: `${slug}@aicte-india.org`,
+      initials
+    };
+    setCurrentUser(newUser);
+    showToast(`Officer switched to random name: ${newName} (${initials})`, 'info');
+  };
+
+  const randomizeAllNames = () => {
+    // 1. Randomize current user
+    const newName = getRandomFullName();
+    const initials = getInitials(newName);
+    const slug = newName.toLowerCase().replace(/\s+/g, '.');
+    setCurrentUser({
+      name: newName,
+      role: 'Regional Officer',
+      email: `${slug}@aicte-india.org`,
+      initials
+    });
+
+    // 2. Randomize institute principals
+    setInstitutes((prev) =>
+      prev.map((inst) => ({
+        ...inst,
+        principalName: getRandomAcademicName()
+      }))
+    );
+
+    // 3. Randomize EVC committees
+    setEvcVisits((prev) =>
+      prev.map((v) => {
+        const mem1 = getRandomAcademicName();
+        const mem2 = getRandomAcademicName();
+        return {
+          ...v,
+          assignedCommittee: `Committee (${mem1.split(' ')[1]}, ${mem2.split(' ')[1]})`,
+          committeeMembers: [mem1, mem2]
+        };
+      })
+    );
+
+    // 4. Randomize application timeline officers
+    setApplications((prev) =>
+      prev.map((app) => ({
+        ...app,
+        timeline: app.timeline.map((t) => ({
+          ...t,
+          officer: t.officer && t.officer.includes('Dr.') ? getRandomAcademicName() : t.officer
+        }))
+      }))
+    );
+
+    showToast('Randomized all officer, principal, and committee names!', 'success');
   };
 
   const stageOrder: ApplicationStage[] = [
@@ -322,7 +413,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const rescheduleEVC = (id: string, newDate: string) => {
-    const parts = newDate.split('-');
     const dateObj = new Date(newDate);
     const day = dateObj.getDate().toString().padStart(2, '0');
     const month = dateObj.toLocaleString('en-US', { month: 'short' });
@@ -381,6 +471,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetToInitialData = () => {
+    localStorage.removeItem(`${STORAGE_KEY}_user`);
     localStorage.removeItem(`${STORAGE_KEY}_apps`);
     localStorage.removeItem(`${STORAGE_KEY}_institutes`);
     localStorage.removeItem(`${STORAGE_KEY}_evc`);
@@ -388,18 +479,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem(`${STORAGE_KEY}_docs`);
     localStorage.removeItem(`${STORAGE_KEY}_notifs`);
 
+    const newName = getRandomFullName();
+    setCurrentUser({
+      name: newName,
+      role: 'Regional Officer',
+      email: `${newName.toLowerCase().replace(/\s+/g, '.')}@aicte-india.org`,
+      initials: getInitials(newName)
+    });
     setApplications(initialApplications);
     setInstitutes(initialInstitutes);
     setEvcVisits(initialEVCVisits);
     setComplianceRecords(initialComplianceRecords);
     setDocuments(initialDocuments);
     setNotifications(initialNotifications);
-    showToast('Reset to original sample data', 'info');
+    showToast('Reset to original sample data with fresh random names', 'info');
   };
 
   return (
     <AppContext.Provider
       value={{
+        currentUser,
+        randomizeCurrentUser,
+        randomizeAllNames,
         applications,
         institutes,
         evcVisits,

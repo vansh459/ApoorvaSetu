@@ -18,7 +18,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
     setSelectedApplication,
     setActiveModal,
     resetToInitialData,
-    markAllNotificationsAsRead
+    markAllNotificationsAsRead,
+    currentUser,
+    randomizeCurrentUser,
+    randomizeAllNames
   } = useApp();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -265,7 +268,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
           )}
         </div>
 
-        {/* User Profile matching screenshot */}
+        {/* User Profile with Random Name support */}
         <div ref={profileRef} className="relative">
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -273,26 +276,26 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
           >
             {/* Avatar Pill circle */}
             <div className="w-9 h-9 rounded-full bg-[#1e3a8a] text-white flex items-center justify-center font-bold text-xs shadow-xs tracking-wider">
-              VJ
+              {currentUser.initials}
             </div>
 
             {/* User details */}
             <div className="hidden sm:block text-left">
               <div className="text-xs font-bold text-slate-800 leading-tight">
-                Vansh Jain
+                {currentUser.name}
               </div>
               <div className="text-[11px] text-slate-500 font-medium leading-tight">
-                Regional Officer
+                {currentUser.role}
               </div>
             </div>
           </div>
 
           {/* Profile Dropdown Menu */}
           {isProfileOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-50">
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-50 animate-in fade-in zoom-in-95">
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60">
-                <p className="text-xs font-bold text-slate-800">Vansh Jain</p>
-                <p className="text-[11px] text-slate-500">ro.western@aicte-india.org</p>
+                <p className="text-xs font-bold text-slate-800">{currentUser.name}</p>
+                <p className="text-[11px] text-slate-500 truncate">{currentUser.email}</p>
                 <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
                   Regional Officer (Class-I)
                 </span>
@@ -301,10 +304,38 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
               <div className="py-1">
                 <button
                   onClick={() => {
+                    randomizeCurrentUser();
+                    setIsProfileOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-blue-700 hover:bg-blue-50 flex items-center justify-between group cursor-pointer"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RotateCcw className="w-3.5 h-3.5 text-blue-600 group-hover:rotate-180 transition-transform" />
+                    <span className="font-semibold">Shuffle Profile Name</span>
+                  </div>
+                  <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-sm">Random</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    randomizeAllNames();
+                    setIsProfileOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-purple-700 hover:bg-purple-50 flex items-center justify-between group cursor-pointer"
+                >
+                  <div className="flex items-center space-x-2">
+                    <User className="w-3.5 h-3.5 text-purple-600" />
+                    <span className="font-semibold">Randomize All Names</span>
+                  </div>
+                  <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-sm">System</span>
+                </button>
+
+                <button
+                  onClick={() => {
                     navigate('/regions-officials');
                     setIsProfileOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center space-x-2"
+                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <User className="w-3.5 h-3.5 text-slate-400" />
                   <span>My Jurisdiction & Office</span>
@@ -315,7 +346,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                     resetToInitialData();
                     setIsProfileOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2 text-xs text-amber-700 hover:bg-amber-50 flex items-center space-x-2"
+                  className="w-full text-left px-4 py-2 text-xs text-amber-700 hover:bg-amber-50 flex items-center space-x-2 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
                   <span>Reset Demo Data</span>
