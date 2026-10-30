@@ -1,4 +1,4 @@
-import { UserRole } from '../types';
+import type { UserRole } from '../types/index.ts';
 
 export interface ActionLink {
   label: string;

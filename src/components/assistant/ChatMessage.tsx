@@ -68,7 +68,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onActionClick
       <div
         className={`max-w-[85%] px-3.5 py-2.5 text-xs transition-all ${
           isAssistant
-            ? 'bg-slate-100 text-slate-800 rounded-2xl rounded-tl-xs shadow-2xs'
+            ? message.isError
+              ? 'bg-amber-50/90 border border-amber-200 text-amber-900 rounded-2xl rounded-tl-xs shadow-2xs'
+              : 'bg-slate-100 text-slate-800 rounded-2xl rounded-tl-xs shadow-2xs'
             : 'bg-blue-600 text-white rounded-2xl rounded-tr-xs shadow-xs'
         }`}
       >

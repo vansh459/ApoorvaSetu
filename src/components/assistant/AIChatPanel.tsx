@@ -81,15 +81,15 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
     setIsThinking(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      const response = await assistantService.processMessage(text, user, location.pathname);
+      const response = await assistantService.processMessage(text, user, location.pathname, messages);
 
       const assistantMsg: ChatMessageItem = {
         id: `msg-ai-${Date.now()}`,
         sender: 'assistant',
         text: response.text,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        actionLinks: response.actionLinks
+        actionLinks: response.actionLinks,
+        isError: response.isError
       };
 
       const finalMessages = [...updatedWithUser, assistantMsg];
