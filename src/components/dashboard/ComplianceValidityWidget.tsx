@@ -12,55 +12,55 @@ import {
 export const ComplianceValidityWidget: React.FC = () => {
   const navigate = useNavigate();
 
-  // Compliance items matching the new reference design
+  // Concise compliance items with guaranteed zero overflow
   const complianceItems = [
     {
-      label: 'Land/Infrastructure Documents Expiring',
+      label: 'Land / Infra Expiring',
       count: '12',
       icon: AlertCircle,
-      iconBg: 'bg-[#fee2e2]',
-      iconColor: 'text-[#ef4444]'
+      iconBg: 'bg-rose-50',
+      iconColor: 'text-rose-600'
     },
     {
-      label: 'Other Undertakings Pending',
+      label: 'Undertakings Pending',
       count: '28',
       icon: FileClock,
-      iconBg: 'bg-[#ffedd5]',
-      iconColor: 'text-[#f97316]'
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-600'
     },
     {
-      label: 'Compliance Submissions Pending',
+      label: 'Submissions Pending',
       count: '16',
       icon: FileText,
-      iconBg: 'bg-[#e0edff]',
-      iconColor: 'text-[#3b82f6]'
+      iconBg: 'bg-blue-50',
+      iconColor: 'text-blue-600'
     },
     {
       label: 'Completed Submissions',
       count: '142',
       icon: CheckCircle2,
-      iconBg: 'bg-[#dcfce7]',
-      iconColor: 'text-[#10b981]'
+      iconBg: 'bg-emerald-50',
+      iconColor: 'text-emerald-600'
     },
     {
-      label: 'Documents Expiring Soon',
+      label: 'Expiring Soon',
       count: '09',
       icon: Clock,
-      iconBg: 'bg-[#fef3c7]',
-      iconColor: 'text-[#f59e0b]'
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-600'
     }
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between h-full min-w-0">
-      {/* Header with icon matching reference */}
+    <div className="bg-white rounded-xl border border-slate-200/60 p-4 sm:p-4.5 shadow-xs flex flex-col justify-between h-full min-w-0">
+      {/* Header */}
       <div className="flex items-center justify-between mb-3 shrink-0">
-        <div className="flex items-center space-x-2 shrink-0">
+        <div className="flex items-center space-x-2 shrink-0 min-w-0">
           <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-4 h-4" />
           </div>
-          <h2 className="text-xs sm:text-sm font-bold text-slate-800 tracking-tight whitespace-nowrap">
-            Compliance & Document Validity
+          <h2 className="text-xs sm:text-sm font-bold text-slate-800 tracking-tight truncate">
+            Compliance Validity
           </h2>
         </div>
         <button
@@ -71,28 +71,31 @@ export const ComplianceValidityWidget: React.FC = () => {
         </button>
       </div>
 
-      {/* Items List matching reference */}
-      <div className="space-y-2.5 my-auto min-w-0">
+      {/* Items List - Strictly contained with zero overflow */}
+      <div className="space-y-1.5 my-auto min-w-0">
         {complianceItems.map((item) => {
           const Icon = item.icon;
           return (
             <div
               key={item.label}
               onClick={() => navigate('/compliance')}
-              className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-all duration-150 active:scale-[0.99] group min-w-0"
+              className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-all duration-150 active:scale-[0.99] group min-w-0 gap-2"
             >
-              <div className="flex items-center space-x-2.5 min-w-0 mr-2 flex-1">
+              <div className="flex items-center space-x-2.5 min-w-0 flex-1">
                 <div
-                  className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-110 ${item.iconBg} ${item.iconColor}`}
+                  className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-105 ${item.iconBg} ${item.iconColor}`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-xs font-medium text-slate-700 group-hover:text-blue-600 transition-colors leading-tight">
+                <span
+                  className="text-xs font-medium text-slate-700 group-hover:text-blue-600 transition-colors truncate min-w-0"
+                  title={item.label}
+                >
                   {item.label}
                 </span>
               </div>
 
-              <span className="text-xs sm:text-sm font-bold text-slate-900 shrink-0 whitespace-nowrap">
+              <span className="text-xs font-bold text-slate-900 shrink-0 tabular-nums">
                 {item.count}
               </span>
             </div>

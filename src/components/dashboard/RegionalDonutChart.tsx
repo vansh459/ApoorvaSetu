@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart2 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell } from 'recharts';
 
 export const RegionalDonutChart: React.FC = () => {
   const navigate = useNavigate();
@@ -21,96 +21,63 @@ export const RegionalDonutChart: React.FC = () => {
   const totalApplications = chartData.reduce((sum, item) => sum + item.value, 0);
   const activeItem = activeIndex !== null ? chartData[activeIndex] : null;
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-slate-900/95 text-white px-2.5 py-1.5 rounded-lg shadow-xl border border-slate-700/60 text-xs pointer-events-none z-50 whitespace-nowrap">
-          <div className="flex items-center gap-1.5">
-            <span
-              className="w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: data.color }}
-            />
-            <span className="font-semibold text-white">{data.name}:</span>
-            <span className="font-bold text-slate-100 font-mono">
-              {data.value.toLocaleString()}
-            </span>
-            <span className="text-slate-400">({data.percentage}%)</span>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-xs flex flex-col justify-between h-full min-w-0">
-      {/* Header with icon matching dashboard style */}
-      <div className="flex items-center justify-between mb-2.5 shrink-0">
-        <div className="flex items-center space-x-2 shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <BarChart2 className="w-4 h-4" />
-          </div>
-          <h2 className="text-xs sm:text-sm font-bold text-slate-800 tracking-tight whitespace-nowrap">
-            Applications by Region
-          </h2>
+    <div className="bg-white rounded-xl border border-slate-200/60 p-4 sm:p-4.5 shadow-xs flex flex-col justify-between h-full min-w-0">
+      {/* Header */}
+      <div className="flex items-center space-x-2 mb-2.5 shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+          <BarChart2 className="w-4 h-4" />
         </div>
-        <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 bg-slate-100/80 px-2 py-0.5 rounded-full">
-          7 Zones
-        </span>
+        <h2 className="text-xs sm:text-sm font-bold text-slate-800 tracking-tight whitespace-nowrap">
+          Applications by Region
+        </h2>
       </div>
 
       {/* Chart & Legend Flex Container */}
       <div className="flex items-center gap-3 sm:gap-4 my-auto min-w-0">
-        {/* Left: Perfectly circular donut chart with dynamic center readout */}
-        <div className="w-[116px] sm:w-[126px] h-[116px] sm:h-[126px] shrink-0 relative flex items-center justify-center">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Tooltip
-                content={<CustomTooltip />}
-                wrapperStyle={{ zIndex: 100, pointerEvents: 'none' }}
-              />
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius="60%"
-                outerRadius="90%"
-                paddingAngle={2.5}
-                dataKey="value"
-                stroke="#ffffff"
-                strokeWidth={1.5}
-                onMouseEnter={(_, index) => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(null)}
-                onClick={(entry: any) => {
-                  if (entry && entry.name) {
-                    navigate(
-                      `/applications?region=${encodeURIComponent(
-                        String(entry.name)
-                      )}`
-                    );
-                  }
-                }}
-              >
-                {chartData.map((entry, index) => {
-                  const isHovered = activeIndex === index;
-                  const isAnyHovered = activeIndex !== null;
-                  return (
-                    <Cell
-                      key={`cell-${entry.name}`}
-                      fill={entry.color}
-                      opacity={!isAnyHovered || isHovered ? 1 : 0.4}
-                      stroke={isHovered ? entry.color : '#ffffff'}
-                      strokeWidth={isHovered ? 2.5 : 1.5}
-                      className="transition-all duration-150 cursor-pointer outline-none"
-                    />
+        {/* Left: Perfectly circular donut chart with fixed width/height - zero clipping */}
+        <div className="w-[124px] h-[124px] shrink-0 relative flex items-center justify-center">
+          <PieChart width={124} height={124}>
+            <Pie
+              data={chartData}
+              cx={62}
+              cy={62}
+              innerRadius={38}
+              outerRadius={56}
+              paddingAngle={2.5}
+              dataKey="value"
+              stroke="#ffffff"
+              strokeWidth={1.5}
+              onMouseEnter={(_, index) => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(null)}
+              onClick={(entry: any) => {
+                if (entry && entry.name) {
+                  navigate(
+                    `/applications?region=${encodeURIComponent(
+                      String(entry.name)
+                    )}`
                   );
-                })}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+                }
+              }}
+            >
+              {chartData.map((entry, index) => {
+                const isHovered = activeIndex === index;
+                const isAnyHovered = activeIndex !== null;
+                return (
+                  <Cell
+                    key={`cell-${entry.name}`}
+                    fill={entry.color}
+                    opacity={!isAnyHovered || isHovered ? 1 : 0.35}
+                    stroke={isHovered ? entry.color : '#ffffff'}
+                    strokeWidth={isHovered ? 2.5 : 1.5}
+                    className="transition-all duration-150 cursor-pointer outline-none"
+                  />
+                );
+              })}
+            </Pie>
+          </PieChart>
 
-          {/* Center Text inside Donut Hole */}
+          {/* Center Text inside Donut Hole - Pixel-perfect alignment */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-center px-1">
             <span className="text-xs sm:text-sm font-black text-slate-900 leading-none tracking-tight transition-all duration-150">
               {activeItem

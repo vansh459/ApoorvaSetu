@@ -178,14 +178,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Role Badge Indicator */}
-        <div className="px-3.5 pt-3 pb-1">
-          <div className="px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] font-bold text-slate-300 flex items-center justify-between">
-            <span className="truncate">{user?.roleTitle || 'AICTE User'}</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 ml-2" />
-          </div>
-        </div>
-
         {/* Navigation Links */}
         <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-1">
           {navItems.map((item) => {

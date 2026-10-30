@@ -42,7 +42,7 @@ export const UpcomingEVCList: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-xs flex flex-col justify-between h-full min-w-0">
+    <div className="bg-white rounded-xl border border-slate-200/60 p-4 sm:p-4.5 shadow-xs flex flex-col justify-between h-full min-w-0">
       {/* Header with icon matching reference */}
       <div className="flex items-center justify-between mb-3 shrink-0">
         <div className="flex items-center space-x-2 shrink-0">

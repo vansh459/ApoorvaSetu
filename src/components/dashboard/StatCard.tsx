@@ -20,28 +20,27 @@ export const StatCard: React.FC<StatCardProps> = ({
   variant,
   onClick
 }) => {
-  // Soft pastel card styling matching the reference screenshot exactly
   const styles = {
     blue: {
-      cardBg: 'bg-[#f4f8ff] border-[#e1edfc]',
+      cardBg: 'bg-[#f8faff] border-slate-200/70 hover:border-blue-300',
       iconBg: 'bg-blue-100/70 text-blue-600',
-      sparklineColor: '#3b82f6',
+      sparklineColor: '#2563eb',
       sparklinePath: 'M 2 15 C 14 18, 22 10, 32 14 C 40 18, 48 8, 54 5'
     },
     amber: {
-      cardBg: 'bg-[#fefaf3] border-[#faedd9]',
+      cardBg: 'bg-[#fffbf5] border-slate-200/70 hover:border-amber-300',
       iconBg: 'bg-amber-100/70 text-amber-600',
       sparklineColor: '#f59e0b',
       sparklinePath: 'M 2 14 C 14 8, 24 18, 34 16 C 42 14, 48 10, 54 6'
     },
     green: {
-      cardBg: 'bg-[#f4fcf7] border-[#dcf5e7]',
+      cardBg: 'bg-[#f7fdf9] border-slate-200/70 hover:border-emerald-300',
       iconBg: 'bg-emerald-100/70 text-emerald-600',
       sparklineColor: '#10b981',
       sparklinePath: 'M 2 16 C 14 16, 24 8, 34 14 C 42 18, 48 8, 54 5'
     },
     rose: {
-      cardBg: 'bg-[#fef6f7] border-[#fce2e5]',
+      cardBg: 'bg-[#fef8f8] border-slate-200/70 hover:border-rose-300',
       iconBg: 'bg-rose-100/70 text-rose-600',
       sparklineColor: '#f43f5e',
       sparklinePath: 'M 2 15 C 14 10, 24 16, 34 8 C 42 6, 48 14, 54 8'
@@ -58,53 +57,50 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl border ${styles.cardBg} p-4 sm:p-5 shadow-2xs transition-all duration-200 ease-out group ${
+      className={`rounded-xl border ${styles.cardBg} p-4 sm:p-4.5 shadow-2xs transition-all duration-200 ease-out group flex flex-col justify-between ${
         onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.99]' : ''
       }`}
     >
-      <div className="flex items-start justify-between gap-2.5">
-        {/* Left: Icon */}
+      {/* Top Row: Full Title + Compact Icon */}
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="text-xs font-semibold text-slate-600 transition-colors duration-150 group-hover:text-slate-900 leading-tight line-clamp-1">
+          {title}
+        </span>
         <div
-          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110 ${styles.iconBg}`}
+          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${styles.iconBg}`}
         >
-          <Icon className="w-4.5 h-4.5 stroke-[2]" />
-        </div>
-
-        {/* Center: Title & Large Value */}
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-medium text-slate-600 truncate transition-colors duration-150 group-hover:text-slate-800">
-            {title}
-          </div>
-          <div className="text-2xl sm:text-[26px] font-bold text-slate-900 mt-0.5 tracking-tight leading-tight">
-            {value}
-          </div>
-        </div>
-
-        {/* Right: Perfectly contained sparkline wave */}
-        <div className="shrink-0 pt-2.5">
-          <svg
-            viewBox="0 0 56 20"
-            fill="none"
-            className="w-12 sm:w-14 h-5 overflow-hidden transition-transform duration-200 group-hover:scale-105"
-          >
-            <path
-              d={styles.sparklinePath}
-              stroke={styles.sparklineColor}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <Icon className="w-4 h-4 stroke-[2]" />
         </div>
       </div>
 
-      {/* Bottom: Trend Text */}
-      <div className="mt-3 pt-0.5 flex items-center text-xs">
-        {trendText && (
+      {/* Middle: Prominent Value */}
+      <div className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight leading-none mb-3">
+        {value}
+      </div>
+
+      {/* Bottom: Trend Indicator & Sparkline */}
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100/80 text-[11px]">
+        {trendText ? (
           <span className={`font-semibold ${trendColors}`}>
             {trendText}
           </span>
+        ) : (
+          <span className="text-slate-400">Current cycle</span>
         )}
+
+        <svg
+          viewBox="0 0 56 20"
+          fill="none"
+          className="w-11 h-4 overflow-hidden opacity-75 group-hover:opacity-100 transition-opacity"
+        >
+          <path
+            d={styles.sparklinePath}
+            stroke={styles.sparklineColor}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </div>
     </div>
   );
