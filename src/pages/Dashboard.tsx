@@ -8,7 +8,11 @@ import { EVCMemberDashboard } from '../components/dashboard/roles/EVCMemberDashb
 import { InstitutionAdminDashboard } from '../components/dashboard/roles/InstitutionAdminDashboard';
 
 export const Dashboard: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
 
   // If session is unauthenticated, redirect strictly to login (never default to AICTE Admin)
   if (!isAuthenticated || !user || !user.role) {

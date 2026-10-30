@@ -30,6 +30,16 @@ export const Applications: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
   const [selectedStage, setSelectedStage] = useState(initialStage);
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
+
+  // Synchronize state with URL parameters when navigating with browser back/forward buttons
+  React.useEffect(() => {
+    const stage = searchParams.get('stage') || 'All';
+    const status = searchParams.get('status') || 'All';
+    const region = searchParams.get('region') || 'All';
+    setSelectedStage(stage);
+    setSelectedStatus(status);
+    setSelectedRegion(region);
+  }, [searchParams]);
   const [sortField, setSortField] = useState<'id' | 'instituteName' | 'lastUpdated'>('lastUpdated');
   const [sortAsc, setSortAsc] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);

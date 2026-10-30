@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import { Permission, UserRole } from '../../types';
@@ -29,10 +29,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   useEffect(() => {
     // If client state thinks authenticated, but backend session is missing/revoked, force logout
-    if (isAuthenticated && !isServerValid) {
+    if (isAuthenticated && !isServerValid && !isLoading) {
       logout();
     }
-  }, [isAuthenticated, isServerValid, logout]);
+  }, [isAuthenticated, isServerValid, isLoading, logout]);
 
   if (isLoading) {
     return (
@@ -66,7 +66,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           Your current authenticated role (<strong className="text-slate-800">{user.roleTitle}</strong>) does not have authorization to view this module.
         </p>
         <button
-          onClick={() => navigate('/', { replace: true })}
+          onClick={() => navigate('/')}
           className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -90,7 +90,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           Missing required security permission: <code className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded text-xs font-mono">{requiredPermission}</code>.
         </p>
         <button
-          onClick={() => navigate('/', { replace: true })}
+          onClick={() => navigate('/')}
           className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -100,7 +100,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  return <>{children}</>;
+  return children ? <>{children}</> : <Outlet />;
 };
 
 /**
@@ -109,6 +109,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
  */
 export const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
   const isServerValid = authService.isSessionValid();
 
   if (isLoading) {
@@ -120,7 +121,8 @@ export const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   if (isAuthenticated && isServerValid) {
-    return <Navigate to="/" replace />;
+    const from = (location.state as any)?.from?.pathname || '/';
+    return <Navigate to={from} replace />;
   }
 
   return <>{children}</>;

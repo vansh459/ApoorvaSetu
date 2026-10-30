@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
 import { Sidebar } from '../components/common/Sidebar';
 import { Header } from '../components/common/Header';
 import { ToastContainer } from '../components/common/Toast';
@@ -11,6 +11,15 @@ import { GenerateReportModal } from '../components/modals/GenerateReportModal';
 
 export const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const navType = useNavigationType();
+
+  // Scroll to top on standard link clicks (PUSH), preserve scroll on browser back/forward (POP)
+  useEffect(() => {
+    if (navType !== 'POP') {
+      window.scrollTo(0, 0);
+    }
+  }, [location.pathname, navType]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex">
@@ -22,9 +31,11 @@ export const DashboardLayout: React.FC = () => {
         {/* Top Header */}
         <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-        {/* Page View */}
+        {/* Page View with Smooth 180ms Page Transition */}
         <main className="flex-1 p-4 sm:p-5 lg:p-6 max-w-[1650px] w-full mx-auto">
-          <Outlet />
+          <div key={location.pathname} className="animate-page-fade w-full">
+            <Outlet />
+          </div>
         </main>
       </div>
 

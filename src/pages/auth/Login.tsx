@@ -55,14 +55,6 @@ export const Login: React.FC = () => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isDemoHelperOpen, setIsDemoHelperOpen] = useState(false);
 
-  // If already authenticated, redirect immediately to dashboard
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      const from = (location.state as any)?.from?.pathname || '/';
-      navigate(from, { replace: true });
-    }
-  }, [isAuthenticated, navigate, location]);
-
   const demoAccounts: DemoAccountInfo[] = [
     {
       role: 'SUPER_ADMIN',

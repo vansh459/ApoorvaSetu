@@ -521,16 +521,25 @@ class AuthService {
 
     const verification = this.verifyToken(token);
 
-    // If signature failed or structure is invalid, reject and clear
+    // If signature failed or structure is invalid, return null (do not destroy storage in getter)
     if (!verification.valid || !verification.sub || !verification.sid) {
-      this.logout();
       return null;
+    }
+
+    // Ensure server session registry is synced from localStorage if empty
+    if (!this.serverSessions.has(verification.sid)) {
+      const savedSessions = localStorage.getItem(SERVER_SESSIONS_STORAGE_KEY);
+      if (savedSessions) {
+        try {
+          const parsed = JSON.parse(savedSessions);
+          this.serverSessions = new Map(Object.entries(parsed));
+        } catch {}
+      }
     }
 
     // Validate against server session registry
     const serverSession = this.serverSessions.get(verification.sid);
     if (!serverSession || serverSession.isRevoked) {
-      this.logout();
       return null;
     }
 
@@ -553,15 +562,18 @@ class AuthService {
         setCookie(REFRESH_COOKIE_NAME, newRefreshToken, Math.floor((serverSession.refreshExpiresAt - now) / 1000));
       } else {
         // Entire session expired
-        this.logout();
         return null;
       }
+    }
+
+    // Ensure users array is populated
+    if (this.users.length === 0) {
+      this.initStorage();
     }
 
     // Look up authoritative user from database
     const user = this.users.find((u) => u.id === serverSession.userId);
     if (!user || !user.isActive) {
-      this.logout();
       return null;
     }
 

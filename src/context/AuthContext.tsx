@@ -17,8 +17,16 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Synchronously initialize authenticated user from backend session storage
+  // Prevents blank screens, flashing, and false unauthenticated redirects during browser navigation
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      return authService.validateSession();
+    } catch {
+      return null;
+    }
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   // Authoritative session verification directly from server session registry & backend user store
   const verifySession = useCallback(() => {
@@ -32,16 +40,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Initialize and verify session on initial mount
+  // Listen for session invalidation, BFCache restoration, and history navigation
   useEffect(() => {
-    verifySession();
-    setIsLoading(false);
-
-    // Listen to browser BFCache restoration and history popstate
+    // Listen to browser BFCache restoration and history navigation
     const handlePageShow = (e: PageTransitionEvent) => {
       if (e.persisted || !authService.isSessionValid()) {
         verifySession();
       }
+    };
+
+    // Listen to popstate (browser back/forward button clicks)
+    const handlePopState = () => {
+      verifySession();
     };
 
     // Listen to tab storage synchronization
@@ -52,10 +62,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('popstate', handlePopState);
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
       window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [verifySession]);
