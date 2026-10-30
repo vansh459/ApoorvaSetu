@@ -54,8 +54,6 @@ export const Login: React.FC = () => {
 
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isDemoHelperOpen, setIsDemoHelperOpen] = useState(false);
-  const [isSsoModalOpen, setIsSsoModalOpen] = useState(false);
-  const [ssoProvider, setSsoProvider] = useState<'DigiLocker' | 'National Single Window'>('DigiLocker');
 
   // If already authenticated, redirect immediately to dashboard
   React.useEffect(() => {
@@ -154,11 +152,6 @@ export const Login: React.FC = () => {
     e.preventDefault();
     if (!forgotEmail) return;
     setForgotSubmitted(true);
-  };
-
-  const handleOpenSso = (provider: 'DigiLocker' | 'National Single Window') => {
-    setSsoProvider(provider);
-    setIsSsoModalOpen(true);
   };
 
   return (
@@ -378,42 +371,6 @@ export const Login: React.FC = () => {
               </button>
             </form>
 
-            {/* Other Login Options Divider */}
-            <div className="relative my-5 flex items-center justify-center">
-              <div className="border-t border-slate-200 w-full" />
-              <span className="bg-white px-3 text-[11px] font-medium text-slate-400 whitespace-nowrap absolute">
-                Other Login Options
-              </span>
-            </div>
-
-            {/* Alternative National Login Buttons */}
-            <div className="space-y-2.5">
-              <button
-                type="button"
-                onClick={() => handleOpenSso('DigiLocker')}
-                className="w-full py-2 px-3 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/70 rounded-lg text-xs font-semibold text-slate-700 transition-colors flex items-center justify-center space-x-2 cursor-pointer"
-              >
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/1/12/DigiLocker_logo.png"
-                  alt="DigiLocker"
-                  className="w-4 h-4 object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-                <span>Login with DigiLocker</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleOpenSso('National Single Window')}
-                className="w-full py-2 px-3 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/70 rounded-lg text-xs font-semibold text-slate-700 transition-colors flex items-center justify-center space-x-2 cursor-pointer"
-              >
-                <Shield className="w-3.5 h-3.5 text-blue-600" />
-                <span>Login via National Single Window</span>
-              </button>
-            </div>
-
             {/* Bottom Contact Help inside Card */}
             <p className="text-[11px] text-center text-slate-600 mt-6 leading-relaxed">
               Don't have an account?{' '}
@@ -623,77 +580,6 @@ export const Login: React.FC = () => {
               className="w-full mt-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-white cursor-pointer"
             >
               Understood
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Simulated SSO Modal (DigiLocker / National Single Window) */}
-      {isSsoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
-            <button
-              onClick={() => setIsSsoModalOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <h3 className="text-lg font-bold text-slate-900 mb-1">
-              {ssoProvider} Single Sign-On
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Government of India National Identity Gateway
-            </p>
-
-            <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 text-xs text-slate-700 space-y-2">
-              <p>
-                In production, this redirects to the official <strong>{ssoProvider}</strong> OAuth2 OpenID Connect authorization endpoint to verify Aadhaar or MeriPehchaan institutional credentials.
-              </p>
-              <p className="text-slate-500">
-                Select an authorized account below to proceed with simulated national SSO:
-              </p>
-            </div>
-
-            <div className="mt-3 space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('institute@apoorvasetu.demo');
-                  setPassword(DEMO_PASSWORD);
-                  setIsSsoModalOpen(false);
-                }}
-                className="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 text-xs cursor-pointer flex items-center justify-between"
-              >
-                <div>
-                  <div className="font-bold text-slate-900">Dr. K. S. Murthy (Principal)</div>
-                  <div className="text-[11px] text-slate-500 font-mono">institute@apoorvasetu.demo (ABC Institute)</div>
-                </div>
-                <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">Sign In</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('regional@apoorvasetu.demo');
-                  setPassword(DEMO_PASSWORD);
-                  setIsSsoModalOpen(false);
-                }}
-                className="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 text-xs cursor-pointer flex items-center justify-between"
-              >
-                <div>
-                  <div className="font-bold text-slate-900">Dr. R. K. Sharma (Regional Officer)</div>
-                  <div className="text-[11px] text-slate-500 font-mono">regional@apoorvasetu.demo (Northern Region)</div>
-                </div>
-                <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">Sign In</span>
-              </button>
-            </div>
-
-            <button
-              onClick={() => setIsSsoModalOpen(false)}
-              className="w-full mt-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-            >
-              Cancel
             </button>
           </div>
         </div>
