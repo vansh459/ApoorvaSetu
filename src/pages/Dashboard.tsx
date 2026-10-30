@@ -20,7 +20,7 @@ export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Page Header matching screenshot */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -32,7 +32,7 @@ export const Dashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Right Last Updated Badge */}
+        {/* Right: Last Updated Badge */}
         <div className="flex items-center space-x-2 text-right shrink-0">
           <Calendar className="w-4 h-4 text-slate-400" />
           <div className="text-left sm:text-right">
@@ -95,30 +95,30 @@ export const Dashboard: React.FC = () => {
 
       {/* Row 2: Stage Movement, Regional Donut, and Upcoming EVC Visits */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div className="lg:col-span-5 flex flex-col">
+        <div className="lg:col-span-12 xl:col-span-4 flex flex-col min-w-0">
           <StageMovementChart />
         </div>
 
-        <div className="lg:col-span-4 flex flex-col">
+        <div className="lg:col-span-6 xl:col-span-4 flex flex-col min-w-0">
           <RegionalDonutChart />
         </div>
 
-        <div className="lg:col-span-3 flex flex-col">
+        <div className="lg:col-span-6 xl:col-span-4 flex flex-col min-w-0">
           <UpcomingEVCList />
         </div>
       </div>
 
       {/* Row 3: Recent Applications Table, Compliance Validity, and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div className="lg:col-span-6 flex flex-col">
+        <div className="lg:col-span-12 xl:col-span-6 flex flex-col min-w-0">
           <RecentApplicationsTable />
         </div>
 
-        <div className="lg:col-span-3 flex flex-col">
+        <div className="lg:col-span-6 xl:col-span-3 flex flex-col min-w-0">
           <ComplianceValidityWidget />
         </div>
 
-        <div className="lg:col-span-3 flex flex-col">
+        <div className="lg:col-span-6 xl:col-span-3 flex flex-col min-w-0">
           <QuickActionsPanel />
         </div>
       </div>

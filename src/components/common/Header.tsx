@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Menu, RotateCcw, Check, ExternalLink, User } from 'lucide-react';
+import {
+  Search,
+  Bell,
+  Menu,
+  RotateCcw,
+  Check,
+  ExternalLink,
+  User
+} from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 interface HeaderProps {
@@ -72,12 +80,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
     : [];
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between shadow-xs">
+    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between">
       {/* Left: Mobile Menu Toggle & Global Search Bar */}
-      <div className="flex items-center space-x-3 flex-1 max-w-2xl">
+      <div className="flex items-center space-x-3 flex-1 max-w-xl">
         <button
           onClick={onMenuToggle}
-          className="lg:hidden p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+          className="lg:hidden p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
           aria-label="Toggle menu"
         >
           <Menu className="w-5 h-5" />
@@ -96,12 +104,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
               }}
               onFocus={() => setIsSearchOpen(true)}
               placeholder="Search by Application ID / Institute Name / Region / Stage..."
-              className="w-full pl-10 pr-4 py-2 bg-[#f1f5f9] hover:bg-[#eaf0f7] focus:bg-white text-slate-800 text-xs sm:text-sm rounded-xl border border-transparent focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-400"
+              className="w-full pl-10 pr-4 py-2 bg-[#f1f5f9] text-slate-800 text-xs sm:text-sm rounded-xl border border-transparent focus:bg-white focus:border-blue-400 focus:outline-hidden transition-all placeholder:text-slate-400"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 text-slate-400 hover:text-slate-600 text-xs font-semibold"
+                className="absolute right-3 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
               >
                 Clear
               </button>
@@ -110,21 +118,23 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
 
           {/* Search Dropdown Results */}
           {isSearchOpen && searchQuery.trim().length > 0 && (
-            <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 max-h-96 overflow-y-auto">
-              <div className="p-2 border-b border-slate-100 bg-slate-50/70 text-xs font-semibold text-slate-500 flex justify-between">
+            <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50 max-h-96 overflow-y-auto">
+              <div className="p-2 border-b border-slate-100 bg-slate-50 text-xs font-semibold text-slate-500 flex justify-between">
                 <span>Search Results for "{searchQuery}"</span>
-                <span className="text-slate-400">{filteredApps.length + filteredInsts.length} matches</span>
+                <span className="text-slate-400">
+                  {filteredApps.length + filteredInsts.length} matches
+                </span>
               </div>
 
               {filteredApps.length === 0 && filteredInsts.length === 0 ? (
                 <div className="p-6 text-center text-xs text-slate-500">
-                  No applications or institutes match your search term.
+                  No applications or institutes match your search.
                 </div>
               ) : (
                 <div className="py-2">
                   {filteredApps.length > 0 && (
                     <div className="px-3 py-1">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                         Applications
                       </div>
                       {filteredApps.slice(0, 4).map((app) => (
@@ -138,9 +148,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                           className="flex items-center justify-between p-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
                         >
                           <div>
-                            <div className="text-xs font-semibold text-slate-800 flex items-center space-x-2">
+                            <div className="text-xs font-semibold text-slate-800">
                               <span className="text-blue-600">{app.id}</span>
-                              <span className="text-slate-400">•</span>
+                              <span className="text-slate-400 mx-1.5">•</span>
                               <span>{app.instituteName}</span>
                             </div>
                             <div className="text-[11px] text-slate-500">
@@ -157,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
 
                   {filteredInsts.length > 0 && (
                     <div className="px-3 py-1 border-t border-slate-100 mt-2 pt-2">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                         Institutes
                       </div>
                       {filteredInsts.slice(0, 3).map((inst) => (
@@ -178,7 +188,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                             </div>
                           </div>
                           <span className="text-[11px] text-blue-600 font-medium">
-                            View Directory →
+                            View →
                           </span>
                         </div>
                       ))}
@@ -193,11 +203,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
 
       {/* Right: Notifications & User Profile */}
       <div className="flex items-center space-x-4 pl-3">
-        {/* Notification Bell */}
+        {/* Notification Bell matching screenshot */}
         <div ref={notifRef} className="relative">
           <button
             onClick={() => setIsNotifOpen(!isNotifOpen)}
-            className="relative p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-colors"
+            className="relative p-2 text-slate-600 hover:text-slate-800 rounded-full cursor-pointer transition-colors"
             title="Notifications"
           >
             <Bell className="w-5 h-5 text-slate-600" />
@@ -213,14 +223,16 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
             <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
               <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                 <div className="flex items-center space-x-2">
-                  <span className="font-semibold text-xs text-slate-800">Notifications</span>
+                  <span className="font-semibold text-xs text-slate-800">
+                    Notifications
+                  </span>
                   <span className="text-[10px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded-full">
                     {unreadNotifications.length} new
                   </span>
                 </div>
                 <button
                   onClick={markAllNotificationsAsRead}
-                  className="text-[11px] text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-[11px] text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
                 >
                   Mark all as read
                 </button>
@@ -259,7 +271,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                     navigate('/notifications');
                     setIsNotifOpen(false);
                   }}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium inline-flex items-center cursor-pointer"
                 >
                   View all notifications <ExternalLink className="w-3 h-3 ml-1" />
                 </button>
@@ -268,7 +280,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
           )}
         </div>
 
-        {/* User Profile with Random Name support */}
+        {/* User Profile matching screenshot: VJ avatar circle, Vansh Jain, Regional Officer */}
         <div ref={profileRef} className="relative">
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -292,7 +304,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
 
           {/* Profile Dropdown Menu */}
           {isProfileOpen && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-50 animate-in fade-in zoom-in-95">
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-50">
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60">
                 <p className="text-xs font-bold text-slate-800">{currentUser.name}</p>
                 <p className="text-[11px] text-slate-500 truncate">{currentUser.email}</p>
@@ -313,7 +325,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                     <RotateCcw className="w-3.5 h-3.5 text-blue-600 group-hover:rotate-180 transition-transform" />
                     <span className="font-semibold">Shuffle Profile Name</span>
                   </div>
-                  <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-sm">Random</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-sm">
+                    Random
+                  </span>
                 </button>
 
                 <button
@@ -327,7 +341,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                     <User className="w-3.5 h-3.5 text-purple-600" />
                     <span className="font-semibold">Randomize All Names</span>
                   </div>
-                  <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-sm">System</span>
+                  <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-sm">
+                    System
+                  </span>
                 </button>
 
                 <button

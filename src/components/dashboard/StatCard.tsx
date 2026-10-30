@@ -5,7 +5,6 @@ interface StatCardProps {
   title: string;
   value: string;
   trendText?: string;
-  trendDirection?: 'up' | 'down';
   trendColor?: 'green' | 'amber' | 'rose' | 'blue';
   subtext?: string;
   icon: LucideIcon;
@@ -23,69 +22,80 @@ export const StatCard: React.FC<StatCardProps> = ({
   variant,
   onClick
 }) => {
-  // Color configuration to precisely match screenshot cards
+  // Pastel tinted styling matching the reference screenshot exactly
   const styles = {
     blue: {
-      cardBg: 'bg-[#eff6ff]/70 border-[#dbeafe]',
-      iconBg: 'bg-[#dbeafe] text-[#2563eb]',
-      hoverBorder: 'hover:border-blue-300'
+      cardBg: 'bg-[#edf5ff] border-[#d8e8fc]',
+      iconBg: 'bg-[#d8e8fc] text-[#2563eb]'
     },
     amber: {
-      cardBg: 'bg-[#fffbeb]/70 border-[#fef3c7]',
-      iconBg: 'bg-[#fef3c7] text-[#d97706]',
-      hoverBorder: 'hover:border-amber-300'
+      cardBg: 'bg-[#fff8ec] border-[#faebd4]',
+      iconBg: 'bg-[#faebd4] text-[#d97706]'
     },
     green: {
-      cardBg: 'bg-[#f0fdf4]/70 border-[#dcfce7]',
-      iconBg: 'bg-[#dcfce7] text-[#16a34a]',
-      hoverBorder: 'hover:border-green-300'
+      cardBg: 'bg-[#f0fbf4] border-[#d7f3e2]',
+      iconBg: 'bg-[#d7f3e2] text-[#16a34a]'
     },
     rose: {
-      cardBg: 'bg-[#fff1f2]/70 border-[#ffe4e6]',
-      iconBg: 'bg-[#ffe4e6] text-[#e11d48]',
-      hoverBorder: 'hover:border-rose-300'
+      cardBg: 'bg-[#fff1f2] border-[#fcdade]',
+      iconBg: 'bg-[#fcdade] text-[#e11d48]'
     }
   }[variant];
 
   const trendColors = {
-    green: 'text-emerald-600',
-    amber: 'text-amber-600',
-    rose: 'text-rose-600',
-    blue: 'text-blue-600'
+    green: 'text-[#16a34a]',
+    amber: 'text-[#d97706]',
+    rose: 'text-[#e11d48]',
+    blue: 'text-[#2563eb]'
   }[trendColor];
 
   return (
     <div
       onClick={onClick}
-      className={`relative p-5 rounded-2xl border ${styles.cardBg} ${styles.hoverBorder} transition-all duration-200 shadow-2xs ${
-        onClick ? 'cursor-pointer hover:shadow-md hover:-translate-y-0.5' : ''
+      className={`rounded-2xl border ${styles.cardBg} p-5 transition-all duration-150 ${
+        onClick ? 'cursor-pointer hover:shadow-sm' : ''
       }`}
     >
       <div className="flex items-start space-x-3.5">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${styles.iconBg}`}>
-          <Icon className="w-5 h-5" />
+        {/* Rounded square icon container */}
+        <div
+          className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${styles.iconBg}`}
+        >
+          <Icon className="w-5 h-5 stroke-[2.2]" />
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-semibold text-slate-600 tracking-tight">
+          <div className="text-xs font-medium text-slate-600">
             {title}
           </div>
-          <div className="text-2xl sm:text-[28px] font-bold text-slate-900 mt-0.5 tracking-tight">
+          <div className="text-2xl sm:text-[28px] font-bold text-slate-900 mt-0.5 tracking-tight leading-none">
             {value}
           </div>
         </div>
       </div>
 
-      {/* Trend / Subtext row */}
-      <div className="mt-3 pt-2 flex items-center justify-between text-xs border-t border-black/5">
-        <div className="flex items-center space-x-1 text-slate-500 font-medium">
-          {subtext && <span>{subtext}</span>}
-          {trendText && (
-            <span className={`font-semibold ${trendColors}`}>
-              {trendText}
-            </span>
-          )}
-        </div>
+      {/* Subtext and trend line */}
+      <div className="mt-4 pt-1 flex items-center justify-between text-xs">
+        {/* For card 1: trend then subtext. For cards 2-4: subtext on left, trend on right */}
+        {variant === 'blue' ? (
+          <div className="space-y-0.5">
+            {trendText && (
+              <span className={`font-semibold ${trendColors} mr-1.5`}>
+                {trendText}
+              </span>
+            )}
+            {subtext && <span className="text-slate-500">{subtext}</span>}
+          </div>
+        ) : (
+          <>
+            <span className="text-slate-500 font-normal">{subtext}</span>
+            {trendText && (
+              <span className={`font-semibold ${trendColors}`}>
+                {trendText}
+              </span>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

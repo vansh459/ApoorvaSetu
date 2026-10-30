@@ -3,8 +3,7 @@
 @layer base {
   :root {
     --primary: #2563eb;
-    --navy-sidebar: #0f172a;
-    --navy-dark: #0b1322;
+    --navy-sidebar: #0a1526;
   }
 
   body {

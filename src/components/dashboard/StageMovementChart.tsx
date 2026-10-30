@@ -6,54 +6,56 @@ import { stageMovementData } from '../../data/initialData';
 export const StageMovementChart: React.FC = () => {
   const navigate = useNavigate();
 
+  // Max percentage to scale bars relative to width
+  const maxPercentage = 30; // 27% is highest
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col justify-between">
-      {/* Card Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-            <BarChart3 className="w-4 h-4" />
-          </div>
-          <h2 className="text-sm font-bold text-slate-800">
-            Application Movement (Stage-wise)
-          </h2>
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between h-full">
+      {/* Header with icon matching reference */}
+      <div className="flex items-center space-x-2.5 mb-5">
+        <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+          <BarChart3 className="w-4 h-4" />
         </div>
-        <button
-          onClick={() => navigate('/workflow')}
-          className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline"
-        >
-          View Pipeline →
-        </button>
+        <h2 className="text-sm font-bold text-slate-800 tracking-tight">
+          Application Movement (Stage-wise)
+        </h2>
       </div>
 
-      {/* Stage Bars */}
-      <div className="space-y-3.5 my-auto">
+      {/* Stage Bars List */}
+      <div className="space-y-4 my-auto">
         {stageMovementData.map((stage) => {
+          const widthPercent = (stage.percentage / maxPercentage) * 100;
+
           return (
             <div
               key={stage.name}
-              onClick={() => navigate(`/applications?stage=${encodeURIComponent(stage.name)}`)}
-              className="group cursor-pointer"
+              onClick={() =>
+                navigate(`/applications?stage=${encodeURIComponent(stage.name)}`)
+              }
+              className="flex items-center text-xs group cursor-pointer"
             >
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">
-                  {stage.name}
-                </span>
-                <span className="font-bold text-slate-800">
-                  {stage.count.toLocaleString()}{' '}
-                  <span className="font-medium text-slate-400">({stage.percentage}%)</span>
-                </span>
+              {/* Stage Label */}
+              <div className="w-36 sm:w-44 shrink-0 text-slate-700 font-medium truncate pr-2 group-hover:text-blue-600 transition-colors">
+                {stage.name}
               </div>
 
-              {/* Progress track */}
-              <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+              {/* Progress Bar Container */}
+              <div className="flex-1 min-w-[80px] h-3 bg-slate-100 rounded-sm overflow-hidden mr-3">
                 <div
-                  className="h-full rounded-full transition-all duration-700 ease-out group-hover:brightness-110"
+                  className="h-full rounded-sm transition-all duration-500"
                   style={{
-                    width: `${Math.min(100, stage.percentage * 3.2)}%`,
+                    width: `${widthPercent}%`,
                     backgroundColor: stage.color
                   }}
                 />
+              </div>
+
+              {/* Count & Percentage */}
+              <div className="w-20 shrink-0 text-right font-medium text-slate-800">
+                <span className="font-bold">{stage.count.toLocaleString()}</span>{' '}
+                <span className="text-slate-400 font-normal">
+                  ({stage.percentage}%)
+                </span>
               </div>
             </div>
           );

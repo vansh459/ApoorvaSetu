@@ -50,28 +50,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       {/* Sidebar container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#0a1222] text-slate-200 flex flex-col transition-transform duration-300 ease-in-out border-r border-slate-800/80 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#0a1526] text-slate-200 flex flex-col transition-transform duration-300 ease-in-out border-r border-[#15233c] ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/60">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#15233c]">
           <div className="flex items-center space-x-3">
-            {/* AICTE Logo Emblem matching reference screenshot */}
-            <div className="relative w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 p-0.5 flex items-center justify-center shadow-md shadow-amber-500/20">
-              <div className="w-full h-full rounded-full bg-[#0d182b] flex items-center justify-center p-1">
-                {/* Sunburst seal */}
-                <div className="w-full h-full rounded-full border border-amber-400/80 flex items-center justify-center bg-radial from-amber-400/20 to-transparent">
-                  <span className="text-[8px] font-black tracking-tighter text-amber-300">AICTE</span>
+            {/* AICTE Gold Emblem Seal */}
+            <div className="relative w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-300 p-0.5 flex items-center justify-center shadow-xs">
+              <div className="w-full h-full rounded-full bg-[#0a1526] flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full border border-amber-400/90 flex items-center justify-center">
+                  <span className="text-[7px] font-black tracking-tighter text-amber-300">
+                    AICTE
+                  </span>
                 </div>
               </div>
             </div>
 
             <div>
-              <div className="text-white font-bold text-base leading-tight tracking-wide">
+              <div className="text-white font-bold text-sm leading-tight tracking-wide">
                 AICTE
               </div>
-              <div className="text-[11px] text-slate-300 font-normal leading-tight">
+              <div className="text-[11px] text-slate-400 font-normal leading-tight">
                 Approval Management System
               </div>
             </div>
@@ -79,14 +80,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
           <button
             onClick={onClose}
-            className="lg:hidden text-slate-400 hover:text-white p-1 rounded-md"
+            className="lg:hidden text-slate-400 hover:text-white p-1 rounded-md cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation Links */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <div className="flex-1 overflow-y-auto px-3.5 py-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -97,10 +98,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   if (window.innerWidth < 1024) onClose();
                 }}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all group ${
+                  `flex items-center justify-between px-3 py-2.5 rounded-lg text-xs sm:text-[13px] font-medium transition-colors ${
                     isActive
-                      ? 'bg-[#2563eb] text-white shadow-sm shadow-blue-600/30 font-semibold'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-[#2563eb] text-white shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
                   }`
                 }
               >
@@ -108,8 +109,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   <>
                     <div className="flex items-center space-x-3">
                       <Icon
-                        className={`w-4 h-4 transition-colors ${
-                          isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
+                        className={`w-4 h-4 ${
+                          isActive ? 'text-white' : 'text-slate-400'
                         }`}
                       />
                       <span>{item.name}</span>
@@ -120,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                           isActive
                             ? 'bg-white text-blue-700'
-                            : 'bg-rose-500 text-white shadow-xs'
+                            : 'bg-rose-500 text-white'
                         }`}
                       >
                         {item.badge}
@@ -133,18 +134,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           })}
         </div>
 
-        {/* Bottom AICTE Motto Card matching screenshot */}
-        <div className="p-4 border-t border-slate-800/60">
-          <div className="bg-[#0f1b30] border border-slate-800/80 rounded-xl p-3.5 text-center shadow-inner">
-            <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-blue-900/40 border border-blue-500/30 flex items-center justify-center text-blue-400">
-              <Landmark className="w-4 h-4" />
-            </div>
+        {/* Bottom AICTE Motto Card matching reference screenshot */}
+        <div className="p-4 border-t border-[#15233c]">
+          <div className="bg-[#0e1d35] border border-[#1b2f52] rounded-xl p-3 text-center">
             <div className="text-white font-bold text-xs tracking-wider">
               AICTE
             </div>
-            <p className="text-[10px] text-slate-400 mt-1 leading-tight font-normal">
+            <p className="text-[10px] text-slate-400 mt-1 leading-snug font-normal">
               Facilitating Quality Technical Education for a Better Tomorrow
             </p>
+            {/* Greek pillar landmark icon at the bottom */}
+            <div className="mt-3 flex justify-center text-blue-400/80">
+              <Landmark className="w-6 h-6 stroke-[1.5]" />
+            </div>
           </div>
         </div>
       </aside>
