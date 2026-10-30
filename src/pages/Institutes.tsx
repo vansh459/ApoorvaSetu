@@ -4,19 +4,26 @@ import {
   MapPin
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { filterInstitutesForUser } from '../services/rbacService';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Modal } from '../components/common/Modal';
 import { Institute } from '../types';
 
 export const Institutes: React.FC = () => {
   const { institutes } = useApp();
+  const { user } = useAuth();
 
   const [search, setSearch] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [activeInst, setActiveInst] = useState<Institute | null>(null);
 
-  const filteredInsts = institutes.filter((inst: Institute) => {
+  const scopedInsts = React.useMemo(() => {
+    return filterInstitutesForUser(institutes, user);
+  }, [institutes, user]);
+
+  const filteredInsts = scopedInsts.filter((inst: Institute) => {
     const matchesSearch =
       inst.name.toLowerCase().includes(search.toLowerCase()) ||
       inst.code.toLowerCase().includes(search.toLowerCase()) ||
@@ -29,10 +36,10 @@ export const Institutes: React.FC = () => {
     return matchesSearch && matchesRegion && matchesCategory;
   });
 
-  const totalInstitutes = institutes.length;
-  const approvedCount = institutes.filter((i: Institute) => i.status === 'Approved').length;
-  const pendingCount = institutes.filter((i: Institute) => i.status === 'Pending Review').length;
-  const noticeCount = institutes.filter((i: Institute) => i.status === 'Notice Issued').length;
+  const totalInstitutes = scopedInsts.length;
+  const approvedCount = scopedInsts.filter((i: Institute) => i.status === 'Approved').length;
+  const pendingCount = scopedInsts.filter((i: Institute) => i.status === 'Pending Review').length;
+  const noticeCount = scopedInsts.filter((i: Institute) => i.status === 'Notice Issued').length;
 
   return (
     <div className="space-y-6">

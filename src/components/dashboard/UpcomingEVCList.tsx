@@ -70,7 +70,7 @@ export const UpcomingEVCList: React.FC = () => {
             className="flex items-center justify-between cursor-pointer hover:bg-slate-50/70 p-1 rounded-xl transition-colors min-w-0"
           >
             {/* Left: Date Box + Details */}
-            <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0 mr-2 flex-1">
+            <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0 flex-1">
               <div className="flex flex-col items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-50 border border-slate-200/80 text-center shrink-0">
                 <span className="text-xs sm:text-sm font-bold text-slate-900 leading-none">
                   {visit.day}
@@ -80,18 +80,18 @@ export const UpcomingEVCList: React.FC = () => {
                 </span>
               </div>
 
-              <div className="min-w-0">
-                <h4 className="text-xs font-bold text-slate-900 leading-tight whitespace-nowrap">
+              <div className="min-w-0 flex-1">
+                <h4 className="text-xs font-bold text-slate-900 leading-tight truncate">
                   {visit.instituteName}
                 </h4>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 leading-tight mt-0.5 whitespace-nowrap">
+                <p className="text-[10px] sm:text-[11px] text-slate-500 leading-tight mt-0.5 truncate">
                   {visit.region}
                 </p>
               </div>
             </div>
 
             {/* Right: Soft Status Pill with right margin */}
-            <div className="shrink-0 ml-auto pl-2">
+            <div className="shrink-0 ml-2">
               <span
                 className={`inline-block text-[9px] sm:text-[10px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full whitespace-nowrap ${
                   visit.status.toLowerCase() === 'pending'

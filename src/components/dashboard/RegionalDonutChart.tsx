@@ -30,9 +30,9 @@ export const RegionalDonutChart: React.FC = () => {
       </div>
 
       {/* Chart & Legend Flex Container */}
-      <div className="flex items-center gap-2.5 sm:gap-3.5 my-auto min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3 my-auto min-w-0">
         {/* Left: Perfectly circular compact donut chart with zero clipping */}
-        <div className="w-[84px] sm:w-[92px] h-[84px] sm:h-[92px] shrink-0 relative flex items-center justify-center">
+        <div className="w-[76px] sm:w-[84px] h-[76px] sm:h-[84px] shrink-0 relative flex items-center justify-center">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Tooltip
@@ -96,21 +96,21 @@ export const RegionalDonutChart: React.FC = () => {
                   `/applications?region=${encodeURIComponent(reg.name)}`
                 )
               }
-              className="flex items-center justify-between text-xs cursor-pointer group hover:bg-slate-50/80 py-0.5 px-1 rounded transition-colors min-w-0"
+              className="flex items-center justify-between gap-1.5 text-xs cursor-pointer group hover:bg-slate-50/80 py-0.5 px-1 rounded transition-colors min-w-0"
             >
-              {/* Region Label with Dot - full name displayed */}
-              <div className="flex items-center space-x-1.5 shrink-0">
+              {/* Region Label with Dot */}
+              <div className="flex items-center space-x-1.5 min-w-0 flex-1">
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"
                   style={{ backgroundColor: reg.color }}
                 />
-                <span className="text-slate-700 font-medium group-hover:text-blue-600 transition-colors whitespace-nowrap text-[10px] sm:text-[11px]">
+                <span className="text-slate-700 font-medium group-hover:text-blue-600 transition-colors truncate text-[10px] sm:text-[11px]">
                   {reg.name}
                 </span>
               </div>
 
               {/* Number and Percentage */}
-              <div className="shrink-0 text-right whitespace-nowrap text-[10px] sm:text-[11px] font-medium text-slate-800 pl-2">
+              <div className="shrink-0 text-right whitespace-nowrap text-[10px] sm:text-[11px] font-medium text-slate-800 ml-auto">
                 <span className="font-bold text-slate-900">
                   {reg.value.toLocaleString()}
                 </span>{' '}

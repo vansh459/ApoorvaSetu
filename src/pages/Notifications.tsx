@@ -6,10 +6,13 @@ import {
   Check
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { filterNotificationsForUser } from '../services/rbacService';
 import { NotificationItem } from '../types';
 
 export const Notifications: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     notifications,
     markNotificationAsRead,
@@ -18,13 +21,17 @@ export const Notifications: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'All' | 'Unread' | 'High'>('All');
 
-  const filteredNotifs = notifications.filter((n: NotificationItem) => {
+  const scopedNotifs = React.useMemo(() => {
+    return filterNotificationsForUser(notifications, user);
+  }, [notifications, user]);
+
+  const filteredNotifs = scopedNotifs.filter((n: NotificationItem) => {
     if (activeTab === 'Unread') return !n.read;
     if (activeTab === 'High') return n.priority === 'high';
     return true;
   });
 
-  const unreadCount = notifications.filter((n: NotificationItem) => !n.read).length;
+  const unreadCount = scopedNotifs.filter((n: NotificationItem) => !n.read).length;
 
   return (
     <div className="space-y-6">

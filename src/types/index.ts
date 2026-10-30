@@ -1,9 +1,13 @@
 export type ApplicationStage = 
   | 'Submitted'
+  | 'Initial Scrutiny'
+  | 'Regional Review'
   | 'Scrutiny / Re-scrutiny'
   | 'Expert Visit Committee (EVC)'
   | 'SAC / SHC'
+  | 'Compliance / Undertaking Verification'
   | 'Approval (Subject to Undertaking)'
+  | 'Final AICTE Review'
   | 'Final Approval'
   | 'Other Stages';
 
@@ -23,6 +27,65 @@ export type Region =
   | 'Central'
   | 'North Eastern'
   | 'Others';
+
+export type UserRole = 
+  | 'SUPER_ADMIN'
+  | 'AICTE_ADMIN'
+  | 'REGIONAL_OFFICER'
+  | 'EVC_MEMBER'
+  | 'INSTITUTION_ADMIN';
+
+export type Permission =
+  | 'users.read'
+  | 'users.create'
+  | 'users.update'
+  | 'users.delete'
+  | 'roles.manage'
+  | 'applications.read'
+  | 'applications.create'
+  | 'applications.review'
+  | 'applications.forward'
+  | 'applications.return'
+  | 'applications.approve'
+  | 'applications.reject'
+  | 'institutes.read'
+  | 'institutes.update'
+  | 'institutes.manage'
+  | 'workflow.manage'
+  | 'evc.read'
+  | 'evc.schedule'
+  | 'evc.assign'
+  | 'evc.report.submit'
+  | 'documents.read'
+  | 'documents.upload'
+  | 'documents.verify'
+  | 'compliance.read'
+  | 'compliance.submit'
+  | 'compliance.verify'
+  | 'reports.read'
+  | 'reports.export'
+  | 'audit.read'
+  | 'system.config';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  roleTitle: string;
+  permissions: Permission[];
+  avatar?: string;
+  initials: string;
+  phone?: string;
+  designation?: string;
+  region?: Region;
+  instituteId?: string;
+  instituteName?: string;
+  committeeName?: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLogin?: string;
+}
 
 export interface ApplicationTimelineEvent {
   stage: string;
@@ -131,6 +194,9 @@ export interface NotificationItem {
   read: boolean;
   priority: 'high' | 'medium' | 'low';
   link?: string;
+  targetRole?: UserRole;
+  targetRegion?: Region;
+  targetInstituteId?: string;
 }
 
 export interface RegionalOffice {
@@ -144,4 +210,62 @@ export interface RegionalOffice {
   jurisdiction: string[];
   totalInstitutes: number;
   pendingApplications: number;
+}
+
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  userId: string;
+  userName: string;
+  userRole: UserRole;
+  action: string;
+  entityType: 'Application' | 'User' | 'EVC' | 'Compliance' | 'Document' | 'System' | 'Auth';
+  entityId: string;
+  details: string;
+  previousState?: string;
+  newState?: string;
+  ipAddress: string;
+}
+
+export interface SystemConfig {
+  maintenanceMode: boolean;
+  academicYear: string;
+  approvalCycleEndDate: string;
+  evcMinMembers: number;
+  autoEscalationDays: number;
+  notificationEmailAlerts: boolean;
+  requireTwoFactorForAdmin: boolean;
+  maxUploadSizeMB: number;
+}
+
+export interface InspectionReport {
+  id: string;
+  visitId: string;
+  applicationId?: string;
+  instituteId: string;
+  instituteName: string;
+  inspectorId: string;
+  inspectorName: string;
+  visitDate: string;
+  submissionDate: string;
+  infrastructureScore: number; // 0 - 100
+  facultyScore: number; // 0 - 100
+  labScore: number; // 0 - 100
+  safetyCompliance: boolean;
+  recommendations: 'Recommended' | 'Conditional' | 'Not Recommended';
+  remarks: string;
+  evidenceFiles: string[];
+  status: 'Draft' | 'Submitted' | 'Reviewed';
+}
+
+export interface EscalationItem {
+  id: string;
+  applicationId: string;
+  instituteName: string;
+  region: Region;
+  raisedBy: string;
+  raisedDate: string;
+  urgency: 'Medium' | 'High' | 'Critical';
+  reason: string;
+  status: 'Open' | 'Under Review' | 'Resolved';
 }

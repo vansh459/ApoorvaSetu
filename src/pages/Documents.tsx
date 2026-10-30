@@ -7,12 +7,15 @@ import {
   Eye
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { filterDocumentsForUser } from '../services/rbacService';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Modal } from '../components/common/Modal';
 import { DocumentItem } from '../types';
 
 export const Documents: React.FC = () => {
   const { documents, uploadDocument, showToast } = useApp();
+  const { user } = useAuth();
 
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -24,7 +27,11 @@ export const Documents: React.FC = () => {
   const [docCategory, setDocCategory] = useState<any>('Land & Building');
   const [docInstName, setDocInstName] = useState('ABC Institute of Tech');
 
-  const filteredDocs = documents.filter((doc: DocumentItem) => {
+  const scopedDocs = React.useMemo(() => {
+    return filterDocumentsForUser(documents, user);
+  }, [documents, user]);
+
+  const filteredDocs = scopedDocs.filter((doc: DocumentItem) => {
     const matchesSearch =
       doc.title.toLowerCase().includes(search.toLowerCase()) ||
       doc.instituteName.toLowerCase().includes(search.toLowerCase());

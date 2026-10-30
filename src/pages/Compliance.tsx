@@ -6,17 +6,24 @@ import {
   FileText
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { filterComplianceForUser } from '../services/rbacService';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { complianceSummaryData } from '../data/initialData';
 import { ComplianceRecord } from '../types';
 
 export const Compliance: React.FC = () => {
   const { complianceRecords, setActiveModal, verifyCompliance } = useApp();
+  const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<string>('All');
   const [search, setSearch] = useState('');
 
-  const filteredRecords = complianceRecords.filter((rec: ComplianceRecord) => {
+  const scopedRecords = React.useMemo(() => {
+    return filterComplianceForUser(complianceRecords, user);
+  }, [complianceRecords, user]);
+
+  const filteredRecords = scopedRecords.filter((rec: ComplianceRecord) => {
     const matchesSearch =
       rec.title.toLowerCase().includes(search.toLowerCase()) ||
       rec.instituteName.toLowerCase().includes(search.toLowerCase());

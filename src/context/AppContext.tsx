@@ -19,6 +19,7 @@ import {
   regionalOffices
 } from '../data/initialData';
 import { getRandomFullName, getRandomAcademicName, getInitials } from '../utils/nameGenerator';
+import { authService } from '../services/authService';
 
 interface ToastInfo {
   id: string;
@@ -287,6 +288,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       })
     );
+    try {
+      authService.addAuditLog({
+        userId: 'USR-AICTE-001',
+        userName: 'Amit Sharma',
+        userRole: 'AICTE_ADMIN',
+        action: 'STAGE_UPDATE',
+        entityType: 'Application',
+        entityId: appId,
+        details: `Application ${appId} transitioned to ${newStage} (${newStatus})`
+      });
+    } catch {}
     showToast(`Application ${appId} transitioned to ${newStage}`, 'success');
   };
 
@@ -317,11 +329,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       })
     );
+    try {
+      authService.addAuditLog({
+        userId: 'USR-REG-001',
+        userName: 'Dr. Sunita Rao',
+        userRole: 'REGIONAL_OFFICER',
+        action: 'APPLICATION_RETURNED',
+        entityType: 'Application',
+        entityId: appId,
+        details: `Application ${appId} returned for corrections: ${reason}`
+      });
+    } catch {}
     showToast(`Application ${appId} returned for institution corrections.`, 'warning');
   };
 
   const approveApplication = (appId: string) => {
     updateApplicationStage(appId, 'Final Approval', 'Approved', 'Final approval granted by AICTE Competent Authority.');
+    try {
+      authService.addAuditLog({
+        userId: 'USR-AICTE-001',
+        userName: 'Amit Sharma',
+        userRole: 'AICTE_ADMIN',
+        action: 'APPLICATION_APPROVED',
+        entityType: 'Application',
+        entityId: appId,
+        details: `Final approval granted for application ${appId}`
+      });
+    } catch {}
     showToast(`Application ${appId} approved successfully!`, 'success');
   };
 
@@ -339,6 +373,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       })
     );
+    try {
+      authService.addAuditLog({
+        userId: 'USR-AICTE-001',
+        userName: 'Amit Sharma',
+        userRole: 'AICTE_ADMIN',
+        action: 'APPLICATION_REJECTED',
+        entityType: 'Application',
+        entityId: appId,
+        details: `Application ${appId} rejected: ${reason}`
+      });
+    } catch {}
     showToast(`Application ${appId} has been rejected.`, 'error');
   };
 
@@ -378,6 +423,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setApplications((prev) => [newApp, ...prev]);
+    try {
+      authService.addAuditLog({
+        userId: 'USR-INST-001',
+        userName: 'Dr. K. S. Sundaram',
+        userRole: 'INSTITUTION_ADMIN',
+        action: 'SUBMIT_APPLICATION',
+        entityType: 'Application',
+        entityId: newId,
+        details: `New EoA application registered: ${newId} (${newApp.instituteName})`
+      });
+    } catch {}
     showToast(`New Application ${newId} registered successfully!`, 'success');
   };
 
@@ -388,6 +444,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id
     };
     setEvcVisits((prev) => [newVisit, ...prev]);
+    try {
+      authService.addAuditLog({
+        userId: 'USR-AICTE-001',
+        userName: 'Amit Sharma',
+        userRole: 'AICTE_ADMIN',
+        action: 'SCHEDULE_EVC',
+        entityType: 'EVC',
+        entityId: id,
+        details: `EVC inspection ${id} scheduled for ${visitData.instituteName}`
+      });
+    } catch {}
 
     // Add a corresponding notification
     const newNotif: NotificationItem = {

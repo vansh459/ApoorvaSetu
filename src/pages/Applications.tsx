@@ -8,6 +8,8 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { filterApplicationsForUser } from '../services/rbacService';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Region } from '../types';
 
@@ -40,8 +42,14 @@ export const Applications: React.FC = () => {
   const [newType, setNewType] = useState('Extension of Approval (EoA)');
   const [newIntake, setNewIntake] = useState(300);
 
+  const { user } = useAuth();
+
+  const scopedApps = useMemo(() => {
+    return filterApplicationsForUser(applications, user);
+  }, [applications, user]);
+
   const filteredApps = useMemo(() => {
-    return applications
+    return scopedApps
       .filter((app) => {
         const matchesSearch =
           app.id.toLowerCase().includes(search.toLowerCase()) ||
@@ -63,7 +71,7 @@ export const Applications: React.FC = () => {
           return valA < valB ? 1 : -1;
         }
       });
-  }, [applications, search, selectedRegion, selectedStage, selectedStatus, sortField, sortAsc]);
+  }, [scopedApps, search, selectedRegion, selectedStage, selectedStatus, sortField, sortAsc]);
 
   const totalPages = Math.ceil(filteredApps.length / pageSize) || 1;
   const paginatedApps = filteredApps.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -102,6 +110,33 @@ export const Applications: React.FC = () => {
           <span>New Application</span>
         </button>
       </div>
+
+      {/* Scope banner for Regional Officer or Institution Admin */}
+      {user?.role === 'REGIONAL_OFFICER' && (
+        <div className="flex items-center justify-between p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-900">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-amber-200/70 text-amber-900">
+              Regional Officer Scope
+            </span>
+            <span>
+              Restricted to <strong>{user.region} Region</strong> jurisdiction ({scopedApps.length} applications).
+            </span>
+          </div>
+        </div>
+      )}
+
+      {user?.role === 'INSTITUTION_ADMIN' && (
+        <div className="flex items-center justify-between p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-blue-900">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-blue-200/70 text-blue-900">
+              Institutional Scope
+            </span>
+            <span>
+              Showing submissions for <strong>{user.instituteName}</strong> ({user.instituteId}).
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* New Application Inline Modal/Card */}
       {isCreating && (

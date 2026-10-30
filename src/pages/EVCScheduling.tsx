@@ -7,11 +7,14 @@ import {
   XCircle
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { filterEVCVisitsForUser } from '../services/rbacService';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { EVCVisit } from '../types';
 
 export const EVCScheduling: React.FC = () => {
   const { evcVisits, setActiveModal, cancelEVC, rescheduleEVC, showToast } = useApp();
+  const { user } = useAuth();
 
   const [search, setSearch] = useState('');
   const [regionFilter, setRegionFilter] = useState('All');
@@ -19,7 +22,11 @@ export const EVCScheduling: React.FC = () => {
   const [rescheduleTargetId, setRescheduleTargetId] = useState<string | null>(null);
   const [newDateInput, setNewDateInput] = useState('2025-11-20');
 
-  const filteredVisits = evcVisits.filter((v: EVCVisit) => {
+  const scopedVisits = React.useMemo(() => {
+    return filterEVCVisitsForUser(evcVisits, user);
+  }, [evcVisits, user]);
+
+  const filteredVisits = scopedVisits.filter((v: EVCVisit) => {
     const matchesSearch =
       v.instituteName.toLowerCase().includes(search.toLowerCase()) ||
       v.assignedCommittee.toLowerCase().includes(search.toLowerCase());
@@ -27,9 +34,9 @@ export const EVCScheduling: React.FC = () => {
     return matchesSearch && matchesRegion;
   });
 
-  const scheduledCount = evcVisits.filter((v: EVCVisit) => v.status === 'Scheduled').length;
-  const pendingCount = evcVisits.filter((v: EVCVisit) => v.status === 'Pending').length;
-  const completedCount = evcVisits.filter((v: EVCVisit) => v.status === 'Completed').length;
+  const scheduledCount = scopedVisits.filter((v: EVCVisit) => v.status === 'Scheduled').length;
+  const pendingCount = scopedVisits.filter((v: EVCVisit) => v.status === 'Pending').length;
+  const completedCount = scopedVisits.filter((v: EVCVisit) => v.status === 'Completed').length;
 
   return (
     <div className="space-y-6">
