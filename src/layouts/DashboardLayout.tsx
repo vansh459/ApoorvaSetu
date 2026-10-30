@@ -23,7 +23,7 @@ export const DashboardLayout: React.FC = () => {
         <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
 
         {/* Page View */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-7 max-w-[1600px] w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-5 lg:p-6 max-w-[1650px] w-full mx-auto">
           <Outlet />
         </main>
       </div>

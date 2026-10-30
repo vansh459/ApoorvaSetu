@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+
+  <!-- Left diagonal leg of A -->
+  <path
+    d="M48 18 L18 96 L38 96 L60 38 L72 70 C66 73 58 78 52 86 C46 94 45 100 48 97 C52 92 62 82 77 79 L85 96 L105 96 L68 18 Z"
+    fill="url(#blueGrad)"
+  />
+
+  <!-- Swooshing Bridge / Setu in Teal/Emerald -->
+  <path
+    d="M45 88 C55 72 75 60 110 52 C95 62 76 74 65 92 C56 102 48 98 45 88 Z"
+    fill="url(#tealGrad)"
+  />
+</svg>
+

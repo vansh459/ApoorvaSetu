@@ -21,14 +21,14 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      {/* Page Header matching screenshot */}
+      {/* Page Header matching reference design */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight">
             Dashboard
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Track applications, monitor pendency, manage EVCs, compliance and approvals — all in one place.
+            Track applications, monitor progress, manage EVCs, and ensure compliance — all in one place.
           </p>
         </div>
 
@@ -37,23 +37,22 @@ export const Dashboard: React.FC = () => {
           <Calendar className="w-4 h-4 text-slate-400" />
           <div className="text-left sm:text-right">
             <div className="text-[11px] font-medium text-slate-400 leading-tight">
-              Last Updated
+              Last updated
             </div>
             <div className="text-xs font-semibold text-slate-700 leading-tight">
-              22 Oct 2025, 11:45 AM
+              30 Oct 2026, 11:24 AM
             </div>
           </div>
         </div>
       </div>
 
-      {/* Row 1: Top 4 Summary Cards matching screenshot */}
+      {/* Row 1: Top 4 Summary Cards with sparkline curves */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Applications"
           value="5,482"
-          subtext="vs. last month"
-          trendText="↑ 12%"
-          trendColor="green"
+          trendText="↑ 12% from last month"
+          trendColor="blue"
           icon={FileText}
           variant="blue"
           onClick={() => navigate('/applications')}
@@ -62,8 +61,7 @@ export const Dashboard: React.FC = () => {
         <StatCard
           title="Pending at Current Stage"
           value="2,134"
-          subtext="39% of total"
-          trendText="↑ 6%"
+          trendText="↓ 5% from last month"
           trendColor="amber"
           icon={Clock}
           variant="amber"
@@ -73,8 +71,7 @@ export const Dashboard: React.FC = () => {
         <StatCard
           title="Approved"
           value="2,961"
-          subtext="54% of total"
-          trendText="↑ 10%"
+          trendText="↑ 18% from last month"
           trendColor="green"
           icon={CheckCircle2}
           variant="green"
@@ -84,8 +81,7 @@ export const Dashboard: React.FC = () => {
         <StatCard
           title="Requiring Action"
           value="387"
-          subtext="7% of total"
-          trendText="↑ 4%"
+          trendText="↑ 3% from last month"
           trendColor="rose"
           icon={AlertTriangle}
           variant="rose"
@@ -93,32 +89,32 @@ export const Dashboard: React.FC = () => {
         />
       </div>
 
-      {/* Row 2: Stage Movement, Regional Donut, and Upcoming EVC Visits */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div className="lg:col-span-12 xl:col-span-4 flex flex-col min-w-0">
+      {/* Row 2: Stage Movement, Regional Donut, and Upcoming EVC Visits (all side-by-side) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5 items-stretch">
+        <div className="flex flex-col min-w-0">
           <StageMovementChart />
         </div>
 
-        <div className="lg:col-span-6 xl:col-span-4 flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0">
           <RegionalDonutChart />
         </div>
 
-        <div className="lg:col-span-6 xl:col-span-4 flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0">
           <UpcomingEVCList />
         </div>
       </div>
 
       {/* Row 3: Recent Applications Table, Compliance Validity, and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div className="lg:col-span-12 xl:col-span-6 flex flex-col min-w-0">
+        <div className="lg:col-span-6 flex flex-col min-w-0">
           <RecentApplicationsTable />
         </div>
 
-        <div className="lg:col-span-6 xl:col-span-3 flex flex-col min-w-0">
+        <div className="lg:col-span-3 flex flex-col min-w-0">
           <ComplianceValidityWidget />
         </div>
 
-        <div className="lg:col-span-6 xl:col-span-3 flex flex-col min-w-0">
+        <div className="lg:col-span-3 flex flex-col min-w-0">
           <QuickActionsPanel />
         </div>
       </div>

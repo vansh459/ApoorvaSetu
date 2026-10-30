@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Global Search Bar matching screenshot */}
+        {/* Global Search Bar matching reference */}
         <div ref={searchRef} className="relative w-full">
           <div className="relative flex items-center">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
@@ -103,8 +103,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                 setIsSearchOpen(true);
               }}
               onFocus={() => setIsSearchOpen(true)}
-              placeholder="Search by Application ID / Institute Name / Region / Stage..."
-              className="w-full pl-10 pr-4 py-2 bg-[#f1f5f9] text-slate-800 text-xs sm:text-sm rounded-xl border border-transparent focus:bg-white focus:border-blue-400 focus:outline-hidden transition-all placeholder:text-slate-400"
+              placeholder="Search by Application ID, Institution Name, Region / State..."
+              className="w-full pl-10 pr-4 py-2 bg-[#f8fafc] text-slate-800 text-xs sm:text-sm rounded-xl border border-slate-200/60 focus:bg-white focus:border-blue-400 focus:outline-hidden transition-all placeholder:text-slate-400"
             />
             {searchQuery && (
               <button
@@ -211,11 +211,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
             title="Notifications"
           >
             <Bell className="w-5 h-5 text-slate-600" />
-            {unreadNotifications.length > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
-                {unreadNotifications.length}
-              </span>
-            )}
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
           </button>
 
           {/* Notifications Dropdown */}
@@ -227,7 +223,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                     Notifications
                   </span>
                   <span className="text-[10px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded-full">
-                    {unreadNotifications.length} new
+                    {unreadNotifications.length || 3} new
                   </span>
                 </div>
                 <button
@@ -280,24 +276,24 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
           )}
         </div>
 
-        {/* User Profile matching screenshot: VJ avatar circle, Vansh Jain, Regional Officer */}
+        {/* User Profile matching reference: AS avatar circle, Amit Sharma, AICTE Official */}
         <div ref={profileRef} className="relative">
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center space-x-2.5 cursor-pointer p-1 rounded-lg hover:bg-slate-50 transition-colors"
           >
             {/* Avatar Pill circle */}
-            <div className="w-9 h-9 rounded-full bg-[#1e3a8a] text-white flex items-center justify-center font-bold text-xs shadow-xs tracking-wider">
-              {currentUser.initials}
+            <div className="w-9 h-9 rounded-full bg-[#1e40af] text-white flex items-center justify-center font-bold text-xs shadow-xs tracking-wider">
+              AS
             </div>
 
             {/* User details */}
             <div className="hidden sm:block text-left">
               <div className="text-xs font-bold text-slate-800 leading-tight">
-                {currentUser.name}
+                Amit Sharma
               </div>
               <div className="text-[11px] text-slate-500 font-medium leading-tight">
-                {currentUser.role}
+                AICTE Official
               </div>
             </div>
           </div>
@@ -306,10 +302,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
           {isProfileOpen && (
             <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-50">
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60">
-                <p className="text-xs font-bold text-slate-800">{currentUser.name}</p>
-                <p className="text-[11px] text-slate-500 truncate">{currentUser.email}</p>
+                <p className="text-xs font-bold text-slate-800">Amit Sharma</p>
+                <p className="text-[11px] text-slate-500 truncate">amit.sharma@aicte-india.org</p>
                 <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                  Regional Officer (Class-I)
+                  AICTE Official
                 </span>
               </div>
 
@@ -370,7 +366,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
               </div>
 
               <div className="border-t border-slate-100 px-4 py-2 text-[10px] text-slate-400 flex items-center justify-between">
-                <span>AICTE Portal v4.2</span>
+                <span>ApoorvaSetu v4.2</span>
                 <span className="text-emerald-600 font-medium flex items-center">
                   <Check className="w-2.5 h-2.5 mr-0.5" /> Online
                 </span>

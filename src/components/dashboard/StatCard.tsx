@@ -6,7 +6,6 @@ interface StatCardProps {
   value: string;
   trendText?: string;
   trendColor?: 'green' | 'amber' | 'rose' | 'blue';
-  subtext?: string;
   icon: LucideIcon;
   variant: 'blue' | 'amber' | 'green' | 'rose';
   onClick?: () => void;
@@ -17,84 +16,94 @@ export const StatCard: React.FC<StatCardProps> = ({
   value,
   trendText,
   trendColor = 'green',
-  subtext,
   icon: Icon,
   variant,
   onClick
 }) => {
-  // Pastel tinted styling matching the reference screenshot exactly
+  // Soft pastel card styling matching the reference screenshot exactly
   const styles = {
     blue: {
-      cardBg: 'bg-[#edf5ff] border-[#d8e8fc]',
-      iconBg: 'bg-[#d8e8fc] text-[#2563eb]'
+      cardBg: 'bg-[#f4f8ff] border-[#e1edfc]',
+      iconBg: 'bg-blue-100/70 text-blue-600',
+      sparklineColor: '#3b82f6',
+      sparklinePath: 'M 2 15 C 14 18, 22 10, 32 14 C 40 18, 48 8, 54 5'
     },
     amber: {
-      cardBg: 'bg-[#fff8ec] border-[#faebd4]',
-      iconBg: 'bg-[#faebd4] text-[#d97706]'
+      cardBg: 'bg-[#fefaf3] border-[#faedd9]',
+      iconBg: 'bg-amber-100/70 text-amber-600',
+      sparklineColor: '#f59e0b',
+      sparklinePath: 'M 2 14 C 14 8, 24 18, 34 16 C 42 14, 48 10, 54 6'
     },
     green: {
-      cardBg: 'bg-[#f0fbf4] border-[#d7f3e2]',
-      iconBg: 'bg-[#d7f3e2] text-[#16a34a]'
+      cardBg: 'bg-[#f4fcf7] border-[#dcf5e7]',
+      iconBg: 'bg-emerald-100/70 text-emerald-600',
+      sparklineColor: '#10b981',
+      sparklinePath: 'M 2 16 C 14 16, 24 8, 34 14 C 42 18, 48 8, 54 5'
     },
     rose: {
-      cardBg: 'bg-[#fff1f2] border-[#fcdade]',
-      iconBg: 'bg-[#fcdade] text-[#e11d48]'
+      cardBg: 'bg-[#fef6f7] border-[#fce2e5]',
+      iconBg: 'bg-rose-100/70 text-rose-600',
+      sparklineColor: '#f43f5e',
+      sparklinePath: 'M 2 15 C 14 10, 24 16, 34 8 C 42 6, 48 14, 54 8'
     }
   }[variant];
 
   const trendColors = {
-    green: 'text-[#16a34a]',
-    amber: 'text-[#d97706]',
-    rose: 'text-[#e11d48]',
-    blue: 'text-[#2563eb]'
+    green: 'text-emerald-600',
+    amber: 'text-amber-600',
+    rose: 'text-rose-600',
+    blue: 'text-blue-600'
   }[trendColor];
 
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl border ${styles.cardBg} p-5 transition-all duration-150 ${
-        onClick ? 'cursor-pointer hover:shadow-sm' : ''
+      className={`rounded-2xl border ${styles.cardBg} p-4 sm:p-5 shadow-2xs transition-all duration-150 ${
+        onClick ? 'cursor-pointer hover:shadow-xs' : ''
       }`}
     >
-      <div className="flex items-start space-x-3.5">
-        {/* Rounded square icon container */}
+      <div className="flex items-start justify-between gap-2.5">
+        {/* Left: Icon */}
         <div
-          className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${styles.iconBg}`}
+          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${styles.iconBg}`}
         >
-          <Icon className="w-5 h-5 stroke-[2.2]" />
+          <Icon className="w-4.5 h-4.5 stroke-[2]" />
         </div>
 
+        {/* Center: Title & Large Value */}
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-medium text-slate-600">
+          <div className="text-xs font-medium text-slate-600 truncate">
             {title}
           </div>
-          <div className="text-2xl sm:text-[28px] font-bold text-slate-900 mt-0.5 tracking-tight leading-none">
+          <div className="text-2xl sm:text-[26px] font-bold text-slate-900 mt-0.5 tracking-tight leading-tight">
             {value}
           </div>
         </div>
+
+        {/* Right: Perfectly contained sparkline wave */}
+        <div className="shrink-0 pt-2.5">
+          <svg
+            viewBox="0 0 56 20"
+            fill="none"
+            className="w-12 sm:w-14 h-5 overflow-hidden"
+          >
+            <path
+              d={styles.sparklinePath}
+              stroke={styles.sparklineColor}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
       </div>
 
-      {/* Subtext and trend line */}
-      <div className="mt-4 pt-1 flex items-center justify-between text-xs">
-        {/* For card 1: trend then subtext. For cards 2-4: subtext on left, trend on right */}
-        {variant === 'blue' ? (
-          <div className="space-y-0.5">
-            {trendText && (
-              <span className={`font-semibold ${trendColors} mr-1.5`}>
-                {trendText}
-              </span>
-            )}
-            {subtext && <span className="text-slate-500">{subtext}</span>}
-          </div>
-        ) : (
-          <>
-            <span className="text-slate-500 font-normal">{subtext}</span>
-            {trendText && (
-              <span className={`font-semibold ${trendColors}`}>
-                {trendText}
-              </span>
-            )}
-          </>
+      {/* Bottom: Trend Text */}
+      <div className="mt-3 pt-0.5 flex items-center text-xs">
+        {trendText && (
+          <span className={`font-semibold ${trendColors}`}>
+            {trendText}
+          </span>
         )}
       </div>
     </div>

@@ -5,47 +5,49 @@ import {
   FileText,
   FileClock,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
 
 export const ComplianceValidityWidget: React.FC = () => {
   const navigate = useNavigate();
 
+  // Compliance items matching the new reference design
   const complianceItems = [
     {
-      label: 'Lease Documents (expiring < 3 months)',
-      count: '126',
-      icon: FileText,
-      iconBg: 'bg-[#fee2e2]',
-      iconColor: 'text-[#ef4444]'
-    },
-    {
-      label: 'Other Institutional Undertakings',
-      count: '243',
-      icon: FileClock,
-      iconBg: 'bg-[#fef3c7]',
-      iconColor: 'text-[#f59e0b]'
-    },
-    {
-      label: 'Compliance Submissions (pending)',
-      count: '389',
-      icon: FileText,
-      iconBg: 'bg-[#e0edff]',
-      iconColor: 'text-[#3b82f6]'
-    },
-    {
-      label: 'Documents Expired',
-      count: '67',
+      label: 'Land/Infrastructure Documents Expiring',
+      count: '12',
       icon: AlertCircle,
       iconBg: 'bg-[#fee2e2]',
       iconColor: 'text-[#ef4444]'
     },
     {
-      label: 'Documents Valid',
-      count: '4,957',
+      label: 'Other Undertakings Pending',
+      count: '28',
+      icon: FileClock,
+      iconBg: 'bg-[#ffedd5]',
+      iconColor: 'text-[#f97316]'
+    },
+    {
+      label: 'Compliance Submissions Pending',
+      count: '16',
+      icon: FileText,
+      iconBg: 'bg-[#e0edff]',
+      iconColor: 'text-[#3b82f6]'
+    },
+    {
+      label: 'Completed Submissions',
+      count: '142',
       icon: CheckCircle2,
       iconBg: 'bg-[#dcfce7]',
       iconColor: 'text-[#10b981]'
+    },
+    {
+      label: 'Documents Expiring Soon',
+      count: '09',
+      icon: Clock,
+      iconBg: 'bg-[#fef3c7]',
+      iconColor: 'text-[#f59e0b]'
     }
   ];
 
@@ -69,7 +71,7 @@ export const ComplianceValidityWidget: React.FC = () => {
         </button>
       </div>
 
-      {/* Items List - complete full readable text */}
+      {/* Items List matching reference */}
       <div className="space-y-2.5 my-auto min-w-0">
         {complianceItems.map((item) => {
           const Icon = item.icon;
