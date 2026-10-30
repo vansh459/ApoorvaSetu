@@ -26,7 +26,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
   const navigate = useNavigate();
-  const { user, logout, switchRole } = useAuth();
+  const { user, logout } = useAuth();
   const {
     searchQuery,
     setSearchQuery,
@@ -88,15 +88,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
       )
     : [];
 
-  const handleRoleQuickSwitch = async (role: UserRole) => {
-    setIsProfileOpen(false);
-    await switchRole(role);
-    navigate('/');
-  };
-
   const handleLogout = () => {
+    setIsProfileOpen(false);
     logout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -343,37 +338,37 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                 </div>
               </div>
 
-              {/* Quick Role Switcher for Evaluator Convenience */}
-              <div className="p-2 border-b border-slate-100 bg-slate-50/30">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-1.5">
-                  Switch Active Role
+              {/* Active Role & Jurisdiction Metadata (Role switching strictly removed for security) */}
+              <div className="p-3 border-b border-slate-100 bg-slate-50/40 text-xs space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500 font-medium">Designation</span>
+                  <span className="text-slate-800 font-semibold">{user?.designation || user?.roleTitle}</span>
                 </div>
-                <div className="grid grid-cols-1 gap-1 text-xs">
-                  {[
-                    { role: 'SUPER_ADMIN' as UserRole, label: 'Super Admin', icon: Users, color: 'text-purple-600' },
-                    { role: 'AICTE_ADMIN' as UserRole, label: 'AICTE Central Admin', icon: ShieldCheck, color: 'text-blue-600' },
-                    { role: 'REGIONAL_OFFICER' as UserRole, label: 'Regional Officer (North)', icon: Compass, color: 'text-teal-600' },
-                    { role: 'EVC_MEMBER' as UserRole, label: 'EVC Committee Member', icon: FileCheck2, color: 'text-amber-600' },
-                    { role: 'INSTITUTION_ADMIN' as UserRole, label: 'Institution Admin', icon: Building2, color: 'text-rose-600' }
-                  ].map((r) => {
-                    const Icon = r.icon;
-                    const isCurrent = user?.role === r.role;
-                    return (
-                      <button
-                        key={r.role}
-                        onClick={() => handleRoleQuickSwitch(r.role)}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-                          isCurrent ? 'bg-blue-50 font-bold text-blue-900' : 'hover:bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <Icon className={`w-3.5 h-3.5 ${r.color}`} />
-                          <span className="text-[11px]">{r.label}</span>
-                        </div>
-                        {isCurrent && <Check className="w-3.5 h-3.5 text-blue-600" />}
-                      </button>
-                    );
-                  })}
+                {user?.instituteName && (
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Institution</span>
+                    <span className="text-slate-800 font-semibold">{user.instituteName}</span>
+                  </div>
+                )}
+                {user?.instituteId && (
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">AICTE PID</span>
+                    <span className="text-slate-800 font-mono font-bold text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">
+                      {user.instituteId}
+                    </span>
+                  </div>
+                )}
+                {user?.region && (
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Jurisdiction</span>
+                    <span className="text-teal-700 font-bold">{user.region} Region</span>
+                  </div>
+                )}
+                <div className="pt-1 flex items-center justify-between text-[10px] text-slate-400">
+                  <span>Session Status</span>
+                  <span className="text-emerald-600 font-bold flex items-center">
+                    <Check className="w-3 h-3 mr-0.5" /> Authenticated
+                  </span>
                 </div>
               </div>
 

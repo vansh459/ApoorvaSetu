@@ -252,6 +252,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     newStatus: ApplicationStatus = 'In Progress',
     note?: string
   ) => {
+    const targetApp = applications.find((a) => a.id === appId);
+    const authCheck = authService.authorizeAction('applications.forward', {
+      region: targetApp?.region,
+      instituteId: targetApp?.instituteId
+    });
+    if (!authCheck.authorized) {
+      showToast(authCheck.reason || 'Unauthorized to update application stage.', 'error');
+      return;
+    }
+
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id !== appId) return app;
@@ -289,10 +299,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     try {
+      const activeUser = authService.getCurrentUser();
       authService.addAuditLog({
-        userId: 'USR-AICTE-001',
-        userName: 'Amit Sharma',
-        userRole: 'AICTE_ADMIN',
+        userId: activeUser ? activeUser.id : 'USR-AICTE-001',
+        userName: activeUser ? activeUser.name : 'Amit Sharma',
+        userRole: activeUser ? activeUser.role : 'AICTE_ADMIN',
         action: 'STAGE_UPDATE',
         entityType: 'Application',
         entityId: appId,
@@ -305,6 +316,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const advanceApplication = (appId: string) => {
     const app = applications.find((a) => a.id === appId);
     if (!app) return;
+
+    const authCheck = authService.authorizeAction('applications.forward', {
+      region: app.region,
+      instituteId: app.instituteId
+    });
+    if (!authCheck.authorized) {
+      showToast(authCheck.reason || 'Unauthorized to advance application.', 'error');
+      return;
+    }
+
     const currentIdx = stageOrder.indexOf(app.stage);
     if (currentIdx < stageOrder.length - 1) {
       const nextStage = stageOrder[currentIdx + 1];
@@ -316,6 +337,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const returnApplication = (appId: string, reason: string) => {
+    const app = applications.find((a) => a.id === appId);
+    const authCheck = authService.authorizeAction('applications.return', {
+      region: app?.region,
+      instituteId: app?.instituteId
+    });
+    if (!authCheck.authorized) {
+      showToast(authCheck.reason || 'Unauthorized to return application.', 'error');
+      return;
+    }
+
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id !== appId) return app;
@@ -330,10 +361,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     try {
+      const activeUser = authService.getCurrentUser();
       authService.addAuditLog({
-        userId: 'USR-REG-001',
-        userName: 'Dr. Sunita Rao',
-        userRole: 'REGIONAL_OFFICER',
+        userId: activeUser ? activeUser.id : 'USR-REG-001',
+        userName: activeUser ? activeUser.name : 'Dr. R. K. Sharma',
+        userRole: activeUser ? activeUser.role : 'REGIONAL_OFFICER',
         action: 'APPLICATION_RETURNED',
         entityType: 'Application',
         entityId: appId,
@@ -344,12 +376,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const approveApplication = (appId: string) => {
+    const authCheck = authService.authorizeAction('applications.approve');
+    if (!authCheck.authorized) {
+      showToast(authCheck.reason || 'Unauthorized to approve application.', 'error');
+      return;
+    }
+
     updateApplicationStage(appId, 'Final Approval', 'Approved', 'Final approval granted by AICTE Competent Authority.');
     try {
+      const activeUser = authService.getCurrentUser();
       authService.addAuditLog({
-        userId: 'USR-AICTE-001',
-        userName: 'Amit Sharma',
-        userRole: 'AICTE_ADMIN',
+        userId: activeUser ? activeUser.id : 'USR-AICTE-001',
+        userName: activeUser ? activeUser.name : 'Amit Sharma',
+        userRole: activeUser ? activeUser.role : 'AICTE_ADMIN',
         action: 'APPLICATION_APPROVED',
         entityType: 'Application',
         entityId: appId,
@@ -360,6 +399,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const rejectApplication = (appId: string, reason: string) => {
+    const authCheck = authService.authorizeAction('applications.reject');
+    if (!authCheck.authorized) {
+      showToast(authCheck.reason || 'Unauthorized to reject application.', 'error');
+      return;
+    }
+
     setApplications((prev) =>
       prev.map((app) => {
         if (app.id !== appId) return app;
@@ -374,10 +419,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
     try {
+      const activeUser = authService.getCurrentUser();
       authService.addAuditLog({
-        userId: 'USR-AICTE-001',
-        userName: 'Amit Sharma',
-        userRole: 'AICTE_ADMIN',
+        userId: activeUser ? activeUser.id : 'USR-AICTE-001',
+        userName: activeUser ? activeUser.name : 'Amit Sharma',
+        userRole: activeUser ? activeUser.role : 'AICTE_ADMIN',
         action: 'APPLICATION_REJECTED',
         entityType: 'Application',
         entityId: appId,
@@ -388,6 +434,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addNewApplication = (appData: Partial<Application>) => {
+    const authCheck = authService.authorizeAction('applications.create', {
+      instituteId: appData.instituteId
+    });
+    if (!authCheck.authorized) {
+      showToast(authCheck.reason || 'Unauthorized to submit application.', 'error');
+      return;
+    }
+
     const newId = `AICTE/2025/${Math.floor(12877 + Math.random() * 900)}`;
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -438,6 +492,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const scheduleEVC = (visitData: Omit<EVCVisit, 'id'>) => {
+    const authCheck = authService.authorizeAction('evc.schedule');
+    if (!authCheck.authorized) {
+      showToast(authCheck.reason || 'Unauthorized to schedule EVC inspection visit.', 'error');
+      return;
+    }
+
     const id = `EVC-${Math.floor(8810 + Math.random() * 900)}`;
     const newVisit: EVCVisit = {
       ...visitData,

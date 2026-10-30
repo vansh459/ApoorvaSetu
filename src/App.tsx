@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import { DashboardLayout } from './layouts/DashboardLayout';
-import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { ProtectedRoute, PublicRoute } from './components/common/ProtectedRoute';
 
 // Auth page
 import { Login } from './pages/auth/Login';
@@ -46,7 +46,14 @@ export function App() {
         <AuthProvider>
           <Routes>
             {/* Public Auth Route */}
-            <Route path="/login" element={<Login />} />
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
 
             {/* Authenticated Application Shell */}
             <Route

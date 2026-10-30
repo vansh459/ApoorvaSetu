@@ -36,7 +36,7 @@ export const Login: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
 
   const [email, setEmail] = useState('aicteadmin@apoorvasetu.demo');
-  const [password, setPassword] = useState(DEMO_PASSWORD);
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +45,7 @@ export const Login: React.FC = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSubmitted, setForgotSubmitted] = useState(false);
 
-  // If already authenticated, redirect to home
+  // If already authenticated, redirect immediately to dashboard
   React.useEffect(() => {
     if (isAuthenticated) {
       const from = (location.state as any)?.from?.pathname || '/';
@@ -131,19 +131,10 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleSelectDemoAccount = async (account: DemoAccountInfo) => {
+  const handleSelectDemoAccount = (account: DemoAccountInfo) => {
     setEmail(account.email);
-    setPassword(DEMO_PASSWORD);
+    setPassword('');
     setErrorMessage('');
-    setIsLoading(true);
-    try {
-      await login(account.email, DEMO_PASSWORD, rememberMe);
-      navigate('/', { replace: true });
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to login with demo account.');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleForgotSubmit = (e: React.FormEvent) => {
@@ -323,19 +314,19 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: 1-Click Demo Accounts Quick-Selector */}
+          {/* Right Column: Registered Role Directory & Credentials Reference */}
           <div className="lg:col-span-7">
             <div className="bg-[#0b162c]/60 border border-slate-800/90 rounded-3xl p-6 sm:p-8 backdrop-blur-md">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center space-x-2">
-                    <span>1-Click Evaluator Access</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                      5 Pre-configured Roles
+                    <span>Registered Role Directory</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                      5 Authorized Roles
                     </span>
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
-                    Select any role below to test its dedicated dashboard, custom navigation, and data scoping.
+                    Select any role below to prefill its User ID / Email. Password verification is strictly required.
                   </p>
                 </div>
               </div>
@@ -382,9 +373,8 @@ export const Login: React.FC = () => {
                       </div>
 
                       <div className="shrink-0 self-end sm:self-center">
-                        <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-xl text-xs font-semibold bg-blue-600/20 text-blue-300 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                          <span>Log In</span>
-                          <span>→</span>
+                        <span className="inline-flex items-center space-x-1 px-3 py-1 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                          <span>Use Email</span>
                         </span>
                       </div>
                     </div>
@@ -392,11 +382,11 @@ export const Login: React.FC = () => {
                 })}
               </div>
 
-              {/* Operational notice */}
+              {/* Security policy notice */}
               <div className="mt-4 p-3 rounded-xl bg-slate-900/40 border border-slate-800 text-slate-400 text-[11px] flex items-center space-x-2">
-                <HelpCircle className="w-4 h-4 text-blue-400 shrink-0" />
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>
-                  Every role is securely enforced with server-side RBAC permissions, jurisdictional filtering, and complete audit logging.
+                  Strict RBAC Policy: Role switching and frontend impersonation are disabled. Every session is verified cryptographically via backend cookies.
                 </span>
               </div>
             </div>

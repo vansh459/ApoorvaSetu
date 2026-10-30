@@ -1,4 +1,5 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { SuperAdminDashboard } from '../components/dashboard/roles/SuperAdminDashboard';
 import { AICTEAdminDashboard } from '../components/dashboard/roles/AICTEAdminDashboard';
@@ -7,10 +8,15 @@ import { EVCMemberDashboard } from '../components/dashboard/roles/EVCMemberDashb
 import { InstitutionAdminDashboard } from '../components/dashboard/roles/InstitutionAdminDashboard';
 
 export const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
-  // Dynamically render role-specific dashboard with distinct components, stats, and workflows
-  switch (user?.role) {
+  // If session is unauthenticated, redirect strictly to login (never default to AICTE Admin)
+  if (!isAuthenticated || !user || !user.role) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Dynamically render role-specific dashboard strictly according to authenticated user role
+  switch (user.role) {
     case 'SUPER_ADMIN':
       return <SuperAdminDashboard />;
     case 'AICTE_ADMIN':
@@ -22,6 +28,6 @@ export const Dashboard: React.FC = () => {
     case 'INSTITUTION_ADMIN':
       return <InstitutionAdminDashboard />;
     default:
-      return <AICTEAdminDashboard />;
+      return <Navigate to="/login" replace />;
   }
 };

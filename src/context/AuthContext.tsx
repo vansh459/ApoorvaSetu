@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, UserRole, Permission } from '../types';
-import { authService, AuthSession, DEMO_PASSWORD } from '../services/authService';
+import { authService } from '../services/authService';
 import { hasPermission as checkPermission, hasAnyRole } from '../services/rbacService';
 
 interface AuthContextType {
@@ -9,7 +9,6 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
   logout: () => void;
-  switchRole: (role: UserRole) => Promise<User>;
   hasPermission: (permission: Permission) => boolean;
   hasRole: (roles: UserRole[]) => boolean;
   refreshUser: () => void;
@@ -21,24 +20,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth session on mount
-  useEffect(() => {
+  // Authoritative session verification directly from server session registry & backend user store
+  const verifySession = useCallback(() => {
     try {
-      const session = authService.getSession();
-      if (session) {
-        setUser(session.user);
-      } else {
-        // Auto-seed default user as AICTE_ADMIN or SUPER_ADMIN if none logged in for seamless dev evaluation
-        // But prompt says: "After successful authentication: Verify user credentials. Retrieve the user's assigned role..."
-        // Default to a default session or null (redirects to /login)
-        setUser(null);
-      }
+      const validatedUser = authService.validateSession();
+      setUser(validatedUser);
+      return validatedUser;
     } catch {
       setUser(null);
-    } finally {
-      setIsLoading(false);
+      return null;
     }
   }, []);
+
+  // Initialize and verify session on initial mount
+  useEffect(() => {
+    verifySession();
+    setIsLoading(false);
+
+    // Listen to browser BFCache restoration and history popstate
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted || !authService.isSessionValid()) {
+        verifySession();
+      }
+    };
+
+    // Listen to tab storage synchronization
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'apoorvasetu_auth_session_v1' || e.key === 'apoorvasetu_server_sessions_v1') {
+        verifySession();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [verifySession]);
 
   const login = async (email: string, password: string, rememberMe = false): Promise<User> => {
     setIsLoading(true);
@@ -56,17 +76,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
-  const switchRole = async (role: UserRole): Promise<User> => {
-    setIsLoading(true);
-    try {
-      const newUser = await authService.switchDemoRole(role);
-      setUser(newUser);
-      return newUser;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const hasPermission = (permission: Permission): boolean => {
     return checkPermission(user, permission);
   };
@@ -76,8 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshUser = () => {
-    const current = authService.getCurrentUser();
-    setUser(current);
+    verifySession();
   };
 
   return (
@@ -88,7 +96,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         logout,
-        switchRole,
         hasPermission,
         hasRole,
         refreshUser
@@ -106,4 +113,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-
