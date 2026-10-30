@@ -155,14 +155,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className="w-9 h-9 flex items-center justify-center shrink-0">
               <img
                 src="/apoorvasetu-icon.png"
-                alt="ApprovaSetu Logo"
+                alt="ApoorvaSetu Logo"
                 className="w-full h-full object-contain drop-shadow-md"
               />
             </div>
 
             <div>
               <div className="text-white font-bold text-base leading-tight tracking-wide">
-                ApprovaSetu
+                ApoorvaSetu
               </div>
               <div className="text-[10px] text-slate-400 font-normal leading-tight mt-0.5">
                 AICTE Approvals, Simplified

@@ -394,7 +394,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
               </div>
 
               <div className="border-t border-slate-100 px-4 py-1.5 text-[10px] text-slate-400 flex items-center justify-between">
-                <span>ApprovaSetu v4.2 RBAC</span>
+                <span>ApoorvaSetu v4.2 RBAC</span>
                 <span className="text-emerald-600 font-medium flex items-center">
                   <Check className="w-2.5 h-2.5 mr-0.5" /> Secure
                 </span>

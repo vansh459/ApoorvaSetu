@@ -156,13 +156,13 @@ export const Login: React.FC = () => {
           <div className="w-10 h-10 flex items-center justify-center shrink-0">
             <img
               src="/apoorvasetu-icon.png"
-              alt="ApprovaSetu Icon"
+              alt="ApoorvaSetu Icon"
               className="w-full h-full object-contain drop-shadow-md"
             />
           </div>
           <div>
             <div className="text-white font-bold text-lg tracking-wide leading-tight">
-              ApprovaSetu
+              ApoorvaSetu
             </div>
             <div className="text-[11px] text-slate-400 font-normal leading-tight">
               AICTE Approvals, Simplified
@@ -396,7 +396,7 @@ export const Login: React.FC = () => {
 
       {/* Footer */}
       <footer className="px-6 py-4 border-t border-slate-900 bg-slate-950/60 text-center text-xs text-slate-500 relative z-10">
-        ApprovaSetu — AICTE Approval Workflow Automation & Compliance System © 2026. Smart India Hackathon Edition.
+        ApoorvaSetu — AICTE Approval Workflow Automation & Compliance System © 2026. Smart India Hackathon Edition.
       </footer>
 
       {/* Forgot Password Modal */}
