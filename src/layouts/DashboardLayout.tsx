@@ -8,6 +8,7 @@ import { TrackApplicationModal } from '../components/modals/TrackApplicationModa
 import { UploadComplianceModal } from '../components/modals/UploadComplianceModal';
 import { ApplicationDetailModal } from '../components/modals/ApplicationDetailModal';
 import { GenerateReportModal } from '../components/modals/GenerateReportModal';
+import { AIHelpdeskAssistant } from '../components/assistant/AIHelpdeskAssistant';
 
 export const DashboardLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -48,6 +49,9 @@ export const DashboardLayout: React.FC = () => {
 
       {/* Toast notifications */}
       <ToastContainer />
+
+      {/* Floating AI Helpdesk Assistant */}
+      <AIHelpdeskAssistant />
     </div>
   );
 };
