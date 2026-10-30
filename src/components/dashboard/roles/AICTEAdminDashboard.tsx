@@ -131,3 +131,4 @@ export const AICTEAdminDashboard: React.FC = () => {
     </div>
   );
 };
+

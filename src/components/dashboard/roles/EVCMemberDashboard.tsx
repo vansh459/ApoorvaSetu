@@ -219,9 +219,8 @@ export const EVCMemberDashboard: React.FC = () => {
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="font-bold text-slate-900 text-sm">{v.inst}</span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                      v.status === 'Scheduled' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-                    }`}>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${v.status === 'Scheduled' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                      }`}>
                       {v.status}
                     </span>
                   </div>
@@ -307,3 +306,4 @@ export const EVCMemberDashboard: React.FC = () => {
     </div>
   );
 };
+

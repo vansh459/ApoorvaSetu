@@ -135,13 +135,12 @@ export const ApplicationTracking: React.FC = () => {
               <div key={st.stage} className="relative flex items-start space-x-4 text-xs">
                 {/* Node icon */}
                 <div
-                  className={`absolute -left-6 top-0 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                    isDone
+                  className={`absolute -left-6 top-0 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${isDone
                       ? 'bg-emerald-600 border-emerald-600 text-white'
                       : isCurrent
-                      ? 'bg-blue-600 border-blue-600 text-white animate-pulse'
-                      : 'bg-white border-slate-300 text-slate-400'
-                  }`}
+                        ? 'bg-blue-600 border-blue-600 text-white animate-pulse'
+                        : 'bg-white border-slate-300 text-slate-400'
+                    }`}
                 >
                   {isDone ? (
                     <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />
@@ -154,9 +153,8 @@ export const ApplicationTracking: React.FC = () => {
                 <div className="flex-1 bg-slate-50/70 p-4 rounded-xl border border-slate-200/70 space-y-1.5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span
-                      className={`text-sm font-bold ${
-                        isDone ? 'text-slate-900' : isCurrent ? 'text-blue-700 font-extrabold' : 'text-slate-400'
-                      }`}
+                      className={`text-sm font-bold ${isDone ? 'text-slate-900' : isCurrent ? 'text-blue-700 font-extrabold' : 'text-slate-400'
+                        }`}
                     >
                       {st.stage}
                     </span>
@@ -181,3 +179,4 @@ export const ApplicationTracking: React.FC = () => {
     </div>
   );
 };
+

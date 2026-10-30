@@ -76,11 +76,10 @@ export const MyAssignedVisits: React.FC = () => {
                   {visit.id}
                 </span>
                 <span
-                  className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
-                    visit.status === 'Completed'
+                  className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${visit.status === 'Completed'
                       ? 'bg-emerald-50 text-emerald-700'
                       : 'bg-amber-50 text-amber-700'
-                  }`}
+                    }`}
                 >
                   {visit.status}
                 </span>
@@ -201,9 +200,8 @@ export const MyAssignedVisits: React.FC = () => {
                       key={rec.val}
                       type="button"
                       onClick={() => setRecommendation(rec.val as any)}
-                      className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
-                        recommendation === rec.val ? rec.color : 'border-slate-200 text-slate-600 bg-white'
-                      }`}
+                      className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${recommendation === rec.val ? rec.color : 'border-slate-200 text-slate-600 bg-white'
+                        }`}
                     >
                       {rec.val}
                     </button>
@@ -259,3 +257,4 @@ export const MyAssignedVisits: React.FC = () => {
     </div>
   );
 };
+

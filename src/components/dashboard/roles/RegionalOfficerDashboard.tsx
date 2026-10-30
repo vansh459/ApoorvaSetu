@@ -273,9 +273,8 @@ export const RegionalOfficerDashboard: React.FC = () => {
                     <div className="text-[11px] text-slate-500">{v.city} • Comm: {v.committee}</div>
                   </div>
                 </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                  v.status === 'Scheduled' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                }`}>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${v.status === 'Scheduled' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                  }`}>
                   {v.status}
                 </span>
               </div>
@@ -393,3 +392,4 @@ export const RegionalOfficerDashboard: React.FC = () => {
     </div>
   );
 };
+

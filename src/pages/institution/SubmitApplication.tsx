@@ -89,13 +89,12 @@ export const SubmitApplication: React.FC = () => {
         ].map((s) => (
           <div key={s.num} className="flex items-center space-x-2">
             <span
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                step === s.num
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step === s.num
                   ? 'bg-blue-600 text-white'
                   : step > s.num
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-100 text-slate-500'
-              }`}
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-100 text-slate-500'
+                }`}
             >
               {step > s.num ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : s.num}
             </span>
@@ -124,11 +123,10 @@ export const SubmitApplication: React.FC = () => {
                 <label
                   key={cat.title}
                   onClick={() => setAppType(cat.title)}
-                  className={`p-3.5 rounded-xl border flex items-start space-x-3 cursor-pointer transition-all ${
-                    appType === cat.title
+                  className={`p-3.5 rounded-xl border flex items-start space-x-3 cursor-pointer transition-all ${appType === cat.title
                       ? 'border-blue-500 bg-blue-50/40 shadow-xs'
                       : 'border-slate-200 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   <input
                     type="radio"
@@ -287,3 +285,4 @@ export const SubmitApplication: React.FC = () => {
     </div>
   );
 };
+

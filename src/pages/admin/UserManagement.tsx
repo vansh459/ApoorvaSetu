@@ -200,11 +200,10 @@ export const UserManagement: React.FC = () => {
                   </td>
                   <td className="py-3 px-4">
                     <span
-                      className={`inline-flex items-center space-x-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        u.isActive
+                      className={`inline-flex items-center space-x-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${u.isActive
                           ? 'bg-emerald-50 text-emerald-700'
                           : 'bg-rose-50 text-rose-700'
-                      }`}
+                        }`}
                     >
                       {u.isActive ? (
                         <>
@@ -222,20 +221,19 @@ export const UserManagement: React.FC = () => {
                   <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
                     {u.lastLogin
                       ? new Date(u.lastLogin).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric'
-                        })
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })
                       : 'Never'}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <button
                       onClick={() => handleToggleStatus(u.id)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
-                        u.isActive
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${u.isActive
                           ? 'text-rose-600 hover:bg-rose-50'
                           : 'text-emerald-600 hover:bg-emerald-50'
-                      }`}
+                        }`}
                     >
                       {u.isActive ? 'Deactivate' : 'Activate'}
                     </button>
@@ -367,3 +365,4 @@ export const UserManagement: React.FC = () => {
     </div>
   );
 };
+

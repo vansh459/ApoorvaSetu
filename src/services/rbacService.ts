@@ -147,7 +147,7 @@ export function filterApplicationsForUser(
   }
   if (user.role === 'EVC_MEMBER') {
     // Member only sees applications from their committee / assigned inspections
-    return applications.filter((app) => 
+    return applications.filter((app) =>
       app.stage === 'Expert Visit Committee (EVC)' &&
       (!user.region || app.region.toLowerCase() === user.region.toLowerCase())
     );
@@ -176,7 +176,7 @@ export function filterInstitutesForUser(
   }
   if (user.role === 'EVC_MEMBER') {
     // EVC member sees institutes assigned in their visits
-    return institutes.filter((inst) => 
+    return institutes.filter((inst) =>
       !user.region || inst.region.toLowerCase() === user.region.toLowerCase()
     );
   }
@@ -204,7 +204,7 @@ export function filterEVCVisitsForUser(
   }
   if (user.role === 'EVC_MEMBER') {
     // EVC member sees visits where they are assigned or committee matches
-    return visits.filter((v) => 
+    return visits.filter((v) =>
       (user.committeeName && v.assignedCommittee.toLowerCase().includes(user.committeeName.toLowerCase())) ||
       v.committeeMembers.some((m) => m.toLowerCase().includes(user.name.toLowerCase())) ||
       v.id === 'EVC-1' || v.id === 'EVC-2' // Default assigned sample
@@ -256,7 +256,7 @@ export function filterDocumentsForUser(
   }
   if (user.role === 'EVC_MEMBER') {
     // EVC member sees documents relevant to inspection institutes
-    return documents.filter((d) => 
+    return documents.filter((d) =>
       !user.region || d.region.toLowerCase() === user.region.toLowerCase()
     );
   }
@@ -288,3 +288,4 @@ export function filterNotificationsForUser(
     return true;
   });
 }
+

@@ -187,19 +187,18 @@ export const RolePermissions: React.FC = () => {
                               type="button"
                               disabled={isLocked}
                               onClick={() => handleToggle(r, perm.key)}
-                              className={`w-6 h-6 rounded-md inline-flex items-center justify-center transition-all ${
-                                isLocked
+                              className={`w-6 h-6 rounded-md inline-flex items-center justify-center transition-all ${isLocked
                                   ? 'bg-purple-100 text-purple-700 cursor-not-allowed opacity-90'
                                   : isGranted
-                                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer shadow-2xs'
-                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-400 cursor-pointer'
-                              }`}
+                                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white cursor-pointer shadow-2xs'
+                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-400 cursor-pointer'
+                                }`}
                               title={
                                 isLocked
                                   ? 'Super Admin retains full system permissions'
                                   : isGranted
-                                  ? `Revoke ${perm.label} for ${ROLE_LABELS[r]}`
-                                  : `Grant ${perm.label} to ${ROLE_LABELS[r]}`
+                                    ? `Revoke ${perm.label} for ${ROLE_LABELS[r]}`
+                                    : `Grant ${perm.label} to ${ROLE_LABELS[r]}`
                               }
                             >
                               {isGranted ? (
@@ -222,3 +221,4 @@ export const RolePermissions: React.FC = () => {
     </div>
   );
 };
+

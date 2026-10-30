@@ -349,11 +349,10 @@ export const Login: React.FC = () => {
                     <div
                       key={account.role}
                       onClick={() => handleSelectDemoAccount(account)}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                        isSelected
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isSelected
                           ? 'bg-blue-900/20 border-blue-500/60 shadow-md shadow-blue-500/10'
                           : 'bg-slate-900/50 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start space-x-3.5">
                         <div
@@ -486,3 +485,4 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+

@@ -96,11 +96,10 @@ export const InspectionChecklist: React.FC = () => {
                 <div
                   key={item.id}
                   onClick={() => toggleItem(catIdx, itemIdx)}
-                  className={`p-3 rounded-xl border flex items-center justify-between text-xs cursor-pointer transition-all ${
-                    item.passed
+                  className={`p-3 rounded-xl border flex items-center justify-between text-xs cursor-pointer transition-all ${item.passed
                       ? 'bg-emerald-50/40 border-emerald-200/70 hover:bg-emerald-50/70'
                       : 'bg-rose-50/40 border-rose-200/70 hover:bg-rose-50/70'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center space-x-3 pr-4">
                     <span className="font-mono font-bold text-slate-400 text-[11px] shrink-0">
@@ -112,11 +111,10 @@ export const InspectionChecklist: React.FC = () => {
                   </div>
 
                   <span
-                    className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0 ${
-                      item.passed
+                    className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[10px] font-bold shrink-0 ${item.passed
                         ? 'bg-emerald-600 text-white'
                         : 'bg-rose-600 text-white'
-                    }`}
+                      }`}
                   >
                     {item.passed ? (
                       <>
@@ -139,3 +137,4 @@ export const InspectionChecklist: React.FC = () => {
     </div>
   );
 };
+
