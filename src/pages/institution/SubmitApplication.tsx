@@ -255,7 +255,7 @@ export const SubmitApplication: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold flex items-center space-x-1.5 cursor-pointer"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl font-semibold flex items-center space-x-1.5 cursor-pointer transition-all duration-150"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Back</span>
@@ -264,7 +264,7 @@ export const SubmitApplication: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || !undertakingAgreed}
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-white rounded-xl font-bold flex items-center space-x-2 cursor-pointer shadow-md disabled:opacity-50"
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 active:scale-95 text-white rounded-xl font-bold flex items-center space-x-2 cursor-pointer shadow-md disabled:opacity-50 transition-all duration-150"
               >
                 {isSubmitting ? (
                   <>

@@ -40,7 +40,7 @@ export const StageMovementChart: React.FC = () => {
               onClick={() =>
                 navigate(`/applications?stage=${encodeURIComponent(stage.name)}`)
               }
-              className="flex items-center text-xs group cursor-pointer min-w-0"
+              className="flex items-center text-xs group cursor-pointer min-w-0 py-0.5 px-1.5 rounded-lg hover:bg-slate-50/80 transition-all duration-150 active:scale-[0.99]"
             >
               {/* Stage Label - full name displayed */}
               <div className="w-36 sm:w-42 shrink-0 text-slate-700 font-medium whitespace-nowrap pr-2 group-hover:text-blue-600 transition-colors text-[11px] sm:text-xs">
@@ -50,7 +50,7 @@ export const StageMovementChart: React.FC = () => {
               {/* Progress Bar Container */}
               <div className="flex-1 min-w-[40px] h-2.5 sm:h-3 bg-slate-100 rounded-sm overflow-hidden mr-2 sm:mr-3">
                 <div
-                  className="h-full rounded-sm transition-all duration-500"
+                  className="h-full rounded-sm animate-bar-fill group-hover:opacity-90 transition-all duration-300"
                   style={{
                     width: `${widthPercent}%`,
                     backgroundColor: stage.color
@@ -60,7 +60,7 @@ export const StageMovementChart: React.FC = () => {
 
               {/* Count & Percentage */}
               <div className="shrink-0 text-right font-medium text-slate-800 whitespace-nowrap text-[10px] sm:text-[11px] pl-1">
-                <span className="font-bold">{stage.count.toLocaleString()}</span>{' '}
+                <span className="font-bold group-hover:text-blue-700 transition-colors">{stage.count.toLocaleString()}</span>{' '}
                 <span className="text-slate-400 font-normal">
                   ({stage.percentage}%)
                 </span>

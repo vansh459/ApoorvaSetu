@@ -139,7 +139,7 @@ export const Notifications: React.FC = () => {
                 {!notif.read && (
                   <button
                     onClick={() => markNotificationAsRead(notif.id)}
-                    className="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+                    className="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-200 active:scale-95 transition-all duration-150 cursor-pointer"
                   >
                     Mark Read
                   </button>
@@ -151,7 +151,7 @@ export const Notifications: React.FC = () => {
                       markNotificationAsRead(notif.id);
                       navigate(notif.link!);
                     }}
-                    className="flex items-center space-x-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                    className="flex items-center space-x-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-2xs transition-all duration-150 cursor-pointer"
                   >
                     <span>Inspect</span>
                     <ArrowRight className="w-3.5 h-3.5" />

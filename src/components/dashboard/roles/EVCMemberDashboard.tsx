@@ -76,7 +76,7 @@ export const EVCMemberDashboard: React.FC = () => {
         {/* Assigned EVC Visits */}
         <div
           onClick={() => navigate('/evc/my-visits')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:shadow-sm cursor-pointer transition-all"
+          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
             <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -97,7 +97,7 @@ export const EVCMemberDashboard: React.FC = () => {
         {/* Upcoming Inspections */}
         <div
           onClick={() => navigate('/evc/my-visits')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:shadow-sm cursor-pointer transition-all"
+          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
             <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -118,7 +118,7 @@ export const EVCMemberDashboard: React.FC = () => {
         {/* Pending Inspection Reports */}
         <div
           onClick={() => navigate('/evc/my-visits')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:shadow-sm cursor-pointer transition-all"
+          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
             <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
@@ -139,7 +139,7 @@ export const EVCMemberDashboard: React.FC = () => {
         {/* Completed Inspections */}
         <div
           onClick={() => navigate('/evc/my-visits')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs hover:shadow-sm cursor-pointer transition-all"
+          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">

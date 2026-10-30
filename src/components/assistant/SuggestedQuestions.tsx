@@ -40,7 +40,7 @@ export const SuggestedQuestions: React.FC<SuggestedQuestionsProps> = ({
             key={idx}
             type="button"
             onClick={() => onSelectQuestion(q)}
-            className="shrink-0 text-xs px-3 py-1 rounded-full bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200/80 hover:border-blue-200 transition-colors cursor-pointer shadow-2xs"
+            className="shrink-0 text-xs px-3 py-1 rounded-full bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200/80 hover:border-blue-200 hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer shadow-2xs"
           >
             {q}
           </button>

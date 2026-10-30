@@ -55,7 +55,7 @@ export const UpcomingEVCList: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/evc-scheduling')}
-          className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer whitespace-nowrap shrink-0 ml-2"
+          className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer whitespace-nowrap shrink-0 ml-2 active:scale-95 transition-transform duration-100"
         >
           View All
         </button>
@@ -67,11 +67,11 @@ export const UpcomingEVCList: React.FC = () => {
           <div
             key={visit.id}
             onClick={() => navigate('/evc-scheduling')}
-            className="flex items-center justify-between cursor-pointer hover:bg-slate-50/70 p-1 rounded-xl transition-colors min-w-0"
+            className="flex items-center justify-between cursor-pointer hover:bg-slate-50/80 p-1.5 rounded-xl transition-all duration-150 active:scale-[0.99] group min-w-0"
           >
             {/* Left: Date Box + Details */}
             <div className="flex items-center space-x-2 sm:space-x-2.5 min-w-0 flex-1">
-              <div className="flex flex-col items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-50 border border-slate-200/80 text-center shrink-0">
+              <div className="flex flex-col items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-50 border border-slate-200/80 group-hover:border-blue-300 group-hover:bg-blue-50/50 text-center shrink-0 transition-all duration-150">
                 <span className="text-xs sm:text-sm font-bold text-slate-900 leading-none">
                   {visit.day}
                 </span>

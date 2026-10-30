@@ -62,9 +62,9 @@ export const QuickActionsPanel: React.FC = () => {
             <button
               key={item.label}
               onClick={item.action}
-              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl border border-slate-200/80 hover:border-blue-400 hover:bg-blue-50/40 text-slate-700 hover:text-blue-700 transition-colors text-xs font-semibold group cursor-pointer text-left bg-white min-w-0"
+              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl border border-slate-200/80 hover:border-blue-400 hover:bg-blue-50/50 hover:shadow-xs text-slate-700 hover:text-blue-700 active:scale-[0.98] transition-all duration-150 text-xs font-semibold group cursor-pointer text-left bg-white min-w-0"
             >
-              <Icon className="w-4 h-4 text-blue-600 shrink-0" />
+              <Icon className="w-4 h-4 text-blue-600 shrink-0 transition-transform duration-150 group-hover:scale-110" />
               <span className="whitespace-nowrap">{item.label}</span>
             </button>
           );

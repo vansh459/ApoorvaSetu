@@ -89,7 +89,7 @@ export const Institutes: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by institution name, permanent AICTE code, city or state..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-hidden focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
           />
         </div>
 
@@ -97,7 +97,7 @@ export const Institutes: React.FC = () => {
           <select
             value={selectedRegion}
             onChange={(e) => setSelectedRegion(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden"
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
           >
             <option value="All">All Regions</option>
             <option value="Northern">Northern</option>
@@ -113,7 +113,7 @@ export const Institutes: React.FC = () => {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden"
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
           >
             <option value="All">All Disciplines / Categories</option>
             <option value="Engineering & Technology">Engineering & Technology</option>
@@ -131,7 +131,7 @@ export const Institutes: React.FC = () => {
           <div
             key={inst.id}
             onClick={() => setActiveInst(inst)}
-            className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-md hover:border-blue-400 cursor-pointer transition-all flex flex-col justify-between group"
+            className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-md hover:border-blue-400 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] cursor-pointer transition-all duration-200 flex flex-col justify-between group"
           >
             <div>
               <div className="flex items-start justify-between gap-2 mb-2">

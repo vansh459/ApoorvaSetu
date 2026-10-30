@@ -182,7 +182,7 @@ export const EVCScheduling: React.FC = () => {
           {filteredVisits.map((visit: EVCVisit) => (
             <div
               key={visit.id}
-              className="bg-white rounded-2xl border border-slate-200/90 p-4.5 shadow-2xs hover:shadow-xs transition-shadow flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="bg-white rounded-2xl border border-slate-200/90 p-4.5 shadow-2xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4"
             >
               {/* Left Date + Info */}
               <div className="flex items-start space-x-4">

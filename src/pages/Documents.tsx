@@ -133,7 +133,7 @@ export const Documents: React.FC = () => {
         {filteredDocs.map((doc: DocumentItem) => (
           <div
             key={doc.id}
-            className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between group"
+            className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs card-interactive flex flex-col justify-between group"
           >
             <div>
               <div className="flex items-start justify-between gap-2 mb-2">
@@ -161,7 +161,7 @@ export const Documents: React.FC = () => {
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
               <button
                 onClick={() => setPreviewDoc(doc)}
-                className="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-blue-600 cursor-pointer"
+                className="inline-flex items-center space-x-1 text-xs font-semibold text-slate-600 hover:text-blue-600 active:scale-95 transition-all duration-150 cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Preview</span>
@@ -169,7 +169,7 @@ export const Documents: React.FC = () => {
 
               <button
                 onClick={() => handleDownload(doc)}
-                className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+                className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white active:scale-95 rounded-lg text-xs font-semibold text-slate-700 transition-all duration-150 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download</span>

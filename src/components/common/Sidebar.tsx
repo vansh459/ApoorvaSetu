@@ -198,10 +198,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   if (window.innerWidth < 1024) onClose();
                 }}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-medium transition-colors ${
+                  `group relative flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-medium transition-all duration-180 ease-out cursor-pointer ${
                     isActive
                       ? 'bg-[#0284c7] text-white shadow-sm font-semibold'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60 active:scale-[0.99]'
                   }`
                 }
               >
@@ -209,16 +209,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   <>
                     <div className="flex items-center space-x-3">
                       <Icon
-                        className={`w-4 h-4 ${
-                          isActive ? 'text-white' : 'text-slate-400'
+                        className={`w-4 h-4 transition-transform duration-200 ease-out ${
+                          isActive
+                            ? 'text-white'
+                            : 'text-slate-400 group-hover:scale-110 group-hover:text-sky-300'
                         }`}
                       />
-                      <span>{item.name}</span>
+                      <span className="transition-colors duration-150">{item.name}</span>
                     </div>
 
                     {item.badge !== undefined && item.badge > 0 && (
                       <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-transform duration-200 group-hover:scale-105 ${
                           isActive
                             ? 'bg-white text-sky-700'
                             : 'bg-rose-500 text-white'
@@ -238,7 +240,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="p-3.5 border-t border-[#15233c]/80 bg-[#070e1b]/80">
           <div className="flex items-center justify-between p-1.5 rounded-xl">
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white/10 shrink-0">
+              <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white/10 shrink-0 transition-transform duration-200 hover:scale-105">
                 {user?.initials || 'AS'}
               </div>
               <div className="min-w-0">
@@ -253,7 +255,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
             <button
               onClick={handleLogout}
-              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0"
+              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 rounded-lg transition-all duration-150 active:scale-90 cursor-pointer shrink-0"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />

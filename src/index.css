@@ -40,11 +40,16 @@
   background: #94a3b8;
 }
 
-/* Subtle, professional page transition (180ms) for smooth navigation */
+/* ========================================================
+   GLOBAL MOTION SYSTEM & KEYFRAME ANIMATIONS
+   Optimized for 60 FPS, hardware accelerated via transform & opacity
+   ======================================================== */
+
+/* Page View Transition (subtle 200ms lift & fade) */
 @keyframes pageFadeIn {
   from {
     opacity: 0;
-    transform: translateY(2px);
+    transform: translateY(3px);
   }
   to {
     opacity: 1;
@@ -53,8 +58,147 @@
 }
 
 .animate-page-fade {
-  animation: pageFadeIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: pageFadeIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
   will-change: opacity, transform;
+}
+
+/* Modal Animations */
+@keyframes modalBackdropFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalContentIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-backdrop {
+  animation: modalBackdropFade 180ms ease-out both;
+  will-change: opacity;
+}
+
+.animate-modal-content {
+  animation: modalContentIn 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+/* Dropdowns & Popovers (Header search, notifications, profile) */
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-dropdown {
+  animation: dropdownSlideIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top right;
+  will-change: opacity, transform;
+}
+
+.animate-dropdown-left {
+  animation: dropdownSlideIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top left;
+  will-change: opacity, transform;
+}
+
+/* Toast Notifications */
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-toast {
+  animation: toastSlideIn 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+/* Chat Assistant Panel & Messages */
+@keyframes chatPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-chat-panel {
+  animation: chatPanelIn 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: bottom right;
+  will-change: opacity, transform;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-message-in {
+  animation: messageSlideIn 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
+}
+
+/* Subtle Bar Fill on Mount */
+@keyframes barFillAnimation {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+.animate-bar-fill {
+  animation: barFillAnimation 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform;
+}
+
+/* Reusable Micro-Interaction Utility Classes */
+.btn-press {
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 150ms ease-out;
+}
+.btn-press:active {
+  transform: scale(0.98);
+}
+
+.card-interactive {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms ease-out;
+}
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.08);
 }
 
 /* Hide scrollbar utility */
@@ -66,4 +210,27 @@
   scrollbar-width: none;
 }
 
-
+/* Accessibility: Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-page-fade,
+  .animate-modal-content,
+  .animate-modal-backdrop,
+  .animate-dropdown,
+  .animate-dropdown-left,
+  .animate-toast,
+  .animate-chat-panel,
+  .animate-message-in,
+  .animate-bar-fill,
+  .card-interactive {
+    animation: none !important;
+    transform: none !important;
+  }
+}

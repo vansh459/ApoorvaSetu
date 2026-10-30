@@ -61,7 +61,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
           type="submit"
           disabled={!text.trim() || disabled}
           aria-label="Send message"
-          className="shrink-0 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:hover:bg-blue-600 text-white flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed shadow-2xs"
+          className="shrink-0 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-90 disabled:opacity-30 disabled:hover:bg-blue-600 disabled:active:scale-100 text-white flex items-center justify-center transition-all duration-150 cursor-pointer disabled:cursor-not-allowed shadow-2xs"
         >
           <ArrowUp className="w-4 h-4 stroke-[2.5]" />
         </button>

@@ -58,21 +58,21 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl border ${styles.cardBg} p-4 sm:p-5 shadow-2xs transition-all duration-150 ${
-        onClick ? 'cursor-pointer hover:shadow-xs' : ''
+      className={`rounded-2xl border ${styles.cardBg} p-4 sm:p-5 shadow-2xs transition-all duration-200 ease-out group ${
+        onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.99]' : ''
       }`}
     >
       <div className="flex items-start justify-between gap-2.5">
         {/* Left: Icon */}
         <div
-          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${styles.iconBg}`}
+          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110 ${styles.iconBg}`}
         >
           <Icon className="w-4.5 h-4.5 stroke-[2]" />
         </div>
 
         {/* Center: Title & Large Value */}
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-medium text-slate-600 truncate">
+          <div className="text-xs font-medium text-slate-600 truncate transition-colors duration-150 group-hover:text-slate-800">
             {title}
           </div>
           <div className="text-2xl sm:text-[26px] font-bold text-slate-900 mt-0.5 tracking-tight leading-tight">
@@ -85,7 +85,7 @@ export const StatCard: React.FC<StatCardProps> = ({
           <svg
             viewBox="0 0 56 20"
             fill="none"
-            className="w-12 sm:w-14 h-5 overflow-hidden"
+            className="w-12 sm:w-14 h-5 overflow-hidden transition-transform duration-200 group-hover:scale-105"
           >
             <path
               d={styles.sparklinePath}

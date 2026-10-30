@@ -127,7 +127,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
     <div
       role="dialog"
       aria-label="ApoorvaSetu Assistant"
-      className="fixed bottom-20 right-4 sm:right-6 z-50 w-[92vw] sm:w-[390px] h-[540px] max-h-[80vh] bg-white rounded-2xl shadow-xl border border-slate-200/90 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      className="fixed bottom-20 right-4 sm:right-6 z-50 w-[92vw] sm:w-[390px] h-[540px] max-h-[80vh] bg-white rounded-2xl shadow-xl border border-slate-200/90 flex flex-col overflow-hidden animate-chat-panel"
     >
       {/* Minimal Header */}
       <div className="px-4 py-2.5 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
@@ -141,7 +141,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
           <button
             onClick={handleResetConversation}
             title="New Conversation"
-            className="p-1.5 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 hover:text-slate-700 hover:bg-slate-100 active:scale-90 rounded-lg transition-all duration-150 cursor-pointer"
             aria-label="New conversation"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -149,7 +149,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
           <button
             onClick={onMinimize}
             title="Minimize"
-            className="p-1.5 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 hover:text-slate-700 hover:bg-slate-100 active:scale-90 rounded-lg transition-all duration-150 cursor-pointer"
             aria-label="Minimize"
           >
             <Minus className="w-3.5 h-3.5" />
@@ -157,7 +157,7 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
           <button
             onClick={onClose}
             title="Close"
-            className="p-1.5 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 hover:text-slate-700 hover:bg-slate-100 active:scale-90 rounded-lg transition-all duration-150 cursor-pointer"
             aria-label="Close"
           >
             <X className="w-3.5 h-3.5" />

@@ -54,9 +54,9 @@ export const Reports: React.FC = () => {
 
       {/* Top 3 Quick Report Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs card-interactive flex flex-col justify-between group">
           <div>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-110">
               <FileSpreadsheet className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold text-slate-800">Applications Master Dataset</h3>
@@ -66,16 +66,16 @@ export const Reports: React.FC = () => {
           </div>
           <button
             onClick={() => setActiveModal('generate-report')}
-            className="mt-4 w-full py-2 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+            className="mt-4 w-full py-2 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 active:scale-95 transition-all duration-150 flex items-center justify-center space-x-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Generate CSV</span>
           </button>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs card-interactive flex flex-col justify-between group">
           <div>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-110">
               <CheckCircle2 className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold text-slate-800">Compliance & Lease Validity Audit</h3>
@@ -85,16 +85,16 @@ export const Reports: React.FC = () => {
           </div>
           <button
             onClick={() => setActiveModal('generate-report')}
-            className="mt-4 w-full py-2 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+            className="mt-4 w-full py-2 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 active:scale-95 transition-all duration-150 flex items-center justify-center space-x-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Generate CSV</span>
           </button>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs card-interactive flex flex-col justify-between group">
           <div>
-            <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+            <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-110">
               <Calendar className="w-4 h-4" />
             </div>
             <h3 className="text-sm font-bold text-slate-800">EVC Inspection Clearance Summary</h3>
@@ -104,7 +104,7 @@ export const Reports: React.FC = () => {
           </div>
           <button
             onClick={() => setActiveModal('generate-report')}
-            className="mt-4 w-full py-2 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+            className="mt-4 w-full py-2 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 active:scale-95 transition-all duration-150 flex items-center justify-center space-x-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Generate CSV</span>

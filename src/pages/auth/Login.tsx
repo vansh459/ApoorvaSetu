@@ -350,7 +350,7 @@ export const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2.5 px-4 rounded-lg font-semibold text-sm text-white bg-[#1976d2] hover:bg-[#1565c0] active:bg-[#0d47a1] focus:outline-hidden focus:ring-2 focus:ring-blue-500/40 shadow-xs hover:shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 mt-1"
+                className="w-full py-2.5 px-4 rounded-lg font-semibold text-sm text-white bg-[#1976d2] hover:bg-[#1565c0] active:scale-[0.98] focus:outline-hidden focus:ring-2 focus:ring-blue-500/40 shadow-xs hover:shadow-md transition-all duration-150 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 mt-1"
               >
                 {isLoading ? (
                   <>
@@ -385,11 +385,11 @@ export const Login: React.FC = () => {
 
       {/* Demo Credentials Drawer / Popover for Evaluators */}
       {isDemoHelperOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-modal-backdrop">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative animate-modal-content">
             <button
               onClick={() => setIsDemoHelperOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer"
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer active:scale-90 transition-all"
             >
               <X className="w-5 h-5" />
             </button>
@@ -458,14 +458,14 @@ export const Login: React.FC = () => {
 
       {/* Forgot Password Modal */}
       {isForgotModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-modal-backdrop">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-2xl relative animate-modal-content">
             <button
               onClick={() => {
                 setIsForgotModalOpen(false);
                 setForgotSubmitted(false);
               }}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer"
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer active:scale-90 transition-all"
             >
               <X className="w-5 h-5" />
             </button>

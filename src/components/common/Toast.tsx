@@ -30,7 +30,7 @@ export const ToastContainer: React.FC = () => {
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-start space-x-3 p-3.5 rounded-xl border shadow-xl backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${bgClasses}`}
+            className={`pointer-events-auto flex items-start space-x-3 p-3.5 rounded-xl border shadow-xl backdrop-blur-md transition-all duration-200 animate-toast ${bgClasses}`}
           >
             <Icon className="w-5 h-5 shrink-0 mt-0.5" />
             <div className="flex-1 text-xs font-medium leading-relaxed">

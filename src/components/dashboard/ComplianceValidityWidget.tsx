@@ -65,7 +65,7 @@ export const ComplianceValidityWidget: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/compliance')}
-          className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer whitespace-nowrap shrink-0 ml-2"
+          className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer whitespace-nowrap shrink-0 ml-2 active:scale-95 transition-transform duration-100"
         >
           View All
         </button>
@@ -79,11 +79,11 @@ export const ComplianceValidityWidget: React.FC = () => {
             <div
               key={item.label}
               onClick={() => navigate('/compliance')}
-              className="flex items-center justify-between p-1 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors group min-w-0"
+              className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-all duration-150 active:scale-[0.99] group min-w-0"
             >
               <div className="flex items-center space-x-2.5 min-w-0 mr-2 flex-1">
                 <div
-                  className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${item.iconBg} ${item.iconColor}`}
+                  className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-110 ${item.iconBg} ${item.iconColor}`}
                 >
                   <Icon className="w-4 h-4" />
                 </div>

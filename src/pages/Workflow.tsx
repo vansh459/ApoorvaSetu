@@ -124,10 +124,10 @@ export const Workflow: React.FC = () => {
               <div
                 key={stage.id}
                 onClick={() => setActiveStageFilter(stage.id)}
-                className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 active:scale-[0.98] ${
                   isSelected
-                    ? 'border-blue-600 bg-blue-50/50 shadow-md ring-2 ring-blue-100'
-                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                    ? 'border-blue-600 bg-blue-50/50 shadow-md ring-2 ring-blue-100 -translate-y-0.5'
+                    : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50/90 hover:-translate-y-0.5'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">

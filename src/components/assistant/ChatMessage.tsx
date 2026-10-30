@@ -64,7 +64,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onActionClick
   };
 
   return (
-    <div className={`flex w-full my-2.5 ${isAssistant ? 'justify-start' : 'justify-end'}`}>
+    <div className={`flex w-full my-2.5 animate-message-in ${isAssistant ? 'justify-start' : 'justify-end'}`}>
       <div
         className={`max-w-[85%] px-3.5 py-2.5 text-xs transition-all ${
           isAssistant
@@ -87,10 +87,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onActionClick
                 key={idx}
                 type="button"
                 onClick={() => handleActionNavigate(link.path)}
-                className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-200 text-[11px] font-medium transition-colors cursor-pointer shadow-2xs group"
+                className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-200 active:scale-95 text-[11px] font-medium transition-all duration-150 cursor-pointer shadow-2xs group"
               >
                 <span>{link.label}</span>
-                <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform duration-150" />
               </button>
             ))}
           </div>

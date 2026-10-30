@@ -138,7 +138,7 @@ export const Compliance: React.FC = () => {
                 </tr>
               ) : (
                 filteredRecords.map((rec: ComplianceRecord) => (
-                  <tr key={rec.id} className="hover:bg-slate-50/70 transition-colors">
+                  <tr key={rec.id} className="hover:bg-blue-50/40 transition-colors duration-150">
                     <td className="py-3 px-4 font-bold text-blue-600">{rec.id}</td>
                     <td className="py-3 px-4 font-semibold text-slate-800 max-w-xs">
                       {rec.title}
@@ -155,7 +155,7 @@ export const Compliance: React.FC = () => {
                       {rec.status !== 'Verified' ? (
                         <button
                           onClick={() => verifyCompliance(rec.id)}
-                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg text-xs font-bold shadow-xs transition-all duration-150 cursor-pointer"
                         >
                           Verify & Clear
                         </button>

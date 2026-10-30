@@ -51,7 +51,7 @@ export const RecentApplicationsTable: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/applications')}
-          className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer whitespace-nowrap"
+          className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer whitespace-nowrap active:scale-95 transition-transform duration-100"
         >
           View All
         </button>
@@ -76,9 +76,9 @@ export const RecentApplicationsTable: React.FC = () => {
               <tr
                 key={app.id}
                 onClick={() => navigate('/applications')}
-                className="hover:bg-slate-50/70 cursor-pointer transition-colors group whitespace-nowrap"
+                className="hover:bg-blue-50/40 cursor-pointer transition-colors duration-150 group whitespace-nowrap"
               >
-                <td className="py-3 pr-3 text-slate-700 font-medium">
+                <td className="py-3 pr-3 text-slate-700 font-medium group-hover:text-blue-600 transition-colors duration-150">
                   {app.id}
                 </td>
                 <td className="py-3 pr-3 text-slate-900 font-semibold">

@@ -16,7 +16,7 @@ export const AIHelpdeskButton: React.FC<AIHelpdeskButtonProps> = ({
     <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 flex items-center">
       {/* Tooltip on hover */}
       {!isOpen && isHovered && (
-        <div className="mr-3 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-xl border border-slate-700/80 animate-in fade-in slide-in-from-right-2 duration-150 whitespace-nowrap hidden sm:flex items-center space-x-1.5">
+        <div className="mr-3 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-xl border border-slate-700/80 animate-dropdown whitespace-nowrap hidden sm:flex items-center space-x-1.5 pointer-events-none">
           <Sparkles className="w-3.5 h-3.5 text-teal-400" />
           <span>Ask ApoorvaSetu Assistant</span>
         </div>

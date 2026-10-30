@@ -32,9 +32,9 @@ export const BottomInfoCards: React.FC = () => {
         return (
           <div
             key={card.title}
-            className="bg-white rounded-2xl border border-slate-200/80 p-4 flex items-center space-x-3.5 shadow-xs"
+            className="bg-white rounded-2xl border border-slate-200/80 p-4 flex items-center space-x-3.5 shadow-xs card-interactive group"
           >
-            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 transition-transform duration-200 group-hover:scale-110">
               <Icon className="w-5 h-5 stroke-[2]" />
             </div>
             <div className="min-w-0">
