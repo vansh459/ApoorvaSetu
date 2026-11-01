@@ -1,4 +1,4 @@
-import type { SlaTier } from '../types';
+import type { SlaTier } from '../types/index.ts';
 
 const MONTHS: Record<string, number> = {
   jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,

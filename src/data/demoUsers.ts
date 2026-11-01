@@ -1,5 +1,5 @@
-import type { AuditLog, SystemConfig, User } from '../types';
-import { ROLE_DEFAULT_PERMISSIONS } from '../services/rbacService';
+import type { AuditLog, SystemConfig, User } from '../types/index.ts';
+import { ROLE_DEFAULT_PERMISSIONS } from '../services/rbacService.ts';
 
 // Standard demo password across all seeded accounts
 export const DEMO_PASSWORD = 'Apoorva@2026';

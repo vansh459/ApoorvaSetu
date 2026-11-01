@@ -1,0 +1,37 @@
+name: apoorvasetu
+
+services:
+  app:
+    build:
+      args:
+        VITE_DATA_MODE: postgres
+    environment:
+      DATABASE_URL: postgresql://apoorvasetu:apoorvasetu@db:5432/apoorvasetu?schema=public
+      DIRECT_URL: postgresql://apoorvasetu:apoorvasetu@db:5432/apoorvasetu?schema=public
+      SEED_ON_START: "1"
+      STORAGE_DRIVER: local
+      UPLOAD_DIR: /app/data/uploads
+    volumes:
+      - apoorvasetu_uploads:/app/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: apoorvasetu
+      POSTGRES_PASSWORD: apoorvasetu
+      POSTGRES_DB: apoorvasetu
+    volumes:
+      - apoorvasetu_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apoorvasetu -d apoorvasetu"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  apoorvasetu_postgres:
+  apoorvasetu_uploads:

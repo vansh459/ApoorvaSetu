@@ -1,4 +1,4 @@
-import {
+import type {
   Application,
   ApplicationTimelineEvent,
   Institute,
@@ -8,8 +8,8 @@ import {
   NotificationItem,
   RegionalOffice,
   Undertaking
-} from '../types';
-import { formatDisplayDate, toIsoDate } from '../utils/dates';
+} from '../types/index.ts';
+import { formatDisplayDate, toIsoDate } from '../utils/dates.ts';
 
 const SEED_DAY_MS = 24 * 60 * 60 * 1000;
 const seedToday = new Date();

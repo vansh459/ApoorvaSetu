@@ -1,4 +1,4 @@
-import {
+import type {
   User,
   UserRole,
   Permission,
@@ -10,7 +10,7 @@ import {
   NotificationItem,
   SystemAlert,
   Undertaking
-} from '../types';
+} from '../types/index.ts';
 
 export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
   SUPER_ADMIN: [

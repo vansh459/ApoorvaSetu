@@ -1,0 +1,373 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Application {
+  id                String   @id
+  instituteId       String
+  instituteName     String
+  type              String
+  region            String
+  state             String
+  stage             String
+  status            String
+  lastUpdated       String
+  appliedDate       String
+  category          String
+  intakeProposed    Int
+  programs          String[] @default([])
+  contactEmail      String
+  contactPhone      String
+  timeline          Json
+  documents         Json
+  remarks           String?
+  routeId           String?
+  stageEnteredAt    String?
+  stageDueAt        String?
+  slaTier           String?
+  assignedOfficerId String?
+  deficiencies      Json?
+  returns           Json?
+  decision          Json?
+  caseSummary       String?
+  evcVisitId        String?
+  version           Int      @default(1)
+  lastActionBy      String?
+
+  @@index([region])
+  @@index([stage])
+  @@index([status])
+  @@index([instituteId])
+  @@map("applications")
+}
+
+model Institute {
+  id                      String @id
+  code                    String
+  name                    String
+  region                  String
+  state                   String
+  city                    String
+  category                String
+  establishedYear         Int
+  principalName           String
+  email                   String
+  phone                   String
+  address                 String
+  status                  String
+  approvedSeats           Int
+  accreditedPrograms      Int
+  complianceScore         Int
+  activeApplicationsCount Int
+
+  @@index([region])
+  @@index([status])
+  @@map("institutes")
+}
+
+model EVCVisit {
+  id                String   @id
+  applicationId     String?
+  instituteId       String
+  instituteName     String
+  stateRegion       String
+  region            String
+  date              String
+  displayDate       Json
+  status            String
+  assignedCommittee String
+  committeeMembers  String[] @default([])
+  mode              String
+  reportSubmitted   Boolean?
+  scheduledAt       String?
+  reportDueAt       String?
+  reportSubmittedAt String?
+  slaTier           String?
+  escalationLevel   Int?
+  report            Json?
+  checklist         Json?
+  evidenceFiles     String[] @default([])
+
+  @@index([applicationId])
+  @@index([instituteId])
+  @@index([region])
+  @@index([status])
+  @@map("evc_visits")
+}
+
+model ComplianceRecord {
+  id              String  @id
+  title           String
+  category        String
+  instituteName   String
+  instituteId     String
+  region          String
+  status          String
+  dueDate         String
+  submissionDate  String?
+  documentRef     String?
+  urgency         String
+  undertakingId   String?
+  verifiedAt      String?
+  verifiedBy      String?
+  escalationLevel Int?
+
+  @@index([instituteId])
+  @@index([region])
+  @@index([status])
+  @@index([dueDate])
+  @@map("compliance_records")
+}
+
+model DocumentItem {
+  id               String  @id
+  title            String
+  category         String
+  instituteName    String
+  instituteId      String
+  region           String
+  uploadDate       String
+  expiryDate       String
+  status           String
+  fileSize         String
+  fileType         String
+  documentTypeCode String?
+  renewalOfId      String?
+  renewalStatus    String?
+  renewalNote      String?
+  verifiedBy       String?
+  storagePath      String?
+  expiryTier       String?
+
+  @@index([instituteId])
+  @@index([region])
+  @@index([status])
+  @@index([expiryDate])
+  @@map("document_items")
+}
+
+model Undertaking {
+  id                  String   @id
+  applicationId       String
+  instituteId         String
+  instituteName       String
+  region              String
+  conditionCode       String
+  title               String
+  dueDate             String
+  evidenceDocumentIds String[] @default([])
+  submittedAt         String?
+  submittedBy         String?
+  verifiedAt          String?
+  verifiedBy          String?
+  rejectionReason     String?
+  status              String
+  escalationLevel     Int      @default(0)
+
+  @@index([applicationId])
+  @@index([instituteId])
+  @@index([region])
+  @@index([status])
+  @@index([dueDate])
+  @@map("undertakings")
+}
+
+model NotificationItem {
+  id                String  @id
+  title             String
+  description       String
+  category          String
+  timestamp         String
+  read              Boolean @default(false)
+  priority          String
+  link              String?
+  targetRole        String?
+  targetRegion      String?
+  targetInstituteId String?
+  targetUserId      String?
+  dedupeKey         String?
+  eventType         String?
+
+  @@index([dedupeKey])
+  @@index([targetRole])
+  @@index([targetUserId])
+  @@index([targetRegion])
+  @@index([targetInstituteId])
+  @@map("notification_items")
+}
+
+model SystemAlert {
+  id          String   @id
+  rule        String
+  entityType  String
+  entityId    String
+  tier        String
+  severity    String
+  dedupeKey   String   @unique
+  createdAt   String
+  status      String
+  title       String
+  description String
+  link        String?
+  region      String?
+  instituteId String?
+  targetRoles String[] @default([])
+
+  @@index([status])
+  @@index([region])
+  @@index([entityType, entityId])
+  @@map("system_alerts")
+}
+
+model EscalationItem {
+  id             String  @id
+  applicationId  String
+  instituteName  String
+  region         String
+  raisedBy       String
+  raisedDate     String
+  urgency        String
+  reason         String
+  status         String
+  level          Int?
+  slaBreachDays  Int?
+  dedupeKey      String?
+  entityType     String?
+  entityId       String?
+  acknowledgedBy String?
+  acknowledgedAt String?
+  resolvedAt     String?
+
+  @@index([applicationId])
+  @@index([dedupeKey])
+  @@index([region])
+  @@index([status])
+  @@map("escalation_items")
+}
+
+model AuditLog {
+  id            String  @id
+  timestamp     String
+  userId        String
+  userName      String
+  userRole      String
+  action        String
+  entityType    String
+  entityId      String
+  details       String
+  previousState String?
+  newState      String?
+  ipAddress     String
+  eventType     String?
+  correlationId String?
+  source        String?
+
+  @@index([timestamp])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model SystemConfig {
+  id                       String   @id @default("default")
+  maintenanceMode          Boolean  @default(false)
+  academicYear             String
+  approvalCycleEndDate     String
+  evcMinMembers            Int
+  autoEscalationDays       Int
+  notificationEmailAlerts  Boolean  @default(true)
+  requireTwoFactorForAdmin Boolean  @default(false)
+  maxUploadSizeMB          Int
+  stageSlas                Json?
+  escalationMatrix         Json?
+  notificationRules        Json?
+  documentWarningDays      Int[]    @default([])
+  undertakingWarningDays   Int[]    @default([])
+  businessDaysOnly         Boolean?
+
+  @@map("system_config")
+}
+
+model RolePermission {
+  role        String   @id
+  permissions String[] @default([])
+
+  @@map("role_permissions")
+}
+
+model User {
+  id            String    @id
+  email         String    @unique
+  name          String
+  role          String
+  roleTitle     String
+  permissions   String[]  @default([])
+  avatar        String?
+  initials      String
+  phone         String?
+  designation   String?
+  region        String?
+  instituteId   String?
+  instituteName String?
+  committeeName String?
+  isActive      Boolean   @default(true)
+  createdAt     String
+  lastLogin     String?
+  passwordHash  String
+  sessions      Session[]
+
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model Session {
+  id         String    @id @default(uuid())
+  tokenHash  String    @unique
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  rememberMe Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime  @default(now())
+  revokedAt  DateTime?
+  ip         String?
+  userAgent  String?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model AssistantMessage {
+  id          String  @id
+  userId      String
+  role        String
+  content     String
+  timestamp   String
+  currentPath String?
+
+  @@index([userId])
+  @@map("assistant_messages")
+}
+
+model FileObject {
+  key         String   @id
+  bucket      String
+  contentType String
+  size        Int
+  uploaderId  String?
+  documentId  String?
+  createdAt   DateTime @default(now())
+
+  @@index([uploaderId])
+  @@index([documentId])
+  @@map("file_objects")
+}
