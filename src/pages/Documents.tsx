@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
+  ScanLine,
   Upload,
   Search,
   FileText,
@@ -409,15 +411,24 @@ export const Documents: React.FC = () => {
           </p>
         </div>
 
-        {canUpload && (
-          <button
-            onClick={openUpload}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors self-start sm:self-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <Link
+            to="/documents/verification"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-xs transition-colors"
           >
-            <Upload className="w-4 h-4" />
-            <span>Upload verification dossier</span>
-          </button>
-        )}
+            <ScanLine className="w-4 h-4" />
+            <span>AI verification</span>
+          </Link>
+          {canUpload && (
+            <button
+              onClick={openUpload}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Upload verification dossier</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

@@ -4,6 +4,7 @@ import type {
   AuditLog,
   ComplianceRecord,
   DocumentItem,
+  DocumentVerificationReport,
   EscalationItem,
   EVCVisit,
   Institute,
@@ -21,13 +22,14 @@ class SupabaseRepository implements Repository {
   async loadRemote(): Promise<RepositorySnapshot | null> {
     if (!isSupabaseConfigured) return null;
 
-    const [applications, institutes, evcVisits, complianceRecords, documents, notifications, undertakings, alerts, escalations, config] =
+    const [applications, institutes, evcVisits, complianceRecords, documents, documentVerifications, notifications, undertakings, alerts, escalations, config] =
       await Promise.all([
         this.fetchApplications(),
         this.fetchInstitutes(),
         this.fetchEVCVisits(),
         this.fetchComplianceRecords(),
         this.fetchDocuments(),
+        this.fetchDocumentVerifications(),
         this.fetchNotifications(),
         this.fetchUndertakings(),
         this.fetchAlerts(),
@@ -41,6 +43,7 @@ class SupabaseRepository implements Repository {
       evcVisits: evcVisits ?? undefined,
       complianceRecords: complianceRecords ?? undefined,
       documents: documents ?? undefined,
+      documentVerifications: documentVerifications ?? undefined,
       notifications: notifications ?? undefined,
       undertakings: undertakings ?? undefined,
       alerts: alerts ?? undefined,
@@ -313,6 +316,57 @@ class SupabaseRepository implements Repository {
         renewal_note: document.renewalNote,
         verified_by: document.verifiedBy,
         storage_path: document.storagePath
+      });
+      return !error;
+    } catch {
+      return false;
+    }
+  }
+
+  private async fetchDocumentVerifications(): Promise<DocumentVerificationReport[] | null> {
+    try {
+      const { data, error } = await supabase
+        .from('document_verifications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error || !data) return null;
+      return data.map((row: any) => row.report as DocumentVerificationReport).filter(Boolean);
+    } catch {
+      return null;
+    }
+  }
+
+  async upsertDocumentVerification(report: DocumentVerificationReport): Promise<boolean> {
+    if (!isSupabaseConfigured) return false;
+    try {
+      const { error } = await supabase.from('document_verifications').upsert({
+        id: report.id,
+        application_id: report.applicationId,
+        document_id: report.documentId ?? null,
+        institute_id: report.instituteId,
+        institute_name: report.instituteName,
+        region: report.region,
+        document_type_code: report.documentTypeCode,
+        file_name: report.fileName,
+        file_type: report.fileType,
+        file_size: report.fileSize,
+        file_hash: report.fileHash,
+        storage_path: report.storagePath ?? null,
+        extraction_method: report.extraction.method,
+        extracted_fields: report.extraction.fields,
+        checklist: report.checklist,
+        issues: report.issues,
+        ai_summary: report.aiSummary ?? null,
+        disclaimer: report.disclaimer,
+        status: report.status,
+        decision: report.decision ?? null,
+        report,
+        created_by: report.createdBy,
+        created_by_user_id: report.createdByUserId,
+        created_at: report.createdAt,
+        reviewed_by: report.decision?.byUserId ?? null,
+        reviewed_by_name: report.decision?.by ?? null,
+        reviewed_at: report.decision?.at ?? null
       });
       return !error;
     } catch {

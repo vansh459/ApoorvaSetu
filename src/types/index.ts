@@ -434,3 +434,110 @@ export interface EscalationItem {
   acknowledgedAt?: string;
   resolvedAt?: string;
 }
+
+export type VerificationConfidence = 'high' | 'medium' | 'low';
+
+export interface VerificationField {
+  value: string | null;
+  confidence: VerificationConfidence;
+  evidence?: string;
+}
+
+export interface DocumentExtractionFields {
+  institutionName: VerificationField;
+  documentType: VerificationField;
+  registrationNumber: VerificationField;
+  issueDate: VerificationField;
+  expiryDate: VerificationField;
+  issuingAuthority: VerificationField;
+}
+
+export type DocumentExtractionMethod = 'text' | 'ocr' | 'hybrid';
+
+export interface DocumentExtraction {
+  method: DocumentExtractionMethod;
+  pageCount: number;
+  textPreview: string;
+  fields: DocumentExtractionFields;
+  warnings: string[];
+}
+
+export type DocumentVerificationIssueSeverity = 'info' | 'warning' | 'critical';
+
+export type DocumentVerificationIssueCode =
+  | 'MISSING_FIELD'
+  | 'LOW_CONFIDENCE'
+  | 'EXPIRED'
+  | 'EXPIRING_SOON'
+  | 'INSTITUTION_MISMATCH'
+  | 'DOCUMENT_TYPE_MISMATCH'
+  | 'DATE_ORDER_INVALID'
+  | 'VALIDITY_MISMATCH'
+  | 'DUPLICATE_FILE'
+  | 'CHECKLIST_MISSING'
+  | 'CHECKLIST_EXPIRED'
+  | 'CHECKLIST_REJECTED';
+
+export interface DocumentVerificationIssue {
+  code: DocumentVerificationIssueCode;
+  severity: DocumentVerificationIssueSeverity;
+  message: string;
+  field?: string;
+  documentId?: string;
+}
+
+export type DocumentChecklistRowStatus =
+  | 'Present'
+  | 'Pending Verification'
+  | 'Missing'
+  | 'Expired'
+  | 'Rejected';
+
+export interface DocumentChecklistRow {
+  code: string;
+  label: string;
+  mandatory: boolean;
+  status: DocumentChecklistRowStatus;
+  evidenceDocumentIds: string[];
+}
+
+export interface DocumentAISummary {
+  text: string;
+  provider: 'gemini' | 'deterministic';
+  generatedAt: string;
+}
+
+export type DocumentVerificationStatus = 'Pending Review' | 'Accepted' | 'Rejected';
+
+export interface DocumentVerificationDecision {
+  outcome: 'Accepted' | 'Rejected';
+  by: string;
+  byUserId: string;
+  at: string;
+  note: string;
+}
+
+export interface DocumentVerificationReport {
+  id: string;
+  applicationId: string;
+  documentId?: string;
+  instituteId: string;
+  instituteName: string;
+  region: Region;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  fileHash: string;
+  storagePath?: string;
+  documentTypeCode: string;
+  extraction: DocumentExtraction;
+  checklist: DocumentChecklistRow[];
+  issues: DocumentVerificationIssue[];
+  aiSummary?: DocumentAISummary;
+  disclaimer: string;
+  status: DocumentVerificationStatus;
+  decision?: DocumentVerificationDecision;
+  createdAt: string;
+  createdBy: string;
+  createdByUserId: string;
+}

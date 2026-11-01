@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 import dotenv from 'dotenv';
 import { aiService } from './server/aiService.ts';
+import { MAX_VERIFY_BODY_BYTES, verifyDocument } from './server/documentVerifier.ts';
 import {
   MAX_BODY_BYTES,
   checkRateLimit,
@@ -29,7 +30,7 @@ function sendJson(res: any, status: number, payload: unknown, headers: Record<st
   res.end(JSON.stringify(payload));
 }
 
-function readJsonBody(req: any): Promise<BodyResult> {
+function readJsonBody(req: any, limit = MAX_BODY_BYTES): Promise<BodyResult> {
   return new Promise((resolve) => {
     let body = '';
     let size = 0;
@@ -44,7 +45,7 @@ function readJsonBody(req: any): Promise<BodyResult> {
     req.on('data', (chunk: Buffer) => {
       if (settled) return;
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) {
+      if (size > limit) {
         finish({ ok: false, reason: 'too_large' });
         req.resume();
         return;
@@ -140,6 +141,52 @@ function aiAssistantBackendPlugin(): Plugin {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         dotenv.config({ override: true });
+
+        if (req.url?.startsWith('/api/documents/verify')) {
+          const origin = req.headers.origin;
+          const headers = corsHeaders(req);
+
+          if (typeof origin === 'string' && origin.length > 0 && !isOriginAllowed(origin)) {
+            sendJson(res, 403, { error: 'FORBIDDEN_ORIGIN', message: 'This origin is not allowed to verify documents.' }, headers);
+            return;
+          }
+          if (req.method === 'OPTIONS') {
+            for (const [name, value] of Object.entries(headers)) {
+              res.setHeader(name, value);
+            }
+            res.statusCode = 204;
+            res.end();
+            return;
+          }
+          if (req.method !== 'POST') {
+            sendJson(res, 405, { error: 'METHOD_NOT_ALLOWED', message: 'Only POST is supported.' }, headers);
+            return;
+          }
+
+          void readJsonBody(req, MAX_VERIFY_BODY_BYTES)
+            .then(async (parsed) => {
+              if (!parsed.ok) {
+                if (parsed.reason === 'too_large') {
+                  sendJson(res, 413, { error: 'PAYLOAD_TOO_LARGE', message: 'The document exceeds the maximum upload size.' }, headers);
+                } else {
+                  sendJson(res, 400, { error: 'INVALID_JSON', message: 'Request body must be valid JSON.' }, headers);
+                }
+                return;
+              }
+              try {
+                const result = await verifyDocument(parsed.value, req);
+                sendJson(res, result.status, result.payload, headers);
+              } catch (err) {
+                console.error('Vite document verification error:', err);
+                sendJson(res, 500, { error: 'INTERNAL_SERVER_ERROR', message: 'An error occurred while verifying the document.' }, headers);
+              }
+            })
+            .catch((err) => {
+              console.error('Vite document verification error:', err);
+              sendJson(res, 500, { error: 'INTERNAL_SERVER_ERROR', message: 'An error occurred while verifying the document.' }, headers);
+            });
+          return;
+        }
 
         if (req.url?.startsWith('/api/assistant/chat')) {
           const origin = req.headers.origin;

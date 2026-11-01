@@ -22,6 +22,7 @@ import {
   AlertCircle,
   ClipboardCheck,
   UploadCloud,
+  FileSearch,
   UserCircle,
   FilePlus2,
   Compass,
@@ -30,7 +31,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { filterAlertsForUser } from '../../services/rbacService';
+import {
+  filterAlertsForUser,
+  filterDocumentVerificationsForUser
+} from '../../services/rbacService';
 import { UserRole } from '../../types';
 
 interface SidebarProps {
@@ -48,11 +52,14 @@ interface NavItem {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { notifications, alerts } = useApp();
+  const { notifications, alerts, documentVerifications } = useApp();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const openAlertCount = filterAlertsForUser(alerts, user).filter(
     (alert) => alert.status !== 'Resolved'
+  ).length;
+  const pendingVerificationCount = filterDocumentVerificationsForUser(documentVerifications, user).filter(
+    (report) => report.status === 'Pending Review'
   ).length;
 
   // Build role-specific navigation strictly matching prompt specifications
@@ -64,6 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { name: 'User Management', path: '/admin/users', icon: Users },
           { name: 'Role & Permissions', path: '/admin/roles', icon: KeyRound },
           { name: 'Institution Management', path: '/institutes', icon: Building2 },
+          { name: 'AI Document Verification', path: '/documents/verification', icon: FileSearch, badge: pendingVerificationCount },
           { name: 'Regional Management', path: '/regions-officials', icon: MapPin },
           { name: 'System Configuration', path: '/admin/system-config', icon: Sliders },
           { name: 'Audit Logs', path: '/admin/audit-logs', icon: History },
@@ -84,6 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { name: 'EVC Queue', path: '/evc/queue', icon: ClipboardList },
           { name: 'Undertakings & Compliance', path: '/compliance', icon: ShieldCheck },
           { name: 'Documents', path: '/documents', icon: FolderArchive },
+          { name: 'AI Document Verification', path: '/documents/verification', icon: FileSearch, badge: pendingVerificationCount },
           { name: 'Reports & Evidence', path: '/reports', icon: FileBarChart },
           { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
           { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
@@ -95,6 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { name: 'Regional Applications', path: '/applications', icon: Clock3 },
           { name: 'Institutes', path: '/institutes', icon: Building2 },
           { name: 'Document Verification', path: '/documents', icon: FileCheck },
+          { name: 'AI Dossier Check', path: '/documents/verification', icon: FileSearch, badge: pendingVerificationCount },
           { name: 'EVC Coordination', path: '/evc-scheduling', icon: CalendarDays },
           { name: 'EVC Queue', path: '/evc/queue', icon: ClipboardList },
           { name: 'Compliance Monitoring', path: '/compliance', icon: ShieldCheck },
@@ -127,6 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { name: 'Submit New Application', path: '/institution/apply', icon: FilePlus2 },
           { name: 'Application Tracking', path: '/institution/tracking', icon: Compass },
           { name: 'Documents', path: '/documents', icon: FolderArchive },
+          { name: 'AI Document Verification', path: '/documents/verification', icon: FileSearch, badge: pendingVerificationCount },
           { name: 'Undertakings & Compliance', path: '/compliance', icon: ShieldCheck },
           { name: 'EVC Visits', path: '/evc-scheduling', icon: CalendarDays },
           { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },

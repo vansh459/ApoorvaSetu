@@ -16,6 +16,7 @@ import { Workflow } from './pages/Workflow';
 import { EVCScheduling } from './pages/EVCScheduling';
 import { Compliance } from './pages/Compliance';
 import { Documents } from './pages/Documents';
+import { DocumentVerification } from './pages/DocumentVerification';
 import { RegionsOfficials } from './pages/RegionsOfficials';
 import { Reports } from './pages/Reports';
 import { Notifications } from './pages/Notifications';
@@ -222,6 +223,17 @@ export function App() {
                 element={
                   <ProtectedRoute requiredPermission="documents.read">
                     <Documents />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/documents/verification"
+                element={
+                  <ProtectedRoute
+                    requiredPermission="documents.read"
+                    allowedRoles={['SUPER_ADMIN', 'AICTE_ADMIN', 'REGIONAL_OFFICER', 'INSTITUTION_ADMIN']}
+                  >
+                    <DocumentVerification />
                   </ProtectedRoute>
                 }
               />

@@ -42,7 +42,7 @@ COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --chown=node:node package.json ./
 # Only the modules the HTTP server imports. Add new server modules here.
-COPY --chown=node:node server/index.ts server/aiService.ts server/authGuard.ts ./server/
+COPY --chown=node:node server/index.ts server/aiService.ts server/authGuard.ts server/documentVerifier.ts ./server/
 COPY --chown=node:node src/services/aiGuard.ts ./src/services/aiGuard.ts
 COPY --chown=node:node src/data/platformKnowledgeBase.ts ./src/data/platformKnowledgeBase.ts
 

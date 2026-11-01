@@ -3,6 +3,7 @@ import type {
   AuditLog,
   ComplianceRecord,
   DocumentItem,
+  DocumentVerificationReport,
   EscalationItem,
   EVCVisit,
   Institute,
@@ -24,6 +25,7 @@ export const LOCAL_KEYS = {
   evcVisits: `${STORAGE_PREFIX}_evc`,
   complianceRecords: `${STORAGE_PREFIX}_compliance`,
   documents: `${STORAGE_PREFIX}_docs`,
+  documentVerifications: `${STORAGE_PREFIX}_verify`,
   notifications: `${STORAGE_PREFIX}_notifs`,
   undertakings: `${STORAGE_PREFIX}_undertakings`,
   alerts: `${STORAGE_PREFIX}_alerts`,
@@ -112,6 +114,10 @@ class LocalRepository implements Repository {
   }
 
   async upsertDocument(_document: DocumentItem): Promise<boolean> {
+    return true;
+  }
+
+  async upsertDocumentVerification(_report: DocumentVerificationReport): Promise<boolean> {
     return true;
   }
 

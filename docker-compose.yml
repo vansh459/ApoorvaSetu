@@ -27,3 +27,34 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3001"
+      # Inside the compose network the extractor is reachable by service name.
+      DOC_VERIFIER_URL: http://doc-verifier:8090
+      DOC_VERIFIER_TOKEN: ${DOC_VERIFIER_TOKEN:-}
+      DOC_MAX_BYTES: ${DOC_MAX_BYTES:-8388608}
+
+    depends_on:
+      doc-verifier:
+        condition: service_healthy
+
+  doc-verifier:
+    build:
+      context: ./services/doc-verifier
+      dockerfile: Dockerfile
+
+    image: apoorvasetu-doc-verifier:local
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 5s
+
+    ports:
+      - "${DOC_VERIFIER_PORT:-8090}:8090"
+
+    env_file:
+      - path: .env
+        required: false
+
+    environment:
+      DOC_MAX_BYTES: ${DOC_MAX_BYTES:-8388608}
+      DOC_MAX_PAGES: ${DOC_MAX_PAGES:-25}
+      DOC_VERIFIER_TOKEN: ${DOC_VERIFIER_TOKEN:-}
+      TESSERACT_LANG: ${TESSERACT_LANG:-eng}

@@ -119,6 +119,40 @@ CREATE TABLE IF NOT EXISTS documents (
 );
 
 -- ------------------------------------------------------------------------------
+-- 5b. AI-ASSISTED DOCUMENT VERIFICATION (advisory only)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS document_verifications (
+    id TEXT PRIMARY KEY,
+    application_id TEXT NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+    document_id TEXT REFERENCES documents(id) ON DELETE SET NULL,
+    institute_id TEXT NOT NULL REFERENCES institutes(id) ON DELETE CASCADE,
+    institute_name TEXT NOT NULL,
+    region TEXT NOT NULL,
+    document_type_code TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    file_type TEXT NOT NULL DEFAULT 'application/pdf',
+    file_size BIGINT NOT NULL DEFAULT 0,
+    file_hash TEXT NOT NULL,
+    storage_path TEXT,
+    extraction_method TEXT NOT NULL,
+    extracted_fields JSONB NOT NULL DEFAULT '{}'::jsonb,
+    checklist JSONB NOT NULL DEFAULT '[]'::jsonb,
+    issues JSONB NOT NULL DEFAULT '[]'::jsonb,
+    ai_summary JSONB,
+    disclaimer TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Pending Review'
+        CHECK (status IN ('Pending Review', 'Accepted', 'Rejected')),
+    decision JSONB,
+    report JSONB NOT NULL,
+    created_by TEXT NOT NULL,
+    created_by_user_id TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reviewed_by TEXT,
+    reviewed_by_name TEXT,
+    reviewed_at TIMESTAMPTZ
+);
+
+-- ------------------------------------------------------------------------------
 -- 6. NOTIFICATIONS TABLE
 -- ------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS notifications (
@@ -193,6 +227,7 @@ ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE evc_visits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE compliance_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE document_verifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE regional_offices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;

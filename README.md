@@ -28,25 +28,36 @@ records and documents — no backend required.
 
 ### Run with Docker
 
-One container serves the built SPA, the Express back end and the assistant APIs on a single
-origin. Demo mode needs no `.env` and no database.
+Two containers run the production-style stack:
+
+| Service | Port | Purpose |
+|---|---|---|
+| `app` | 8080 → 3001 | Built SPA, Express back end, assistant API and document-verification proxy |
+| `doc-verifier` | 8090 | Python FastAPI extractor with PyMuPDF and Tesseract OCR |
+
+Demo mode needs no `.env` and no database.
 
 ```bash
 docker compose up --build -d   # http://localhost:8080
-docker compose ps              # health status
-docker compose logs -f app
+docker compose ps              # both services should report healthy
+docker compose logs -f app doc-verifier
 docker compose down
 ```
 
-- **First build** takes a few minutes (dependencies install inside the image); later builds are
-  much faster.
-- **AI assistant**: copy `.env.example` to `.env` and set `GEMINI_API_KEY`, then
-  `docker compose up -d --force-recreate`. Runtime env changes do not need a rebuild.
+- **First build** takes a few minutes (npm and pip dependencies install inside the images); later
+  builds are much faster.
+- **Document verification** works out of the box: the app container calls
+  `http://doc-verifier:8090` on the compose network. The extractor port is also published for
+  debugging, e.g. `curl http://localhost:8090/health`.
+- **AI assistant and extraction advisory**: copy `.env.example` to `.env` and set
+  `GEMINI_API_KEY`, then `docker compose up -d --force-recreate`. Runtime env changes do not need
+  a rebuild.
 - **Supabase mode**: `VITE_DATA_MODE`, `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are
   inlined at build time — change them in `.env`, then `docker compose up -d --build`.
 - **Rebuild rules**: source or `package-lock.json` changes need `--build`; runtime env changes
   need `--force-recreate`.
-- **Port**: publish on another port with `APP_PORT=8090 docker compose up -d --build`.
+- **Ports**: publish the app elsewhere with `APP_PORT=8081 docker compose up -d --build`; change
+  the extractor port with `DOC_VERIFIER_PORT=8091` (the app still reaches it by service name).
 - **Not included**: the hourly deadline sweep (`api/cron/sweep.ts`, Vercel only) and hot reload
   (use `npm run dev` on the host for that).
 
@@ -92,9 +103,12 @@ Environment variables:
 VITE_DATA_MODE=demo                    # or supabase
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
-GEMINI_API_KEY=...                     # AI assistant (server-side only)
+GEMINI_API_KEY=...                     # AI assistant + advisory (server-side only)
 AI_PROVIDER=gemini
 AI_MODEL=gemini-3-flash-preview
+DOC_VERIFIER_URL=http://localhost:8090 # Python extraction service
+DOC_VERIFIER_TOKEN=                    # optional shared secret
+DOC_MAX_BYTES=8388608                  # maximum PDF size accepted by the Node API
 ```
 
 The repository layer is selected in `src/services/repositories/index.ts`. Demo storage lives under
@@ -130,6 +144,61 @@ Guarantees enforced by `src/workflow/engine.ts`:
 - Regional officers cannot act on another region's cases; version checks reject stale edits.
 - Every transition emits a domain event and an audit entry with before/after state and a shared
   correlation ID.
+
+---
+
+## AI document verification
+
+The verification module is advisory: it never approves, rejects, or moves an application, and it
+does not bypass the existing workflow guards or role permissions.
+
+**Flow:** React page → `POST /api/documents/verify` (Node) → Python `/extract` (PyMuPDF text layer,
+Tesseract OCR fallback) → deterministic checks in `src/workflow/documentVerification.ts` → officer
+review → audit trail.
+
+What the report contains:
+
+- **Extracted fields** — institution name, document type, registration number, issue date, expiry
+  date and issuing authority, each with a confidence level and the evidence snippet.
+- **Missing information** — fields that are absent, unreadable or parsed with low confidence.
+- **Expired or expiring documents** — evaluated against the configured warning windows and the
+  demo clock.
+- **Consistency checks** — expiry before issue, validity drift, institution-name mismatch,
+  document-type mismatch and duplicate file hash.
+- **Checklist comparison** — the required dossier for the application's workflow route, with
+  Present / Pending Verification / Missing / Expired / Rejected statuses.
+- **Optional Gemini narrative** — summarises the extracted facts only; deterministic checks remain
+  authoritative. Without `GEMINI_API_KEY` the deterministic summary is used.
+
+Officers with `documents.verify` can accept or reject the findings with a note. The decision is
+stored in `document_verifications` (Supabase migration
+`20261102090000_document_verification.sql`) and in the audit log; it does not alter the
+application stage, status, or statutory decision.
+
+Endpoints and limits:
+
+| Endpoint | Notes |
+|---|---|
+| `POST /api/documents/verify` | JSON with base64 PDF; max 8 MB by default (`DOC_MAX_BYTES`) |
+| `POST http://localhost:8090/extract` | Raw PDF bytes, optional `X-Verifier-Token` |
+| `GET http://localhost:8090/health` | Extractor capabilities (text layer, OCR) |
+
+The React page is `/documents/verification` (sidebar: **AI Document Verification**), available to
+`SUPER_ADMIN`, `AICTE_ADMIN`, `REGIONAL_OFFICER` and `INSTITUTION_ADMIN` with data scoped by
+region or institution.
+
+### Run the extractor locally
+
+```bash
+cd services/doc-verifier
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+uvicorn main:app --reload --port 8090    # macOS: brew install tesseract first
+```
+
+Then `DOC_VERIFIER_URL=http://localhost:8090 npm run server` (or run `npm run dev`; the Vite
+middleware proxies the same route).
 
 ---
 
@@ -172,6 +241,7 @@ src/
   context/             App and auth providers (useApp / useAuth facades)
   pages/               Role dashboards and workflow screens
   components/          UI, dashboards and modals
+services/doc-verifier/ Python FastAPI PDF text extraction and OCR service
 supabase/              Schema, migrations and RLS tests (production path)
 docs/                  Implementation plan and phase tracking
 ```
@@ -182,14 +252,21 @@ docs/                  Implementation plan and phase tracking
 
 ```bash
 npm run test:run
+
+cd services/doc-verifier
+.venv/bin/python -m pytest -q
 ```
 
 Current suite:
 
 - `src/workflow/routes.test.ts` — route paths and type mapping.
 - `src/workflow/engine.test.ts` — guards, return/resubmit, revert, authority decisions, audit.
+- `src/workflow/documentVerification.test.ts` — checklist comparison, extraction findings,
+  expiry/consistency checks and the advisory report contract.
 - `src/utils/dates.test.ts` — parsing, business days, SLA tiers.
 - `src/services/repositories/localRepository.test.ts` — v3 → v4 migration, audit cap, reset.
+- `services/doc-verifier/tests/` — date parsing, field extraction, PyMuPDF extraction and the
+  `/extract` API contract (OCR/API tests skip when those components are unavailable).
 
 ---
 
@@ -201,8 +278,13 @@ API keys stay server-side.
 
 For a self-hosted deployment, the same image runs on any container host: publish port 3001, inject
 `PORT` and the runtime secrets, and put TLS and compression in front. The local compose file is a
-production-style single-container run, not a Vercel replacement — the hourly sweep and serverless
-functions stay on Vercel.
+production-style run, not a Vercel replacement — the hourly sweep stays on Vercel.
+
+Vercel cannot run the Python extractor. Deploy `services/doc-verifier` to a container host
+(Cloud Run, Render, Fly.io, ECS) that includes the Tesseract binary, set `DOC_VERIFIER_URL` and
+`DOC_VERIFIER_TOKEN` in the Vercel project, and keep the extractor off the public internet except
+for the Node API. Vercel's serverless body limit is 4.5 MB, so production uploads above that size
+need direct-to-Supabase-Storage uploads with a storage-path verification flow.
 
 Before enabling Supabase mode in a shared environment, apply the migrations and run
 `supabase/tests/rls.sql` to confirm cross-region and cross-institution isolation.

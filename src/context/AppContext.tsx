@@ -13,7 +13,10 @@ import {
   InspectionReport,
   Region,
   SystemAlert,
-  Undertaking
+  Undertaking,
+  DocumentAISummary,
+  DocumentExtraction,
+  DocumentVerificationReport
 } from '../types';
 import {
   initialApplications,
@@ -52,6 +55,7 @@ import {
   verifyDocumentInList
 } from '../workflow/documents';
 import { appendAudit } from '../services/auditService';
+import { buildVerificationReport } from '../workflow/documentVerification';
 import type {
   ActorRef,
   AuditDraft,
@@ -76,6 +80,7 @@ const REMOTE_SYNC_TABLES = [
   'evc_visits',
   'compliance_records',
   'documents',
+  'document_verifications',
   'notifications',
   'undertakings',
   'alerts',
@@ -89,6 +94,24 @@ export interface UserProfile {
   initials: string;
 }
 
+export interface DocumentVerificationRunInput {
+  applicationId: string;
+  documentTypeCode: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  fileHash: string;
+  storagePath?: string;
+  extraction: DocumentExtraction;
+  advisory?: { text: string; provider: 'gemini' };
+}
+
+export interface DocumentVerificationActionResult {
+  ok: boolean;
+  reportId?: string;
+  message?: string;
+}
+
 interface AppContextType {
   currentUser: UserProfile;
   randomizeCurrentUser: () => void;
@@ -98,6 +121,7 @@ interface AppContextType {
   evcVisits: EVCVisit[];
   complianceRecords: ComplianceRecord[];
   documents: DocumentItem[];
+  documentVerifications: DocumentVerificationReport[];
   notifications: NotificationItem[];
   undertakings: Undertaking[];
   alerts: SystemAlert[];
@@ -165,6 +189,9 @@ interface AppContextType {
   ) => boolean;
   verifyDocument: (id: string) => boolean;
   rejectDocument: (id: string, reason: string) => boolean;
+  runDocumentVerification: (input: DocumentVerificationRunInput) => DocumentVerificationActionResult;
+  acceptDocumentVerification: (id: string, note: string) => boolean;
+  rejectDocumentVerification: (id: string, note: string) => boolean;
   
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: () => void;
@@ -231,6 +258,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     readLocal<DocumentItem[]>('documents', initialDocuments).map(normalizeDocument)
   );
 
+  const [documentVerifications, setDocumentVerifications] = useState<DocumentVerificationReport[]>(() =>
+    readLocal<DocumentVerificationReport[]>('documentVerifications', [])
+  );
+
   const [notifications, setNotifications] = useState<NotificationItem[]>(() =>
     readLocal<NotificationItem[]>('notifications', initialNotifications)
   );
@@ -273,6 +304,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         if (snapshot.complianceRecords?.length) setComplianceRecords(snapshot.complianceRecords);
         if (snapshot.documents?.length) setDocuments(snapshot.documents.map(normalizeDocument));
+        if (snapshot.documentVerifications?.length) setDocumentVerifications(snapshot.documentVerifications);
         if (snapshot.notifications?.length) setNotifications(snapshot.notifications);
         if (snapshot.undertakings?.length) setUndertakings(snapshot.undertakings);
         if (snapshot.alerts?.length) setAlerts(snapshot.alerts);
@@ -328,6 +360,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     writeLocal('documents', documents);
   }, [documents]);
+
+  useEffect(() => {
+    writeLocal('documentVerifications', documentVerifications);
+  }, [documentVerifications]);
 
   useEffect(() => {
     writeLocal('notifications', notifications);
@@ -1777,6 +1813,163 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
+  const nextVerificationId = () =>
+    `VER-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+
+  const runDocumentVerification: AppContextType['runDocumentVerification'] = (input) => {
+    const application = applications.find((app) => app.id === input.applicationId);
+    if (!application) {
+      showToast('Application not found for this verification.', 'error');
+      return { ok: false, message: 'Application not found.' };
+    }
+
+    const authCheck = authService.authorizeAction('documents.read', {
+      region: application.region,
+      instituteId: application.instituteId
+    });
+    if (!authCheck.authorized) {
+      showToast(authCheck.reason || 'Unauthorized to verify this application.', 'error');
+      return { ok: false, message: authCheck.reason };
+    }
+
+    const actor = getActor();
+    const now = getNow();
+    const config = resolveWorkflowConfig(authService.getSystemConfig());
+    const id = nextVerificationId();
+
+    const aiSummary: DocumentAISummary | undefined = input.advisory
+      ? {
+          text: input.advisory.text,
+          provider: input.advisory.provider,
+          generatedAt: now.toISOString()
+        }
+      : undefined;
+
+    const report = buildVerificationReport({
+      application,
+      documents,
+      documentTypeCode: input.documentTypeCode,
+      extraction: input.extraction,
+      fileName: input.fileName,
+      fileHash: input.fileHash,
+      warningDays: config.documentWarningDays,
+      now,
+      existingReports: documentVerifications,
+      id,
+      createdAt: now.toISOString(),
+      createdBy: actor.name,
+      createdByUserId: actor.id,
+      fileType: input.fileType,
+      fileSize: input.fileSize,
+      storagePath: input.storagePath,
+      aiSummary
+    });
+
+    setDocumentVerifications((prev) => [report, ...prev]);
+    repository.upsertDocumentVerification(report);
+
+    const criticalCount = report.issues.filter((issue) => issue.severity === 'critical').length;
+    recordAudit({
+      action: 'RUN_DOCUMENT_VERIFICATION',
+      entityType: 'Document',
+      entityId: id,
+      details: `AI-assisted verification ran for ${application.instituteName} (${input.documentTypeCode}); ${report.issues.length} finding(s).`,
+      previousState: JSON.stringify({ status: null }),
+      newState: JSON.stringify({
+        status: report.status,
+        criticalFindings: criticalCount,
+        issues: report.issues.length,
+        fileHash: report.fileHash
+      }),
+      source: 'ui'
+    });
+
+    showToast(
+      criticalCount > 0
+        ? `Verification report ready with ${criticalCount} critical finding(s). Officer review required.`
+        : 'Verification report ready. Officer review required.',
+      criticalCount > 0 ? 'warning' : 'info'
+    );
+    return { ok: true, reportId: id };
+  };
+
+  const decideDocumentVerification = (
+    id: string,
+    outcome: 'Accepted' | 'Rejected',
+    note: string
+  ): boolean => {
+    const report = documentVerifications.find((item) => item.id === id);
+    if (!report) {
+      showToast('Verification report not found.', 'error');
+      return false;
+    }
+
+    const authCheck = authService.authorizeAction('documents.verify', {
+      region: report.region,
+      instituteId: report.instituteId
+    });
+    if (!authCheck.authorized) {
+      showToast(authCheck.reason || 'Unauthorized to review verification findings.', 'error');
+      return false;
+    }
+    if (report.status !== 'Pending Review') {
+      showToast('This verification report has already been reviewed.', 'error');
+      return false;
+    }
+    const decisionNote = note.trim();
+    if (outcome === 'Rejected' && !decisionNote) {
+      showToast('Record a reason before rejecting the verification findings.', 'error');
+      return false;
+    }
+
+    const actor = getActor();
+    const updated: DocumentVerificationReport = {
+      ...report,
+      status: outcome,
+      decision: {
+        outcome,
+        by: actor.name,
+        byUserId: actor.id,
+        at: getNow().toISOString(),
+        note: decisionNote || 'Accepted after officer review.'
+      }
+    };
+
+    setDocumentVerifications((prev) => prev.map((item) => (item.id === id ? updated : item)));
+    repository.upsertDocumentVerification(updated);
+
+    recordAudit({
+      action: outcome === 'Accepted' ? 'ACCEPT_DOCUMENT_VERIFICATION' : 'REJECT_DOCUMENT_VERIFICATION',
+      entityType: 'Document',
+      entityId: id,
+      details:
+        outcome === 'Accepted'
+          ? `Verification findings for ${report.fileName} accepted by ${actor.name}.`
+          : `Verification findings for ${report.fileName} rejected by ${actor.name}: ${decisionNote}`,
+      previousState: JSON.stringify({ status: report.status }),
+      newState: JSON.stringify({
+        status: updated.status,
+        decision: updated.decision,
+        disclaimer: report.disclaimer
+      }),
+      source: 'ui'
+    });
+
+    showToast(
+      outcome === 'Accepted'
+        ? 'Verification findings accepted. This does not change the application decision.'
+        : 'Verification findings rejected and recorded for officer follow-up.',
+      outcome === 'Accepted' ? 'success' : 'warning'
+    );
+    return true;
+  };
+
+  const acceptDocumentVerification: AppContextType['acceptDocumentVerification'] = (id, note) =>
+    decideDocumentVerification(id, 'Accepted', note);
+
+  const rejectDocumentVerification: AppContextType['rejectDocumentVerification'] = (id, note) =>
+    decideDocumentVerification(id, 'Rejected', note);
+
   const markNotificationAsRead = (id: string) => {
     const notification = notifications.find((item) => item.id === id);
     if (!notification || notification.read) return;
@@ -2056,6 +2249,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setEvcVisits(initialEVCVisits.map((visit) => normalizeEVCVisit(visit)));
     setComplianceRecords(initialComplianceRecords);
     setDocuments(initialDocuments.map(normalizeDocument));
+    setDocumentVerifications([]);
     setNotifications(initialNotifications);
     setUndertakings(initialUndertakings);
     setAlerts([]);
@@ -2074,6 +2268,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         evcVisits,
         complianceRecords,
         documents,
+        documentVerifications,
         notifications,
         undertakings,
         alerts,
@@ -2112,6 +2307,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitDocumentRenewal,
         verifyDocument,
         rejectDocument,
+        runDocumentVerification,
+        acceptDocumentVerification,
+        rejectDocumentVerification,
         markNotificationAsRead,
         markAllNotificationsAsRead,
         demoClockOffsetDays,

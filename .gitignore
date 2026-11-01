@@ -25,3 +25,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python document verifier service
+services/doc-verifier/.venv
+__pycache__/
+*.pyc
+.pytest_cache/
