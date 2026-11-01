@@ -1,50 +1,14 @@
-import React, { useState } from 'react';
-import { AIHelpdeskButton } from './AIHelpdeskButton';
+import React from 'react';
 import { AIChatPanel } from './AIChatPanel';
 
-export const AIHelpdeskAssistant: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+interface AIHelpdeskAssistantProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
 
-  const handleToggle = () => {
-    if (isOpen) {
-      if (isMinimized) {
-        setIsMinimized(false);
-      } else {
-        setIsOpen(false);
-      }
-    } else {
-      setIsOpen(true);
-      setIsMinimized(false);
-    }
-  };
-
-  const handleClose = () => {
-    setIsOpen(false);
-    setIsMinimized(false);
-  };
-
-  const handleMinimize = () => {
-    setIsMinimized(true);
-  };
-
-  return (
-    <>
-      {/* Floating Chat Panel */}
-      {isOpen && !isMinimized && (
-        <AIChatPanel
-          isOpen={isOpen && !isMinimized}
-          onClose={handleClose}
-          onMinimize={handleMinimize}
-        />
-      )}
-
-      {/* Floating Action Button */}
-      <AIHelpdeskButton
-        isOpen={isOpen && !isMinimized}
-        onClick={handleToggle}
-      />
-    </>
-  );
-};
-
+export const AIHelpdeskAssistant: React.FC<AIHelpdeskAssistantProps> = ({
+  isOpen,
+  onOpenChange
+}) => (
+  <AIChatPanel isOpen={isOpen} onClose={() => onOpenChange(false)} />
+);

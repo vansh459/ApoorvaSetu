@@ -62,7 +62,7 @@ class AssistantService {
       if (!response.ok) {
         const errorJson = await response.json().catch(() => ({}));
         return {
-          text: errorJson.text || errorJson.message || `⚠️ **Server Error (${response.status})**: The AI service could not process the request.`,
+          text: errorJson.text || errorJson.message || `**Server Error (${response.status})**: The AI service could not process the request.`,
           isError: true
         };
       }
@@ -76,7 +76,7 @@ class AssistantService {
     } catch (err: any) {
       console.error('Failed to communicate with /api/assistant/chat:', err);
       return {
-        text: "⚠️ **Connection Error**: Unable to reach the ApoorvaSetu AI backend endpoint. Please ensure the backend server or Vite dev server is running.",
+        text: "**Connection Error**: Unable to reach the ApoorvaSetu AI backend endpoint. Please ensure the backend server or Vite dev server is running.",
         isError: true
       };
     }

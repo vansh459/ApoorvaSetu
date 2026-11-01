@@ -1,15 +1,22 @@
 import React, { useMemo, useState } from 'react';
-import {
-  Plus,
-  X,
-  CheckCircle2,
-  Clock,
-  Send,
-  ShieldAlert
-} from 'lucide-react';
+import { CheckCircle2, Clock, Plus, Send, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { EscalationItem } from '../../types';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Input,
+  Modal,
+  PageHeader,
+  Select,
+  Tabs,
+  Textarea
+} from '../../components/ui';
+import { severityTone, statusTone } from '../../utils/statusTone';
 
 type StatusFilter = 'Open' | 'Under Review' | 'Resolved' | 'All';
 
@@ -66,242 +73,167 @@ export const RegionalEscalations: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
-              {region} Regional Office
-            </span>
-            <span className="text-xs text-slate-400">•</span>
-            <span className="text-xs text-slate-500 font-medium">Regulatory Escalations</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Central Escalations & Exception Queue
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Flag critical institutional deficiencies or special inspection requests directly to Central AICTE Admin.
-          </p>
-        </div>
+      <PageHeader
+        title="Escalation queue"
+        description="Flag critical institutional deficiencies or special inspection requests to central AICTE."
+        meta={<Badge tone="neutral">{region} Regional Office</Badge>}
+        actions={
+          <Button icon={<Plus className="h-4 w-4" />} onClick={() => setIsModalOpen(true)}>
+            Raise escalation
+          </Button>
+        }
+      />
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center space-x-2 transition-colors cursor-pointer shadow-sm shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Raise New Escalation</span>
-        </button>
-      </div>
+      <Card>
+        <Tabs
+          ariaLabel="Filter escalations by status"
+          items={[
+            { id: 'Open', label: 'Open', count: counts.open },
+            { id: 'Under Review', label: 'Under review', count: counts.review },
+            { id: 'Resolved', label: 'Resolved', count: counts.resolved },
+            { id: 'All', label: 'All', count: scoped.length }
+          ]}
+          value={statusFilter}
+          onChange={(id) => setStatusFilter(id as StatusFilter)}
+        />
+      </Card>
 
-      {/* Status filter */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-3 shadow-xs flex flex-wrap items-center gap-1.5">
-        {([
-          ['Open', `Open (${counts.open})`],
-          ['Under Review', `Under Review (${counts.review})`],
-          ['Resolved', `Resolved (${counts.resolved})`],
-          ['All', `All (${scoped.length})`]
-        ] as const).map(([value, label]) => (
-          <button
-            key={value}
-            onClick={() => setStatusFilter(value)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-              statusFilter === value
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Escalation Cards */}
-      <div className="grid grid-cols-1 gap-4">
-        {filtered.length === 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-10 text-center shadow-xs">
-            <ShieldAlert className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-slate-700">No escalations in this view</p>
-            <p className="text-xs text-slate-500 mt-1">
-              Overdue statutory deadlines are escalated automatically by the SLA monitor.
-            </p>
-          </div>
-        )}
-
-        {filtered.map((item) => (
-          <div
-            key={item.id}
-            className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4"
-          >
-            <div className="space-y-1.5 flex-1">
-              <div className="flex items-center space-x-2.5 flex-wrap">
-                <span className="font-mono font-bold text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                  {item.applicationId}
-                </span>
-                <span className="font-bold text-slate-900 text-sm">
-                  {item.instituteName}
-                </span>
-                {item.level && (
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-900 text-white">
-                    Level {item.level}
-                  </span>
-                )}
-                <span
-                  className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${item.urgency === 'Critical'
-                      ? 'bg-rose-100 text-rose-800'
-                      : item.urgency === 'High'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-slate-100 text-slate-700'
-                    }`}
-                >
-                  {item.urgency} Urgency
-                </span>
-                <span
-                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status === 'Resolved'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : item.status === 'Under Review'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-slate-100 text-slate-700'
-                    }`}
-                >
-                  {item.status}
-                </span>
-                {typeof item.slaBreachDays === 'number' && item.slaBreachDays > 0 && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {item.slaBreachDays} day(s) overdue
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {item.reason}
-              </p>
-              <div className="text-[11px] text-slate-400">
-                Raised by {item.raisedBy} on {item.raisedDate}
-                {item.acknowledgedBy ? ` · acknowledged by ${item.acknowledgedBy}` : ''}
-              </div>
-            </div>
-
-            <div className="shrink-0 flex items-center space-x-2">
-              <span className="text-[11px] font-mono text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
-                {item.id}
-              </span>
-              {item.status === 'Open' && (
-                <button
-                  onClick={() => acknowledgeEscalation(item.id)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-                >
-                  Acknowledge
-                </button>
-              )}
-              {item.status !== 'Resolved' && (
-                <button
-                  onClick={() => resolveEscalation(item.id)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 transition-colors cursor-pointer flex items-center gap-1"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Resolve
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl relative border border-slate-200">
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+      {filtered.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={ShieldAlert}
+            title="No escalations in this view"
+            description="Overdue statutory deadlines are escalated automatically by the SLA monitor."
+          />
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-3">
+          {filtered.map((item) => (
+            <article
+              key={item.id}
+              className="flex flex-col justify-between gap-4 rounded-card border border-line bg-surface p-4 shadow-raise md:flex-row md:items-center sm:p-5"
             >
-              <X className="w-5 h-5" />
-            </button>
+              <div className="flex-1 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge tone="info">{item.applicationId}</Badge>
+                  <span className="text-sm font-semibold text-ink">{item.instituteName}</span>
+                  {item.level && <Badge tone="neutral">Level {item.level}</Badge>}
+                  <Badge tone={severityTone(item.urgency)}>{item.urgency} urgency</Badge>
+                  <Badge tone={statusTone(item.status, 'info')}>{item.status}</Badge>
+                  {typeof item.slaBreachDays === 'number' && item.slaBreachDays > 0 && (
+                    <Badge tone="danger">
+                      <Clock className="mr-1 h-3 w-3" aria-hidden="true" />
+                      {item.slaBreachDays} day(s) overdue
+                    </Badge>
+                  )}
+                </div>
 
-            <h3 className="text-lg font-bold text-slate-900 mb-1">
-              Raise Exception / Central Escalation
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Escalate complex scrutiny issues, land title disputes, or emergency scheduling to AICTE HQ.
-            </p>
+                <p className="text-sm leading-relaxed text-ink-2">{item.reason}</p>
 
-            <form onSubmit={handleCreate} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Application ID
-                </label>
-                <input
-                  type="text"
-                  value={newAppId}
-                  onChange={(e) => setNewAppId(e.target.value)}
-                  placeholder="e.g. APP2026-0012"
-                  required
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-teal-500 focus:outline-hidden"
-                />
+                <p className="text-xs text-ink-2">
+                  Raised by {item.raisedBy} on {item.raisedDate}
+                  {item.acknowledgedBy ? `. Acknowledged by ${item.acknowledgedBy}.` : '.'}
+                </p>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Institution Name
-                </label>
-                <input
-                  type="text"
-                  value={newInstName}
-                  onChange={(e) => setNewInstName(e.target.value)}
-                  placeholder="e.g. ABC Institute of Technology"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-teal-500 focus:outline-hidden"
-                />
+              <div className="flex shrink-0 items-center gap-2">
+                <Badge tone="neutral" className="font-mono">
+                  {item.id}
+                </Badge>
+                {item.status === 'Open' && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => acknowledgeEscalation(item.id)}
+                  >
+                    Acknowledge
+                  </Button>
+                )}
+                {item.status !== 'Resolved' && (
+                  <Button
+                    size="sm"
+                    icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+                    onClick={() => resolveEscalation(item.id)}
+                  >
+                    Resolve
+                  </Button>
+                )}
               </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Urgency Level
-                </label>
-                <select
-                  value={newUrgency}
-                  onChange={(e) => setNewUrgency(e.target.value as 'Medium' | 'High' | 'Critical')}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-teal-500 focus:outline-hidden bg-white"
-                >
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Specific Reason & Recommendation
-                </label>
-                <textarea
-                  rows={3}
-                  value={newReason}
-                  onChange={(e) => setNewReason(e.target.value)}
-                  placeholder="Detail the regulatory dilemma, deficiency, or special exemption required..."
-                  required
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-teal-500 focus:outline-hidden"
-                />
-              </div>
-
-              <div className="pt-3 flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold cursor-pointer hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  Dispatch Escalation
-                </button>
-              </div>
-            </form>
-          </div>
+            </article>
+          ))}
         </div>
       )}
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Raise a central escalation"
+        subtitle="Escalate complex scrutiny issues, land title disputes or emergency scheduling to AICTE headquarters."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="raise-escalation-form"
+              icon={<Send className="h-4 w-4" />}
+            >
+              Dispatch escalation
+            </Button>
+          </>
+        }
+      >
+        <form id="raise-escalation-form" onSubmit={handleCreate} className="space-y-4">
+          <Field label="Application ID" htmlFor="escalation-application" required>
+            <Input
+              id="escalation-application"
+              type="text"
+              value={newAppId}
+              onChange={(e) => setNewAppId(e.target.value)}
+              placeholder="APP2026-0012"
+              required
+            />
+          </Field>
+
+          <Field
+            label="Institution name"
+            htmlFor="escalation-institute"
+            hint="Defaults to the linked application when left blank."
+          >
+            <Input
+              id="escalation-institute"
+              type="text"
+              value={newInstName}
+              onChange={(e) => setNewInstName(e.target.value)}
+              placeholder="ABC Institute of Technology"
+            />
+          </Field>
+
+          <Field label="Urgency level" htmlFor="escalation-urgency">
+            <Select
+              id="escalation-urgency"
+              value={newUrgency}
+              onChange={(e) => setNewUrgency(e.target.value as 'Medium' | 'High' | 'Critical')}
+            >
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </Select>
+          </Field>
+
+          <Field label="Reason and recommendation" htmlFor="escalation-reason" required>
+            <Textarea
+              id="escalation-reason"
+              rows={3}
+              value={newReason}
+              onChange={(e) => setNewReason(e.target.value)}
+              placeholder="Detail the regulatory dilemma, deficiency or special exemption required."
+              required
+            />
+          </Field>
+        </form>
+      </Modal>
     </div>
   );
 };

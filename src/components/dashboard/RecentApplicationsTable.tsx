@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { filterApplicationsForUser } from '../../services/rbacService';
 import { STAGE_META, canonicalStage } from '../../workflow/stages';
 import { parseDate } from '../../utils/dates';
+import { Card } from '../ui';
 
 export const RecentApplicationsTable: React.FC = () => {
   const navigate = useNavigate();
@@ -25,60 +26,61 @@ export const RecentApplicationsTable: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/60 p-4 sm:p-4.5 shadow-xs flex flex-col justify-between h-full min-w-0">
-      <div className="flex items-center justify-between mb-3 shrink-0">
-        <div className="flex items-center space-x-2">
-          <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <ListFilter className="w-4 h-4" />
-          </div>
-          <h2 className="text-xs sm:text-sm font-bold text-slate-800 tracking-tight whitespace-nowrap">
-            Recent applications
-          </h2>
+    <Card padded="none" className="flex h-full min-w-0 flex-col">
+      <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <ListFilter className="h-4 w-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+          <h2 className="text-sm font-semibold leading-snug text-ink">Recent applications</h2>
         </div>
         <button
+          type="button"
           onClick={() => navigate('/applications')}
-          className="text-xs text-blue-600 hover:text-blue-700 font-medium cursor-pointer whitespace-nowrap active:scale-95 transition-transform duration-100"
+          className="shrink-0 text-xs font-medium text-accent transition-colors duration-150 hover:text-accent-hover cursor-pointer"
         >
           View all
         </button>
       </div>
 
       {recent.length === 0 ? (
-        <p className="text-xs text-slate-500 my-auto py-6 text-center">
+        <p className="my-auto px-5 py-10 text-center text-sm text-ink-2">
           No applications in scope yet.
         </p>
       ) : (
-        <div className="overflow-x-auto scrollbar-none flex-1 min-w-0">
-          <table className="w-full text-left border-collapse">
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <caption className="sr-only">Five most recently updated applications</caption>
             <thead>
-              <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-400 whitespace-nowrap">
-                <th className="pb-2.5 pr-2.5 font-semibold">Application</th>
-                <th className="pb-2.5 pr-2.5 font-semibold">Institution</th>
-                <th className="pb-2.5 pr-2.5 font-semibold hidden xl:table-cell">Region</th>
-                <th className="pb-2.5 pr-2.5 font-semibold">Stage</th>
-                <th className="pb-2.5 text-right font-semibold">Status</th>
+              <tr className="border-b border-line text-xs text-ink-2">
+                <th scope="col" className="px-5 py-2.5 font-medium">Application</th>
+                <th scope="col" className="px-3 py-2.5 font-medium">Institution</th>
+                <th scope="col" className="hidden px-3 py-2.5 font-medium 2xl:table-cell">Region</th>
+                <th scope="col" className="hidden px-3 py-2.5 font-medium 2xl:table-cell">Stage</th>
+                <th scope="col" className="px-5 py-2.5 text-right font-medium">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100/80 text-xs">
+            <tbody className="divide-y divide-line/70 text-sm">
               {recent.map((app) => (
                 <tr
                   key={app.id}
+                  tabIndex={0}
                   onClick={() => openCase(app.id)}
-                  className="hover:bg-slate-50/70 cursor-pointer group whitespace-nowrap"
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openCase(app.id);
+                    }
+                  }}
+                  className="cursor-pointer whitespace-nowrap transition-colors duration-150 hover:bg-surface-2"
                 >
-                  <td className="py-2.5 pr-2.5 text-blue-600 font-semibold group-hover:underline">
-                    {app.id}
-                  </td>
-                  <td className="py-2.5 pr-2.5 text-slate-900 font-medium max-w-[140px] sm:max-w-[170px] truncate">
+                  <td className="px-5 py-3 font-medium text-accent">{app.id}</td>
+                  <td className="max-w-[170px] truncate px-3 py-3 font-medium text-ink">
                     {app.instituteName}
                   </td>
-                  <td className="py-2.5 pr-2.5 text-slate-600 font-medium hidden xl:table-cell">
-                    {app.region}
-                  </td>
-                  <td className="py-2.5 pr-2.5 text-slate-600 font-medium">
+                  <td className="hidden px-3 py-3 text-ink-2 2xl:table-cell">{app.region}</td>
+                  <td className="hidden px-3 py-3 text-ink-2 2xl:table-cell">
                     {STAGE_META[canonicalStage(app.stage)].shortLabel}
                   </td>
-                  <td className="py-2.5 text-right">
+                  <td className="px-5 py-3 text-right">
                     <StatusBadge status={app.status} size="sm" />
                   </td>
                 </tr>
@@ -87,6 +89,6 @@ export const RecentApplicationsTable: React.FC = () => {
           </table>
         </div>
       )}
-    </div>
+    </Card>
   );
 };

@@ -29,18 +29,18 @@ export const SuggestedQuestions: React.FC<SuggestedQuestionsProps> = ({
   };
 
   return (
-    <div className="px-3 py-1.5 bg-white border-t border-slate-100 shrink-0">
+    <div className="shrink-0 border-t border-line bg-surface px-3 py-2">
       <div
         ref={scrollRef}
         onWheel={handleWheel}
-        className="flex items-center space-x-1.5 overflow-x-auto whitespace-nowrap no-scrollbar py-0.5 cursor-grab active:cursor-grabbing"
+        className="no-scrollbar flex cursor-grab items-center gap-1.5 overflow-x-auto whitespace-nowrap py-0.5 active:cursor-grabbing"
       >
         {questions.map((q, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => onSelectQuestion(q)}
-            className="shrink-0 text-xs px-3 py-1 rounded-full bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200/80 hover:border-blue-200 hover:scale-[1.02] active:scale-95 transition-all duration-150 cursor-pointer shadow-2xs"
+            className="shrink-0 rounded-pill bg-surface-2 px-3 py-1 text-xs text-ink-2 transition-colors duration-150 hover:bg-accent-soft hover:text-accent active:scale-95"
           >
             {q}
           </button>

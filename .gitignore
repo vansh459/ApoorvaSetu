@@ -25,3 +25,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Hallmark capture evidence stays local; the build log is tracked
+.hallmark/before/
+.hallmark/after/

@@ -1,6 +1,14 @@
-import React from 'react';
-import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
+import * as React from 'react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { cn } from '../../utils/cn';
+
+const TONES = {
+  success: { icon: CheckCircle2, tile: 'bg-success-soft text-success' },
+  error: { icon: AlertCircle, tile: 'bg-danger-soft text-danger' },
+  warning: { icon: AlertTriangle, tile: 'bg-warning-soft text-warning' },
+  info: { icon: Info, tile: 'bg-accent-soft text-accent' }
+} as const;
 
 export const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useApp();
@@ -8,39 +16,35 @@ export const ToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col space-y-2.5 max-w-sm w-full pointer-events-none">
+    <div
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 bottom-24 z-50 mx-auto flex w-full max-w-sm flex-col gap-2 px-4 sm:bottom-6 sm:px-0"
+    >
       {toasts.map((toast) => {
-        let Icon = CheckCircle2;
-        let bgClasses = 'bg-slate-900 text-white border-slate-700';
-
-        if (toast.type === 'success') {
-          Icon = CheckCircle2;
-          bgClasses = 'bg-emerald-950 text-emerald-100 border-emerald-800/80';
-        } else if (toast.type === 'error') {
-          Icon = AlertCircle;
-          bgClasses = 'bg-rose-950 text-rose-100 border-rose-800/80';
-        } else if (toast.type === 'warning') {
-          Icon = AlertTriangle;
-          bgClasses = 'bg-amber-950 text-amber-100 border-amber-800/80';
-        } else if (toast.type === 'info') {
-          Icon = Info;
-          bgClasses = 'bg-blue-950 text-blue-100 border-blue-800/80';
-        }
-
+        const tone = TONES[toast.type] ?? TONES.info;
+        const Icon = tone.icon;
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-start space-x-3 p-3.5 rounded-xl border shadow-xl backdrop-blur-md transition-all duration-200 animate-toast ${bgClasses}`}
+            className="toast-enter pointer-events-auto flex items-start gap-3 rounded-card border border-line bg-surface p-3.5 shadow-overlay"
           >
-            <Icon className="w-5 h-5 shrink-0 mt-0.5" />
-            <div className="flex-1 text-xs font-medium leading-relaxed">
-              {toast.message}
-            </div>
-            <button
-              onClick={() => removeToast(toast.id)}
-              className="text-slate-400 hover:text-white p-0.5 rounded transition-colors"
+            <span
+              className={cn(
+                'flex h-8 w-8 shrink-0 items-center justify-center rounded-control',
+                tone.tile
+              )}
             >
-              <X className="w-4 h-4" />
+              <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+            </span>
+            <p className="min-w-0 flex-1 pt-1 text-label font-medium text-ink">{toast.message}</p>
+            <button
+              type="button"
+              aria-label="Dismiss notification"
+              onClick={() => removeToast(toast.id)}
+              className="rounded-md p-1 text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+            >
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         );

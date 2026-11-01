@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  FileText,
-  UploadCloud,
-  CheckCircle2,
-  Building2,
-  ArrowRight,
-  ArrowLeft,
-  Check,
-  AlertCircle
-} from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { APPLICATION_TYPE_OPTIONS, resolveRoute } from '../../workflow/routes';
+import {
+  Badge,
+  Button,
+  Card,
+  Field,
+  Input,
+  Notice,
+  PageHeader,
+  Textarea
+} from '../../components/ui';
+
+const STEPS = [
+  { num: 1, label: 'Approval type' },
+  { num: 2, label: 'Intake and programs' },
+  { num: 3, label: 'Review and submit' }
+];
 
 export const SubmitApplication: React.FC = () => {
   const navigate = useNavigate();
@@ -21,18 +28,20 @@ export const SubmitApplication: React.FC = () => {
 
   const [step, setStep] = useState(1);
   const [appType, setAppType] = useState('Extension of Approval (EoA)');
-  const [academicYear, setAcademicYear] = useState('2026-2027');
+  const [academicYear] = useState('2026-2027');
   const [proposedIntake, setProposedIntake] = useState('540');
   const [programList, setProgramList] = useState('Computer Science & Engg, AI & Machine Learning, Data Science');
   const [undertakingAgreed, setUndertakingAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!undertakingAgreed) {
-      alert('Please agree to the statutory institutional undertaking before submission.');
+      setSubmitError('Agree to the statutory undertaking before submitting.');
       return;
     }
+    setSubmitError('');
 
     setIsSubmitting(true);
     setTimeout(() => {
@@ -63,227 +72,211 @@ export const SubmitApplication: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Header */}
-      <div>
-        <div className="flex items-center space-x-2 mb-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-            Application Submission Wizard
-          </span>
-          <span className="text-xs text-slate-400">•</span>
-          <span className="text-xs text-slate-500 font-medium">AY 2026-27 Approval Cycle</span>
-        </div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Submit New Approval Application
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Submit Extension of Approval (EoA), program expansion, or intake variation requests to AICTE.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Submit an application"
+        description="File an extension of approval, program expansion or intake variation request for the national approval cycle."
+        meta={
+          <>
+            <Badge tone="info">Application wizard</Badge>
+            <span className="text-xs text-ink-2">Academic year {academicYear}</span>
+          </>
+        }
+      />
 
-      {/* Stepper Header */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex items-center justify-between text-xs font-semibold">
-        {[
-          { num: 1, label: 'Approval Type' },
-          { num: 2, label: 'Intake & Programs' },
-          { num: 3, label: 'Review & Submit' }
-        ].map((s) => (
-          <div key={s.num} className="flex items-center space-x-2">
-            <span
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step === s.num
-                  ? 'bg-blue-600 text-white'
-                  : step > s.num
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 text-slate-500'
-                }`}
-            >
-              {step > s.num ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : s.num}
-            </span>
-            <span className={step === s.num ? 'text-blue-700 font-bold' : 'text-slate-500'}>
-              {s.label}
-            </span>
-          </div>
-        ))}
-      </div>
+      <Card padded="sm">
+        <ol className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          {STEPS.map((s) => {
+            const isActive = step === s.num;
+            const isDone = step > s.num;
+            return (
+              <li
+                key={s.num}
+                aria-current={isActive ? 'step' : undefined}
+                className="flex items-center gap-2"
+              >
+                <span
+                  className={
+                    isActive
+                      ? 'flex h-6 w-6 items-center justify-center rounded-full bg-action text-xs font-semibold text-white'
+                      : isDone
+                        ? 'flex h-6 w-6 items-center justify-center rounded-full bg-success text-white'
+                        : 'flex h-6 w-6 items-center justify-center rounded-full border border-line-strong bg-surface text-xs font-medium text-ink-2'
+                  }
+                >
+                  {isDone ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden="true" /> : s.num}
+                </span>
+                <span
+                  className={
+                    isActive ? 'text-label font-semibold text-ink' : 'text-label text-ink-2'
+                  }
+                >
+                  {s.label}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </Card>
 
-      {/* Step Form */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+      <Card>
         {step === 1 && (
-          <div className="space-y-4 text-xs">
-            <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100">
-              Step 1: Select Approval Request Category
-            </h2>
+          <div className="space-y-5">
+            <h2 className="text-sm font-semibold text-ink">Select the approval category</h2>
 
             <div className="space-y-2.5">
               {APPLICATION_TYPE_OPTIONS.map((option) => (
                 <label
                   key={option.value}
-                  onClick={() => setAppType(option.value)}
-                  className={`p-3.5 rounded-xl border flex items-start space-x-3 cursor-pointer transition-all ${appType === option.value
-                      ? 'border-blue-500 bg-blue-50/40 shadow-xs'
-                      : 'border-slate-200 hover:bg-slate-50'
-                    }`}
+                  className={
+                    appType === option.value
+                      ? 'flex cursor-pointer items-start gap-3 rounded-control border border-accent bg-accent-soft/60 p-4'
+                      : 'flex cursor-pointer items-start gap-3 rounded-control border border-line p-4 transition-colors duration-150 hover:bg-surface-2'
+                  }
                 >
                   <input
                     type="radio"
                     name="appType"
                     checked={appType === option.value}
                     onChange={() => setAppType(option.value)}
-                    className="mt-0.5 text-blue-600"
+                    className="mt-0.5 h-4 w-4 accent-accent"
                   />
-                  <div>
-                    <div className="font-bold text-slate-900">{option.value}</div>
-                    <div className="text-[11px] text-slate-500">{option.description}</div>
-                  </div>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-ink">{option.value}</span>
+                    <span className="mt-0.5 block text-label text-ink-2">
+                      {option.description}
+                    </span>
+                  </span>
                 </label>
               ))}
             </div>
 
-            <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100 text-[11px] text-blue-900">
-              <span className="font-bold">Automated routing: </span>
-              {resolveRoute(appType).stages.join(' → ')}
-            </div>
+            <Notice tone="info" title="Automated routing">
+              The case routes through {resolveRoute(appType).stages.join(', ')} after submission.
+            </Notice>
 
-            <div className="pt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold flex items-center space-x-1.5 cursor-pointer shadow-xs"
-              >
-                <span>Continue to Programs</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+            <div className="flex justify-end">
+              <Button onClick={() => setStep(2)}>
+                Continue to programs
+              </Button>
             </div>
           </div>
         )}
 
         {step === 2 && (
-          <div className="space-y-4 text-xs">
-            <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100">
-              Step 2: Intake Capacity & Academic Disciplines
-            </h2>
+          <div className="space-y-5">
+            <h2 className="text-sm font-semibold text-ink">Intake capacity and disciplines</h2>
 
-            <div className="space-y-3.5">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Proposed Total Intake Capacity (Seats)
-                </label>
-                <input
+            <div className="space-y-5">
+              <Field
+                label="Proposed total intake"
+                htmlFor="application-intake"
+                hint="Total seats requested across all programs."
+              >
+                <Input
+                  id="application-intake"
                   type="number"
                   value={proposedIntake}
                   onChange={(e) => setProposedIntake(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
                 />
-              </div>
+              </Field>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Offered Undergraduate / Postgraduate Programs (Comma-separated)
-                </label>
-                <textarea
+              <Field
+                label="Offered programs"
+                htmlFor="application-programs"
+                hint="Separate each undergraduate or postgraduate program with a comma."
+              >
+                <Textarea
+                  id="application-programs"
                   rows={3}
                   value={programList}
                   onChange={(e) => setProgramList(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
                 />
-              </div>
+              </Field>
 
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
-                ℹ️ The cadre ratio of 1:2:6 will automatically be audited by the Scrutiny Committee based on this intake number.
-              </div>
+              <Notice tone="info">
+                The Scrutiny Committee audits the 1:2:6 cadre ratio against this intake number.
+              </Notice>
             </div>
 
-            <div className="pt-4 flex items-center justify-between">
-              <button
-                type="button"
+            <div className="flex items-center justify-between">
+              <Button
+                variant="secondary"
                 onClick={() => setStep(1)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold flex items-center space-x-1.5 cursor-pointer"
+                icon={<ArrowLeft className="h-4 w-4" />}
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStep(3)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold flex items-center space-x-1.5 cursor-pointer shadow-xs"
-              >
-                <span>Review Declaration</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+                Back
+              </Button>
+              <Button onClick={() => setStep(3)}>
+                Review declaration
+              </Button>
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-            <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100">
-              Step 3: Statutory Declaration & Submission
-            </h2>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <h2 className="text-sm font-semibold text-ink">Statutory declaration</h2>
 
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Institution:</span>
-                <span className="font-bold text-slate-900">{user?.instituteName || 'ABC Institute of Tech'}</span>
+            <dl className="grid gap-3 rounded-control bg-surface-2 p-4 sm:grid-cols-2">
+              <div className="flex justify-between gap-4">
+                <dt className="text-label text-ink-2">Institution</dt>
+                <dd className="text-right text-label font-medium text-ink">
+                  {user?.instituteName || 'ABC Institute of Tech'}
+                </dd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Application Category:</span>
-                <span className="font-bold text-blue-700">{appType}</span>
+              <div className="flex justify-between gap-4">
+                <dt className="text-label text-ink-2">Application category</dt>
+                <dd className="text-right text-label font-medium text-ink">{appType}</dd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Proposed Seats:</span>
-                <span className="font-bold text-slate-800">{proposedIntake}</span>
+              <div className="flex justify-between gap-4">
+                <dt className="text-label text-ink-2">Proposed seats</dt>
+                <dd className="text-right text-label font-medium text-ink">{proposedIntake}</dd>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Academic Year:</span>
-                <span className="font-semibold text-slate-800">AY {academicYear}</span>
+              <div className="flex justify-between gap-4">
+                <dt className="text-label text-ink-2">Academic year</dt>
+                <dd className="text-right text-label font-medium text-ink">{academicYear}</dd>
               </div>
+            </dl>
+
+            <div>
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={undertakingAgreed}
+                  onChange={(e) => {
+                    setUndertakingAgreed(e.target.checked);
+                    if (e.target.checked) setSubmitError('');
+                  }}
+                  className="mt-0.5 h-4 w-4 accent-accent"
+                />
+                <span className="text-label leading-relaxed text-ink-2">
+                  I declare that all submitted land titles, fire safety NOCs, building approval plans
+                  and faculty cadre registers comply with the AICTE Approval Process Handbook norms.
+                </span>
+              </label>
+              {submitError && (
+                <p role="alert" className="mt-2 text-xs text-danger">
+                  {submitError}
+                </p>
+              )}
             </div>
 
-            <label className="flex items-start space-x-3 p-3 bg-amber-50/70 border border-amber-200 rounded-xl cursor-pointer">
-              <input
-                type="checkbox"
-                checked={undertakingAgreed}
-                onChange={(e) => setUndertakingAgreed(e.target.checked)}
-                className="mt-0.5 text-blue-600 rounded-md"
-              />
-              <span className="text-slate-800 text-[11px] leading-relaxed">
-                I hereby declare that all submitted land titles, fire safety NOCs, building approval plans, and faculty cadre registers comply with AICTE Approval Process Handbook (APH) 2026-27 norms.
-              </span>
-            </label>
-
-            <div className="pt-4 flex items-center justify-between">
-              <button
-                type="button"
+            <div className="flex items-center justify-between">
+              <Button
+                variant="secondary"
                 onClick={() => setStep(2)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl font-semibold flex items-center space-x-1.5 cursor-pointer transition-all duration-150"
+                icon={<ArrowLeft className="h-4 w-4" />}
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back</span>
-              </button>
-
-              <button
-                type="submit"
-                disabled={isSubmitting || !undertakingAgreed}
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 active:scale-95 text-white rounded-xl font-bold flex items-center space-x-2 cursor-pointer shadow-md disabled:opacity-50 transition-all duration-150"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Transmitting Application...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Submit Official Application</span>
-                  </>
-                )}
-              </button>
+                Back
+              </Button>
+              <Button type="submit" loading={isSubmitting}>
+                {isSubmitting ? 'Submitting' : 'Submit application'}
+              </Button>
             </div>
           </form>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
-

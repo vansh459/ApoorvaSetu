@@ -210,7 +210,7 @@ export class AIService {
     const aiClient = this.getClient();
     if (!aiClient) {
       return {
-        text: "⚠️ **Gemini API Key Missing**: The backend is not configured with a valid `GEMINI_API_KEY`. Please configure `GEMINI_API_KEY` in your `.env` file to enable dynamic AI responses.",
+        text: "**Gemini API Key Missing**: The backend is not configured with a valid `GEMINI_API_KEY`. Please configure `GEMINI_API_KEY` in your `.env` file to enable dynamic AI responses.",
         isConfigError: true,
         error: "CONFIG_ERROR"
       };
@@ -295,7 +295,7 @@ MANDATORY RULES:
     // Handle specific API errors
     if (lastError?.message?.includes('API_KEY_INVALID') || lastError?.status === 400) {
       return {
-        text: "⚠️ **Invalid Gemini API Key**: The configured `GEMINI_API_KEY` was rejected by Google Gemini API. Please check your key in `.env`.",
+        text: "**Invalid Gemini API Key**: The configured `GEMINI_API_KEY` was rejected by Google Gemini API. Please check your key in `.env`.",
         isConfigError: true,
         error: "INVALID_API_KEY"
       };
@@ -303,13 +303,13 @@ MANDATORY RULES:
 
     if (lastError?.status === 429 || lastError?.message?.includes('RESOURCE_EXHAUSTED')) {
       return {
-        text: "⚠️ **Rate Limit Exceeded**: Google Gemini API quota limit reached. Please wait a moment before trying again.",
+        text: "**Rate Limit Exceeded**: Google Gemini API quota limit reached. Please wait a moment before trying again.",
         error: "RATE_LIMITED"
       };
     }
 
     return {
-      text: `⚠️ **AI Service Error**: Unable to reach Google Gemini API (${lastError?.message || 'Network error'}). Please try again.`,
+      text: `**AI Service Error**: Unable to reach Google Gemini API (${lastError?.message || 'Network error'}). Please try again.`,
       error: "AI_SERVICE_ERROR"
     };
   }

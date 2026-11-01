@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -6,10 +6,8 @@ import {
   FileText,
   Clock,
   CheckCircle2,
-  ShieldCheck,
   Activity,
   Server,
-  UserPlus,
   Sliders,
   History
 } from 'lucide-react';
@@ -20,6 +18,8 @@ import { useApp } from '../../../context/AppContext';
 import { alertSummary } from '../../../workflow/selectors';
 import { daysUntil, getNow } from '../../../utils/dates';
 import { User, Application, AuditLog } from '../../../types';
+import { DashboardScaffold } from '../DashboardScaffold';
+import { Badge, Button, Card } from '../../ui';
 
 export const SuperAdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -46,345 +46,237 @@ export const SuperAdminDashboard: React.FC = () => {
     ).length
   }));
 
+  const roleRows = [
+    { role: 'SUPER_ADMIN', label: 'Super administrators' },
+    { role: 'AICTE_ADMIN', label: 'AICTE central officers' },
+    { role: 'REGIONAL_OFFICER', label: 'Regional officers' },
+    { role: 'EVC_MEMBER', label: 'EVC committee inspectors' },
+    { role: 'INSTITUTION_ADMIN', label: 'Institution principals and admins' }
+  ].map((row) => ({
+    ...row,
+    count: users.filter((u: User) => u.role === row.role).length
+  }));
+
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-        <div>
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-              Super Admin Console
-            </span>
-            <span className="text-xs text-slate-400">•</span>
-            <span className="text-xs text-slate-300">National Governance & System Administration</span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-            Platform Operations & Security Center
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Manage all 5 user tiers, configure regulatory workflows, inspect audit trails, and maintain system health.
-          </p>
-        </div>
-
-        {/* Quick Config Pills */}
-        <div className="flex items-center space-x-3 shrink-0">
-          <button
-            onClick={() => navigate('/admin/users')}
-            className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-sm"
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Manage Users</span>
-          </button>
-          <button
-            onClick={() => navigate('/admin/audit-logs')}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer border border-slate-700"
-          >
-            <History className="w-3.5 h-3.5" />
-            <span>Audit Trail</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Row 1: 5 Super Admin Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Total Registered Users */}
-        <div
-          onClick={() => navigate('/admin/users')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <Users className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-              {activeUsersCount} Active
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">
-            {users.length}
-          </div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">
-            Registered Users
-          </div>
-        </div>
-
-        {/* Active Institutions */}
-        <div
-          onClick={() => navigate('/institutes')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Building2 className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-              Verified
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">
-            {institutes.length}
-          </div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">
-            Active Institutions
-          </div>
-        </div>
-
-        {/* Total Applications */}
-        <div
-          onClick={() => navigate('/applications')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
-              <FileText className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-              AY 2026-27
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">
-            {applications.length}
-          </div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">
-            Total Applications
-          </div>
-        </div>
-
-        {/* Pending Applications */}
-        <div
-          onClick={() => navigate('/applications')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Clock className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-              Pipeline
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">
-            {pendingApps}
-          </div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">
-            Active applications
-          </div>
-        </div>
-
-        {/* Approved Applications */}
-        <div
-          onClick={() => navigate('/applications?status=Approved')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <CheckCircle2 className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-              Grant Issued
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">
-            {approvedApps}
-          </div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">
-            Approved Applications
-          </div>
-        </div>
-      </div>
-
-      {/* Row 2: Regional Overview & Role Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        {/* Regional Activity Overview (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                <Activity className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Regional Jurisdictions & Activity Overview
-              </h2>
+    <DashboardScaffold
+      title="Platform operations"
+      description="Manage user tiers, configure regulatory workflows, inspect audit trails and maintain system health."
+      meta={
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface/60 px-2.5 py-1">
+          Super administrator, national governance
+        </span>
+      }
+      actions={
+        <>
+          <Button variant="secondary" onClick={() => navigate('/admin/audit-logs')}>
+            Audit trail
+          </Button>
+          <Button onClick={() => navigate('/admin/users')}>Manage users</Button>
+        </>
+      }
+      stats={[
+        {
+          label: 'Registered users',
+          value: users.length,
+          delta: `${activeUsersCount} active`,
+          icon: Users,
+          onClick: () => navigate('/admin/users')
+        },
+        {
+          label: 'Active institutions',
+          value: institutes.length,
+          delta: 'Verified',
+          icon: Building2,
+          onClick: () => navigate('/institutes')
+        },
+        {
+          label: 'Total applications',
+          value: applications.length,
+          delta: `AY ${config.academicYear}`,
+          icon: FileText,
+          onClick: () => navigate('/applications')
+        },
+        {
+          label: 'Active applications',
+          value: pendingApps,
+          delta: 'In pipeline',
+          icon: Clock,
+          onClick: () => navigate('/applications')
+        },
+        {
+          label: 'Approved applications',
+          value: approvedApps,
+          delta: 'Grant issued',
+          icon: CheckCircle2,
+          onClick: () => navigate('/applications?status=Approved')
+        }
+      ]}
+    >
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12 lg:gap-5">
+        <Card padded="none" className="flex flex-col lg:col-span-7">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Activity className="h-4 w-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+              <h2 className="text-sm font-semibold leading-snug text-ink">Regional jurisdictions</h2>
             </div>
             <button
+              type="button"
               onClick={() => navigate('/regions-officials')}
-              className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+              className="shrink-0 text-xs font-medium text-accent transition-colors duration-150 hover:text-accent-hover cursor-pointer"
             >
-              View Regional Offices →
+              View offices
             </button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full border-collapse text-left text-sm">
+              <caption className="sr-only">Regional offices with institute and active application counts</caption>
               <thead>
-                <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="pb-2">Region</th>
-                  <th className="pb-2">HQ</th>
-                  <th className="pb-2">Regional Officer</th>
-                  <th className="pb-2 text-right">Institutes</th>
-                  <th className="pb-2 text-right">Active apps</th>
+                <tr className="border-b border-line text-xs text-ink-2">
+                  <th scope="col" className="px-5 py-2.5 font-medium">Region</th>
+                  <th scope="col" className="px-3 py-2.5 font-medium">Headquarters</th>
+                  <th scope="col" className="px-3 py-2.5 font-medium">Officer</th>
+                  <th scope="col" className="px-3 py-2.5 text-right font-medium">Institutes</th>
+                  <th scope="col" className="px-5 py-2.5 text-right font-medium">Active</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-line/70">
                 {regionalRows.map((ro) => (
-                  <tr key={ro.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-2.5 font-bold text-slate-900">{ro.region}</td>
-                    <td className="py-2.5 text-slate-600">{ro.headquarters}</td>
-                    <td className="py-2.5 text-slate-700 font-medium">{ro.officerName}</td>
-                    <td className="py-2.5 text-right text-slate-800 font-bold">{ro.instituteCount}</td>
-                    <td className="py-2.5 text-right font-bold text-amber-600">{ro.activeCount}</td>
+                  <tr key={ro.id} className="transition-colors duration-150 hover:bg-surface-2">
+                    <td className="px-5 py-3 font-medium text-ink">{ro.region}</td>
+                    <td className="px-3 py-3 text-ink-2">{ro.headquarters}</td>
+                    <td className="px-3 py-3 text-ink-2">{ro.officerName}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-ink">{ro.instituteCount}</td>
+                    <td className="px-5 py-3 text-right tabular-nums text-ink">{ro.activeCount}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
-        {/* User Activity & Role Distribution (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-800">
-                User Tier & Role Distribution
-              </h2>
+        <Card padded="none" className="flex flex-col lg:col-span-5">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Users className="h-4 w-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+              <h2 className="text-sm font-semibold leading-snug text-ink">User tier distribution</h2>
             </div>
             <button
+              type="button"
               onClick={() => navigate('/admin/roles')}
-              className="text-xs text-purple-600 hover:text-purple-700 font-semibold"
+              className="shrink-0 text-xs font-medium text-accent transition-colors duration-150 hover:text-accent-hover cursor-pointer"
             >
-              Role Matrix →
+              Role matrix
             </button>
           </div>
 
-          <div className="space-y-2.5 my-auto">
-            {[
-              { role: 'SUPER_ADMIN', label: 'Super Administrators', count: users.filter((u: User) => u.role === 'SUPER_ADMIN').length, color: 'bg-purple-600' },
-              { role: 'AICTE_ADMIN', label: 'AICTE Central Officers', count: users.filter((u: User) => u.role === 'AICTE_ADMIN').length, color: 'bg-blue-600' },
-              { role: 'REGIONAL_OFFICER', label: 'Regional Officers', count: users.filter((u: User) => u.role === 'REGIONAL_OFFICER').length, color: 'bg-teal-600' },
-              { role: 'EVC_MEMBER', label: 'EVC Committee Inspectors', count: users.filter((u: User) => u.role === 'EVC_MEMBER').length, color: 'bg-amber-600' },
-              { role: 'INSTITUTION_ADMIN', label: 'Institution Principals & Admins', count: users.filter((u: User) => u.role === 'INSTITUTION_ADMIN').length, color: 'bg-rose-600' }
-            ].map((item) => (
-              <div key={item.role} className="flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-2">
-                  <span className={`w-2 h-2 rounded-full ${item.color}`} />
-                  <span className="font-medium text-slate-700">{item.label}</span>
-                </div>
-                <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">
-                  {item.count} accounts
-                </span>
+          <div className="my-auto space-y-2.5 px-5 py-5 text-sm">
+            {roleRows.map((item) => (
+              <div key={item.role} className="flex items-center justify-between gap-3">
+                <span className="truncate text-ink-2">{item.label}</span>
+                <span className="shrink-0 font-medium tabular-nums text-ink">{item.count}</span>
               </div>
             ))}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <div className="mt-auto flex items-center justify-between border-t border-line px-5 py-3 text-xs text-ink-2">
             <span>Role-based access control</span>
-            <span className="text-emerald-600 font-semibold flex items-center">
-              <CheckCircle2 className="w-3 h-3 mr-1" /> Enforced
+            <span className="inline-flex items-center gap-1 font-medium text-success">
+              <CheckCircle2 className="h-3 w-3" strokeWidth={1.75} /> Enforced
             </span>
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Row 3: Recent Administrative Audit Actions & System Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        {/* Recent Audit Logs (8 cols) */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-                <History className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Recent Administrative Actions & Audit Trail
-              </h2>
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12 lg:gap-5">
+        <Card padded="none" className="flex flex-col lg:col-span-8">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <History className="h-4 w-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+              <h2 className="text-sm font-semibold leading-snug text-ink">Recent administrative actions</h2>
             </div>
             <button
+              type="button"
               onClick={() => navigate('/admin/audit-logs')}
-              className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+              className="shrink-0 text-xs font-medium text-accent transition-colors duration-150 hover:text-accent-hover cursor-pointer"
             >
-              View Full Logs ({allAuditLogs.length})
+              Full logs ({allAuditLogs.length})
             </button>
           </div>
 
-          <div className="space-y-2.5 my-auto">
+          <div className="my-auto divide-y divide-line/70">
             {auditLogs.map((log: AuditLog) => (
               <div
                 key={log.id}
-                className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/60 flex items-start justify-between text-xs"
+                className="flex flex-col gap-1 px-5 py-3 text-sm sm:flex-row sm:items-start sm:justify-between sm:gap-4"
               >
-                <div className="space-y-0.5">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-bold text-slate-900">{log.userName}</span>
-                    <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-slate-200 text-slate-700">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-ink">{log.userName}</span>
+                    <Badge tone="neutral" size="sm">
                       {log.userRole}
-                    </span>
-                    <span className="text-slate-400 font-mono text-[10px]">{log.action}</span>
+                    </Badge>
+                    <span className="font-mono text-xs text-ink-2">{log.action}</span>
                   </div>
-                  <p className="text-slate-600">{log.details}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-ink-2">{log.details}</p>
                 </div>
-                <div className="text-right shrink-0 ml-4">
-                  <div className="text-[10px] font-medium text-slate-400">{log.timestamp}</div>
-                  <div className="text-[10px] text-slate-400 font-mono">{log.ipAddress}</div>
+                <div className="shrink-0 text-xs text-ink-2 sm:text-right">
+                  <div>{log.timestamp}</div>
+                  <div className="font-mono">{log.ipAddress}</div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
-        {/* System Alerts & Maintenance Controls (4 cols) */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-                <Server className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Automation and alerts
-              </h2>
+        <Card padded="none" className="flex flex-col lg:col-span-4">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Server className="h-4 w-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+              <h2 className="text-sm font-semibold leading-snug text-ink">Automation and alerts</h2>
             </div>
             <button
+              type="button"
               onClick={() => navigate('/admin/system-config')}
-              className="text-xs text-slate-500 hover:text-slate-800"
+              className="shrink-0 text-xs font-medium text-accent transition-colors duration-150 hover:text-accent-hover cursor-pointer"
             >
               Config
             </button>
           </div>
 
-          <div className="space-y-3 my-auto">
+          <div className="my-auto space-y-2.5 px-5 py-5 text-sm">
             <button
+              type="button"
               onClick={() => navigate('/alerts')}
-              className="w-full text-left p-3 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-between gap-3 cursor-pointer hover:bg-rose-100/70 transition-colors"
+              className="flex w-full items-center justify-between gap-3 rounded-control border border-line bg-surface-2 px-3 py-3 text-left transition-colors duration-150 hover:border-line-strong cursor-pointer"
             >
               <div>
-                <div className="text-xs font-bold text-rose-900">Deadline alerts</div>
-                <div className="text-[10px] text-rose-700">
+                <div className="font-medium text-ink">Deadline alerts</div>
+                <div className="mt-0.5 text-xs text-ink-2">
                   {alertsInForce.critical} critical, {alertsInForce.high} high severity
                 </div>
               </div>
-              <span className="text-lg font-black text-rose-700">
+              <span className="text-2xl font-semibold tabular-nums text-ink">
                 {alertsInForce.open + alertsInForce.acknowledged}
               </span>
             </button>
 
-            <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3 rounded-control border border-line px-3 py-3">
               <div>
-                <div className="text-xs font-bold text-blue-900">Academic year cycle</div>
-                <div className="text-[10px] text-blue-700">AY {config.academicYear}</div>
+                <div className="font-medium text-ink">Academic year cycle</div>
+                <div className="mt-0.5 text-xs text-ink-2">AY {config.academicYear}</div>
               </div>
-              <span className="text-xs font-bold text-blue-700">
+              <Badge tone={cycleDaysLeft >= 0 ? 'success' : 'neutral'} size="sm">
                 {cycleDaysLeft >= 0 ? 'Open' : 'Closed'}
-              </span>
+              </Badge>
             </div>
 
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3 rounded-control border border-line px-3 py-3">
               <div>
-                <div className="text-xs font-bold text-amber-900">Cycle deadline</div>
-                <div className="text-[10px] text-amber-700">{config.approvalCycleEndDate}</div>
+                <div className="font-medium text-ink">Cycle deadline</div>
+                <div className="mt-0.5 text-xs text-ink-2">{config.approvalCycleEndDate}</div>
               </div>
-              <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full whitespace-nowrap">
+              <span className="shrink-0 text-xs text-ink-2">
                 {cycleDaysLeft >= 0
                   ? `${cycleDaysLeft} days left`
                   : `Ended ${Math.abs(cycleDaysLeft)} days ago`}
@@ -392,17 +284,17 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100">
-            <button
+          <div className="mt-auto border-t border-line px-5 py-4">
+            <Button
+              fullWidth
               onClick={() => navigate('/admin/system-config')}
-              className="w-full py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+              icon={<Sliders className="h-4 w-4" strokeWidth={1.75} />}
             >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Configure System Settings</span>
-            </button>
+              Configure system settings
+            </Button>
           </div>
-        </div>
+        </Card>
       </div>
-    </div>
+    </DashboardScaffold>
   );
 };

@@ -11,7 +11,21 @@ export const Dashboard: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return null;
+    return (
+      <div className="space-y-6" aria-busy="true" aria-label="Loading dashboard">
+        <div className="h-32 animate-pulse rounded-modal bg-surface-2" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((key) => (
+            <div key={key} className="h-28 animate-pulse rounded-card border border-line bg-surface-2" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {[0, 1, 2].map((key) => (
+            <div key={key} className="h-64 animate-pulse rounded-card border border-line bg-surface-2" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   // If session is unauthenticated, redirect strictly to login (never default to AICTE Admin)

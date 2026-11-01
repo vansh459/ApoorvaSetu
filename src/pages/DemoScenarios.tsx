@@ -1,22 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Clock3, FlaskConical } from 'lucide-react';
+import { Clock3, FlaskConical } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { DEMO_CLOCK_PRESETS, SEED_SCENARIOS } from '../data/seedScenarios';
-import type { SeedScenarioTier } from '../data/seedScenarios';
 import { formatDisplayDate, getNow } from '../utils/dates';
-
-const TIER_STYLE: Record<SeedScenarioTier, string> = {
-  'On Track': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Approaching: 'bg-amber-50 text-amber-700 border-amber-200',
-  'Due Today': 'bg-orange-50 text-orange-700 border-orange-200',
-  Breached: 'bg-rose-50 text-rose-700 border-rose-200',
-  Paused: 'bg-slate-100 text-slate-600 border-slate-200',
-  Overdue: 'bg-rose-50 text-rose-700 border-rose-200',
-  Expired: 'bg-rose-50 text-rose-700 border-rose-200',
-  Verified: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Pending: 'bg-amber-50 text-amber-700 border-amber-200'
-};
+import { statusTone } from '../utils/statusTone';
+import { Badge, Button, Card, PageHeader } from '../components/ui';
 
 export const DemoScenarios: React.FC = () => {
   const navigate = useNavigate();
@@ -25,32 +14,29 @@ export const DemoScenarios: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Demo scenarios</h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Every seeded case below is anchored to the day the demo starts, so the SLA tiers stay true
-          however long the project sits between walkthroughs.
-        </p>
-      </div>
+      <PageHeader
+        title="Demo scenarios"
+        description="Every seeded case below is anchored to the day the demo starts, so the SLA tiers stay true however long the project sits between walkthroughs."
+      />
 
-      <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-start gap-2">
-            <Clock3 className="w-4 h-4 text-slate-500 mt-0.5" />
+      <Card>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-2.5">
+            <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-ink-2" />
             <div>
-              <h2 className="text-sm font-bold text-slate-800">Demo clock</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <h2 className="text-sm font-semibold text-ink">Demo clock</h2>
+              <p className="mt-0.5 text-sm text-ink-2">
                 Today is {formatDisplayDate(now)}. Advance the clock to watch reminders and
                 escalations climb without waiting for real days to pass.
               </p>
             </div>
           </div>
-          <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 rounded-full px-3 py-1 self-start sm:self-auto">
+          <Badge tone="neutral" className="self-start sm:self-auto">
             Offset {demoClockOffsetDays === 0 ? 'today' : `+${demoClockOffsetDays} day(s)`}
-          </span>
+          </Badge>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="mt-4 grid grid-cols-1 gap-1 rounded-control border border-line bg-surface-2 p-1 sm:grid-cols-2 lg:grid-cols-4">
           {DEMO_CLOCK_PRESETS.map((preset) => {
             const active = preset.days === demoClockOffsetDays;
             return (
@@ -59,83 +45,73 @@ export const DemoScenarios: React.FC = () => {
                 type="button"
                 aria-pressed={active}
                 onClick={() => setDemoClockOffset(preset.days)}
-                className={`text-left rounded-xl border p-3 transition-colors cursor-pointer active:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+                className={`rounded-[8px] border p-3 text-left transition-[background-color,border-color,box-shadow] duration-150 ${
                   active
-                    ? 'border-blue-300 bg-blue-50'
-                    : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'
+                    ? 'border-line bg-surface shadow-raise'
+                    : 'border-transparent hover:bg-surface/60'
                 }`}
               >
-                <span
-                  className={`block text-xs font-bold ${
-                    active ? 'text-blue-700' : 'text-slate-800'
-                  }`}
-                >
+                <span className={`block text-sm font-semibold ${active ? 'text-ink' : 'text-ink-2'}`}>
                   {preset.label}
                 </span>
-                <span className="block text-[11px] text-slate-500 mt-0.5">{preset.hint}</span>
+                <span className="mt-0.5 block text-xs text-ink-2">{preset.hint}</span>
               </button>
             );
           })}
         </div>
 
-        <p className="text-[11px] text-slate-500 mt-3">
+        <p className="mt-3 text-xs text-ink-2">
           The clock only affects deadline evaluation. It never approves, rejects or verifies a case;
           those actions still need an authorised officer.
         </p>
-      </section>
+      </Card>
 
-      <section className="bg-white rounded-2xl border border-slate-200 shadow-2xs">
-        <div className="p-5 border-b border-slate-100 flex items-start gap-2">
-          <FlaskConical className="w-4 h-4 text-slate-500 mt-0.5" />
+      <Card padded="none">
+        <div className="flex items-start gap-2.5 border-b border-line p-5">
+          <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-ink-2" />
           <div>
-            <h2 className="text-sm font-bold text-slate-800">Seeded scenes</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h2 className="text-sm font-semibold text-ink">Seeded scenes</h2>
+            <p className="mt-0.5 text-sm text-ink-2">
               Each scene names the record, the tier you should see, and the control that proves the
               rule.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-5">
+        <div className="grid grid-cols-1 gap-3 p-5 lg:grid-cols-2">
           {SEED_SCENARIOS.map((scenario) => (
             <article
               key={scenario.id}
-              className="flex flex-col rounded-xl border border-slate-200 p-4 hover:border-slate-300 transition-colors"
+              className="flex flex-col rounded-card border border-line p-4 transition-colors duration-150 hover:border-line-strong"
             >
               <div className="flex items-start justify-between gap-3">
-                <h3 className="text-sm font-bold text-slate-900 leading-tight">
-                  {scenario.title}
-                </h3>
-                <span
-                  className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${TIER_STYLE[scenario.tier]}`}
-                >
-                  {scenario.tier}
-                </span>
+                <h3 className="text-sm font-semibold leading-tight text-ink">{scenario.title}</h3>
+                <Badge tone={statusTone(scenario.tier)}>{scenario.tier}</Badge>
               </div>
 
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
-                <span className="font-semibold text-slate-600">{scenario.entityType}</span>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-2">
+                <span className="font-medium text-ink">{scenario.entityType}</span>
                 <span className="font-mono">{scenario.entityId}</span>
               </div>
 
-              <p className="text-xs text-slate-600 mt-2 leading-relaxed">{scenario.summary}</p>
-              <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
-                <span className="font-semibold text-slate-600">What to check. </span>
+              <p className="mt-2 text-sm leading-relaxed text-ink-2">{scenario.summary}</p>
+              <p className="mt-2 text-xs leading-relaxed text-ink-2">
+                <span className="font-semibold text-ink">What to check. </span>
                 {scenario.lookFor}
               </p>
 
-              <button
-                type="button"
+              <Button
+                variant="link"
+                size="sm"
+                className="mt-3 self-start"
                 onClick={() => navigate(scenario.link)}
-                className="mt-3 self-start inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 active:text-blue-900 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 {scenario.linkLabel}
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </article>
           ))}
         </div>
-      </section>
+      </Card>
     </div>
   );
 };

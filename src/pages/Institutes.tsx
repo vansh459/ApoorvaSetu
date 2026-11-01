@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
-import {
-  Search,
-  MapPin
-} from 'lucide-react';
+import { AlertTriangle, Building2, CheckCircle2, Clock, MapPin, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { filterInstitutesForUser } from '../services/rbacService';
 import { StatusBadge } from '../components/common/StatusBadge';
-import { Modal } from '../components/common/Modal';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  Modal,
+  PageHeader,
+  ProgressBar,
+  Select,
+  StatTile
+} from '../components/ui';
 import { Institute } from '../types';
 
 export const Institutes: React.FC = () => {
@@ -41,213 +49,184 @@ export const Institutes: React.FC = () => {
   const pendingCount = scopedInsts.filter((i: Institute) => i.status === 'Pending Review').length;
   const noticeCount = scopedInsts.filter((i: Institute) => i.status === 'Notice Issued').length;
 
+  const scoreTone = (score: number): 'success' | 'warning' | 'danger' =>
+    score >= 90 ? 'success' : score >= 75 ? 'warning' : 'danger';
+
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Institutes Directory & Dossiers
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Central registry of approved and applicant technical institutions across India.
-        </p>
+      <PageHeader
+        title="Institutes"
+        description="Central registry of approved and applicant technical institutions across India."
+      />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile label="Total institutes" value={totalInstitutes} delta="Across 7 regions" icon={Building2} />
+        <StatTile label="Approved and active" value={approvedCount} delta="Full compliance" icon={CheckCircle2} />
+        <StatTile label="Under review" value={pendingCount} delta="EVC or scrutiny stage" icon={Clock} />
+        <StatTile label="Notice issued" value={noticeCount} delta="Affidavit required" icon={AlertTriangle} />
       </div>
 
-      {/* Summary Stat Counters */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-          <div className="text-xs font-semibold text-slate-500">Total Institutes</div>
-          <div className="text-2xl font-bold text-slate-900 mt-0.5">{totalInstitutes}</div>
-          <div className="text-[11px] text-blue-600 font-medium mt-1">Across 7 Regions</div>
-        </div>
+      <Card>
+        <div className="flex flex-col gap-3 md:flex-row">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
+            <Input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search institution, PID, city or state"
+              aria-label="Search institutions"
+              className="pl-9"
+            />
+          </div>
 
-        <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-100 shadow-2xs">
-          <div className="text-xs font-semibold text-emerald-800">Approved & Active</div>
-          <div className="text-2xl font-bold text-emerald-950 mt-0.5">{approvedCount}</div>
-          <div className="text-[11px] text-emerald-700 font-medium mt-1">Full Compliance</div>
-        </div>
-
-        <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-100 shadow-2xs">
-          <div className="text-xs font-semibold text-amber-800">Under Review / Scrutiny</div>
-          <div className="text-2xl font-bold text-amber-950 mt-0.5">{pendingCount}</div>
-          <div className="text-[11px] text-amber-700 font-medium mt-1">EVC / Scrutiny Stage</div>
-        </div>
-
-        <div className="bg-rose-50/70 p-4 rounded-2xl border border-rose-100 shadow-2xs">
-          <div className="text-xs font-semibold text-rose-800">Notice Issued</div>
-          <div className="text-2xl font-bold text-rose-950 mt-0.5">{noticeCount}</div>
-          <div className="text-[11px] text-rose-700 font-medium mt-1">Affidavit Required</div>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex flex-col md:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by institution name, permanent AICTE code, city or state..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
-          />
-        </div>
-
-        <div className="w-full md:w-48">
-          <select
+          <Select
             value={selectedRegion}
             onChange={(e) => setSelectedRegion(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
+            aria-label="Filter by region"
+            className="md:w-48"
           >
-            <option value="All">All Regions</option>
+            <option value="All">All regions</option>
             <option value="Northern">Northern</option>
             <option value="Southern">Southern</option>
             <option value="Eastern">Eastern</option>
             <option value="Western">Western</option>
             <option value="Central">Central</option>
             <option value="North Eastern">North Eastern</option>
-          </select>
-        </div>
+          </Select>
 
-        <div className="w-full md:w-56">
-          <select
+          <Select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
+            aria-label="Filter by discipline"
+            className="md:w-56"
           >
-            <option value="All">All Disciplines / Categories</option>
+            <option value="All">All disciplines</option>
             <option value="Engineering & Technology">Engineering & Technology</option>
             <option value="Management">Management</option>
             <option value="Pharmacy">Pharmacy</option>
             <option value="Architecture">Architecture</option>
             <option value="Polytechnic">Polytechnic</option>
-          </select>
+          </Select>
         </div>
-      </div>
+      </Card>
 
-      {/* Institution Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredInsts.map((inst: Institute) => (
-          <div
-            key={inst.id}
-            onClick={() => setActiveInst(inst)}
-            className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-md hover:border-blue-400 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] cursor-pointer transition-all duration-200 flex flex-col justify-between group"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                  AICTE PID: {inst.code}
-                </span>
-                <StatusBadge status={inst.status} size="sm" />
-              </div>
-
-              <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                {inst.name}
-              </h3>
-
-              <div className="flex items-center space-x-1.5 text-xs text-slate-500 mt-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>
-                  {inst.city}, {inst.state} ({inst.region})
-                </span>
-              </div>
-
-              <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-[11px]">
-                <div>
-                  <span className="text-slate-400">Category:</span>
-                  <div className="font-semibold text-slate-700 truncate">{inst.category}</div>
+      {filteredInsts.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={Building2}
+            title="No institutions match these filters"
+            description="Clear the search or choose a different region or discipline."
+          />
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredInsts.map((inst: Institute) => (
+            <button
+              key={inst.id}
+              type="button"
+              onClick={() => setActiveInst(inst)}
+              className="card-interactive flex flex-col justify-between rounded-card border border-line bg-surface p-5 text-left shadow-raise hover:border-line-strong"
+            >
+              <div>
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <Badge>AICTE PID: {inst.code}</Badge>
+                  <StatusBadge status={inst.status} size="sm" />
                 </div>
-                <div>
-                  <span className="text-slate-400">Approved Seats:</span>
-                  <div className="font-semibold text-slate-700">{inst.approvedSeats}</div>
+
+                <h3 className="text-sm font-semibold text-ink">{inst.name}</h3>
+
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-ink-2">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-3" />
+                  <span>
+                    {inst.city}, {inst.state} ({inst.region})
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2 border-t border-line pt-3 text-xs">
+                  <div>
+                    <span className="text-ink-2">Category</span>
+                    <div className="font-medium leading-snug text-ink">{inst.category}</div>
+                  </div>
+                  <div>
+                    <span className="text-ink-2">Approved seats</span>
+                    <div className="font-medium text-ink">{inst.approvedSeats}</div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Bottom Compliance Score Bar */}
-            <div className="mt-4 pt-3 border-t border-slate-100">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-slate-500 font-medium">Compliance Health</span>
-                <span className="font-bold text-slate-800">{inst.complianceScore}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${inst.complianceScore}%`,
-                    backgroundColor:
-                      inst.complianceScore >= 90
-                        ? '#10b981'
-                        : inst.complianceScore >= 75
-                        ? '#f59e0b'
-                        : '#ef4444'
-                  }}
+              <div className="mt-4 border-t border-line pt-3">
+                <div className="mb-1 flex items-center justify-between text-xs">
+                  <span className="text-ink-2">Compliance health</span>
+                  <span className="font-semibold text-ink">{inst.complianceScore}%</span>
+                </div>
+                <ProgressBar
+                  value={inst.complianceScore}
+                  tone={scoreTone(inst.complianceScore)}
+                  label={`${inst.name} compliance health`}
                 />
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Institute Detail Modal */}
-      {activeInst && (
-        <Modal
-          isOpen={!!activeInst}
-          onClose={() => setActiveInst(null)}
-          title={activeInst.name}
-          subtitle={`Permanent ID: ${activeInst.code} • Established ${activeInst.establishedYear}`}
-          maxWidth="max-w-2xl"
-        >
+      <Modal
+        isOpen={Boolean(activeInst)}
+        onClose={() => setActiveInst(null)}
+        title={activeInst?.name ?? 'Institution'}
+        subtitle={
+          activeInst ? `Permanent ID ${activeInst.code}, established ${activeInst.establishedYear}` : undefined
+        }
+        size="lg"
+        footer={
+          <Button variant="secondary" onClick={() => setActiveInst(null)}>
+            Close dossier
+          </Button>
+        }
+      >
+        {activeInst && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="grid grid-cols-1 gap-3 rounded-control border border-line bg-surface-2 p-4 text-sm sm:grid-cols-2">
               <div>
-                <span className="text-slate-400">Head of Institution / Principal:</span>
-                <div className="font-bold text-slate-800 text-sm mt-0.5">{activeInst.principalName}</div>
+                <span className="text-xs text-ink-2">Head of institution</span>
+                <div className="mt-0.5 font-semibold text-ink">{activeInst.principalName}</div>
               </div>
               <div>
-                <span className="text-slate-400">Jurisdiction & Region:</span>
-                <div className="font-semibold text-slate-800 mt-0.5">{activeInst.region} Regional Office</div>
+                <span className="text-xs text-ink-2">Jurisdiction</span>
+                <div className="mt-0.5 font-medium text-ink">{activeInst.region} Regional Office</div>
               </div>
               <div>
-                <span className="text-slate-400">Official Email:</span>
-                <div className="font-semibold text-blue-600 mt-0.5">{activeInst.email}</div>
+                <span className="text-xs text-ink-2">Official email</span>
+                <div className="mt-0.5 font-medium text-accent">{activeInst.email}</div>
               </div>
               <div>
-                <span className="text-slate-400">Contact Number:</span>
-                <div className="font-semibold text-slate-800 mt-0.5">{activeInst.phone}</div>
+                <span className="text-xs text-ink-2">Contact number</span>
+                <div className="mt-0.5 font-medium text-ink">{activeInst.phone}</div>
               </div>
               <div className="sm:col-span-2">
-                <span className="text-slate-400">Registered Campus Address:</span>
-                <div className="font-medium text-slate-700 mt-0.5">{activeInst.address}</div>
+                <span className="text-xs text-ink-2">Registered campus address</span>
+                <div className="mt-0.5 text-ink">{activeInst.address}</div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl">
-                <div className="text-lg font-black text-blue-700">{activeInst.approvedSeats}</div>
-                <div className="text-[11px] font-medium text-slate-600">Annual Student Intake</div>
+            <div className="grid grid-cols-1 gap-3 text-center sm:grid-cols-3">
+              <div className="rounded-control border border-line p-3">
+                <div className="text-xl font-semibold text-ink">{activeInst.approvedSeats}</div>
+                <div className="mt-0.5 text-xs text-ink-2">Annual student intake</div>
               </div>
-              <div className="p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl">
-                <div className="text-lg font-black text-emerald-700">{activeInst.accreditedPrograms}</div>
-                <div className="text-[11px] font-medium text-slate-600">NBA Accredited Courses</div>
+              <div className="rounded-control border border-line p-3">
+                <div className="text-xl font-semibold text-ink">{activeInst.accreditedPrograms}</div>
+                <div className="mt-0.5 text-xs text-ink-2">NBA accredited courses</div>
               </div>
-              <div className="p-3 bg-purple-50/70 border border-purple-100 rounded-xl">
-                <div className="text-lg font-black text-purple-700">{activeInst.complianceScore}%</div>
-                <div className="text-[11px] font-medium text-slate-600">Compliance Rating</div>
+              <div className="rounded-control border border-line p-3">
+                <div className="text-xl font-semibold text-ink">{activeInst.complianceScore}%</div>
+                <div className="mt-0.5 text-xs text-ink-2">Compliance rating</div>
               </div>
-            </div>
-
-            <div className="flex justify-end pt-3 border-t border-slate-100">
-              <button
-                onClick={() => setActiveInst(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-200 cursor-pointer"
-              >
-                Close Dossier
-              </button>
             </div>
           </div>
-        </Modal>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

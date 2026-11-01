@@ -1156,30 +1156,3 @@ export const regionalOffices: RegionalOffice[] = [
     pendingApplications: 95
   }
 ];
-
-export const stageMovementData = [
-  { name: 'Scrutiny / Re-scrutiny', count: 1482, percentage: 27, color: '#3b82f6', hex: '#3b82f6' },
-  { name: 'Expert Visit Committee (EVC)', count: 1124, percentage: 21, color: '#8b5cf6', hex: '#8b5cf6' },
-  { name: 'SAC / SHC', count: 896, percentage: 16, color: '#0d9488', hex: '#0d9488' },
-  { name: 'Approval (Subject to Undertaking)', count: 642, percentage: 12, color: '#f59e0b', hex: '#f59e0b' },
-  { name: 'Final Approval', count: 438, percentage: 8, color: '#10b981', hex: '#10b981' },
-  { name: 'Other Stages', count: 476, percentage: 9, color: '#64748b', hex: '#64748b' }
-];
-
-export const regionalDistributionData = [
-  { name: 'Northern', value: 1248, percentage: 23, color: '#3b82f6' },
-  { name: 'Southern', value: 1102, percentage: 20, color: '#10b981' },
-  { name: 'Eastern', value: 934, percentage: 17, color: '#f59e0b' },
-  { name: 'Western', value: 872, percentage: 16, color: '#8b5cf6' },
-  { name: 'Central', value: 648, percentage: 12, color: '#06b6d4' },
-  { name: 'North Eastern', value: 391, percentage: 7, color: '#f43f5e' },
-  { name: 'Others', value: 287, percentage: 5, color: '#334155' }
-];
-
-export const complianceSummaryData = [
-  { label: 'Lease Documents (expiring < 3 months)', count: 126, color: '#ef4444', icon: 'file-text' },
-  { label: 'Other Institutional Undertakings', count: 243, color: '#f59e0b', icon: 'file-text' },
-  { label: 'Compliance Submissions (pending)', count: 389, color: '#3b82f6', icon: 'file-check' },
-  { label: 'Documents Expired', count: 67, color: '#dc2626', icon: 'alert-circle' },
-  { label: 'Documents Valid', count: 4957, color: '#10b981', icon: 'check-circle-2' }
-];

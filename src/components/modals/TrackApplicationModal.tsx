@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Search, CheckCircle2, Clock, AlertCircle, ArrowRight } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { Modal } from '../common/Modal';
+import { Button, EmptyState, Field, Input, Notice } from '../ui';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { StatusBadge } from '../common/StatusBadge';
@@ -32,39 +33,32 @@ export const TrackApplicationModal: React.FC = () => {
     <Modal
       isOpen={activeModal === 'track-app'}
       onClose={() => setActiveModal(null)}
-      title="Track Application Status"
-      subtitle="Real-time multi-stage approval lifecycle tracker"
-      maxWidth="max-w-2xl"
+      title="Track application status"
+      subtitle="Live view of the approval lifecycle for one case"
+      size="lg"
     >
       <div className="space-y-5">
-        {/* Search input */}
-        <div className="flex items-center space-x-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
-            <input
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <Field label="Application ID" htmlFor="track-application-id" className="flex-1">
+            <Input
+              id="track-application-id"
               type="text"
               value={appIdInput}
               onChange={(e) => setAppIdInput(e.target.value)}
-              placeholder="Enter Application ID (e.g. AICTE/2026/12876)"
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-blue-500"
+              placeholder="AICTE/2026/12876"
             />
-          </div>
-          <button
-            type="button"
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shrink-0"
-          >
-            Track Status
-          </button>
+          </Field>
+          <Button>Track status</Button>
         </div>
 
-        {/* Quick select buttons */}
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-          <span>Quick check:</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-ink-2">Quick check</span>
           {scopedApps.slice(0, 4).map((a) => (
             <button
               key={a.id}
+              type="button"
               onClick={() => setAppIdInput(a.id)}
-              className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 font-medium transition-colors"
+              className="rounded-pill bg-surface-2 px-2.5 py-1 font-mono text-xs text-ink-2 transition-colors duration-150 hover:text-ink"
             >
               {a.id}
             </button>
@@ -72,72 +66,68 @@ export const TrackApplicationModal: React.FC = () => {
         </div>
 
         {matchedApp ? (
-          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-4">
-            {/* Top meta */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
-              <div>
-                <span className="text-xs font-bold text-blue-600">{matchedApp.id}</span>
-                <h4 className="text-sm font-bold text-slate-900 mt-0.5">
-                  {matchedApp.instituteName}
-                </h4>
-                <p className="text-[11px] text-slate-500">
-                  {matchedApp.type} • {matchedApp.region} Region
+          <div className="space-y-5 rounded-card bg-surface-2 p-4 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
+              <div className="min-w-0">
+                <span className="font-mono text-xs text-ink-2">{matchedApp.id}</span>
+                <h3 className="mt-1 text-base font-semibold text-ink">{matchedApp.instituteName}</h3>
+                <p className="mt-0.5 text-xs text-ink-2">
+                  {matchedApp.type}, {matchedApp.region} Region
                 </p>
                 {matchedApp.stageDueAt && (
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Statutory deadline:{' '}
-                    <strong className="text-slate-700">{formatDisplayDate(matchedApp.stageDueAt)}</strong>
-                    {matchedApp.slaTier ? ` • ${matchedApp.slaTier}` : ''}
+                  <p className="mt-1 text-xs text-ink-2">
+                    Statutory deadline{' '}
+                    <span className="font-medium text-ink">
+                      {formatDisplayDate(matchedApp.stageDueAt)}
+                    </span>
+                    {matchedApp.slaTier ? `, ${matchedApp.slaTier}` : ''}
                   </p>
                 )}
               </div>
               <StatusBadge status={matchedApp.status} />
             </div>
 
-            {/* Stepper Pipeline */}
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">
-                Approval Pipeline Progress
-              </div>
+              <div className="mb-3 text-label font-medium text-ink-2">Approval pipeline</div>
               <div className="space-y-3">
                 {stages.map((stg, idx) => {
                   const isDone = idx < currentStageIndex;
                   const isCurrent = idx === currentStageIndex;
 
                   return (
-                    <div key={stg} className="flex items-center space-x-3 text-xs">
+                    <div key={stg} className="flex items-center gap-3 text-xs">
                       <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-[10px] ${
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-pill font-semibold ${
                           isDone
-                            ? 'bg-emerald-600 text-white'
+                            ? 'bg-success text-white'
                             : isCurrent
-                            ? 'bg-blue-600 text-white ring-4 ring-blue-100 animate-pulse'
-                            : 'bg-slate-200 text-slate-500'
+                              ? 'bg-accent text-white'
+                              : 'bg-line text-ink-2'
                         }`}
                       >
                         {isDone ? (
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
                         ) : isCurrent ? (
-                          <Clock className="w-3.5 h-3.5" />
+                          <Clock className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
                         ) : (
                           idx + 1
                         )}
                       </div>
 
-                      <div className="flex-1 min-w-0 flex items-center justify-between">
+                      <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
                         <span
-                          className={`font-semibold ${
+                          className={`truncate ${
                             isCurrent
-                              ? 'text-blue-700 font-bold'
+                              ? 'font-semibold text-ink'
                               : isDone
-                              ? 'text-slate-800'
-                              : 'text-slate-400'
+                                ? 'font-medium text-ink'
+                                : 'text-ink-2'
                           }`}
                         >
                           {stg}
                         </span>
-                        <span className="text-[11px] text-slate-500">
-                          {isDone ? 'Completed' : isCurrent ? 'Active Stage' : 'Pending'}
+                        <span className="shrink-0 text-ink-2">
+                          {isDone ? 'Completed' : isCurrent ? 'Active stage' : 'Pending'}
                         </span>
                       </div>
                     </div>
@@ -146,34 +136,30 @@ export const TrackApplicationModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Remarks note */}
             {matchedApp.remarks && (
-              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-xs text-blue-900">
-                <span className="font-bold">Latest Officer Note: </span>
+              <Notice tone="info" title="Latest officer note">
                 {matchedApp.remarks}
-              </div>
+              </Notice>
             )}
 
-            {/* Footer action */}
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
+            <div className="flex justify-end">
+              <Button
+                variant="link"
                 onClick={() => {
                   setSelectedApplication(matchedApp);
                   setActiveModal('app-detail');
                 }}
-                className="inline-flex items-center space-x-1 text-xs font-bold text-blue-600 hover:text-blue-800"
               >
-                <span>Open Full Application & Action Dossier</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+                Open application dossier
+              </Button>
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 text-xs text-slate-500">
-            <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            No application found with ID "{appIdInput}".
-          </div>
+          <EmptyState
+            icon={AlertCircle}
+            title="No application found"
+            description={`No case matches ${appIdInput}. Check the ID or pick one from the quick check list.`}
+          />
         )}
       </div>
     </Modal>

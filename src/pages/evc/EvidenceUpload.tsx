@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
-import { UploadCloud, FileText, Image, Trash2, Camera, ClipboardList } from 'lucide-react';
+import { Camera, ClipboardList, FileText, Image, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { filterEVCVisitsForUser } from '../../services/rbacService';
 import { formatDisplayDate } from '../../utils/dates';
+import {
+  Badge,
+  Card,
+  CardHeader,
+  EmptyState,
+  Field,
+  IconButton,
+  PageHeader,
+  Select
+} from '../../components/ui';
 
 export const EvidenceUpload: React.FC = () => {
   const { user } = useAuth();
@@ -22,121 +32,113 @@ export const EvidenceUpload: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Header */}
-      <div>
-        <div className="flex items-center space-x-2 mb-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-            EVC Evidence Repository
-          </span>
-          <span className="text-xs text-slate-400">•</span>
-          <span className="text-xs text-slate-500 font-medium">Tamper-Proof Audit Attachments</span>
-        </div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Inspection Evidence & Geotagged Records
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Attach geotagged photographs, laboratory records and attendance audits to the inspection they support.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Inspection evidence"
+        description="Attach geotagged photographs, laboratory records and attendance audits to the inspection they support."
+        meta={
+          <>
+            <Badge tone="info">EVC evidence repository</Badge>
+            <span className="text-xs text-ink-2">Tamper-proof attachments</span>
+          </>
+        }
+      />
 
       {assignedVisits.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center">
-          <ClipboardList className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-          <div className="text-sm font-semibold text-slate-700">No inspection visit assigned to you</div>
-          <p className="text-xs text-slate-500 mt-1">
-            Evidence can be attached once a committee visit is scheduled for your region.
-          </p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={ClipboardList}
+            title="No inspection visit assigned to you"
+            description="Evidence can be attached once a committee visit is scheduled for your region."
+          />
+        </Card>
       ) : (
         <>
-          {/* Visit selector */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="text-xs font-semibold text-slate-700 shrink-0">Evidence for visit</div>
-            <select
-              value={visitId}
-              onChange={(e) => setVisitId(e.target.value)}
-              className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:border-amber-500"
-            >
-              {assignedVisits.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.id} — {item.instituteName}
-                  {item.date ? ` (${formatDisplayDate(item.date)})` : ''}
-                </option>
-              ))}
-            </select>
-            <div className="text-[11px] text-slate-500 shrink-0">{evidenceFiles.length} files attached</div>
-          </div>
-
-          {/* Upload Dropzone */}
-          <div
-            onClick={handleSimulatedUpload}
-            className={`bg-white rounded-2xl border-2 border-dashed p-8 text-center transition-all group shadow-xs ${
-              locked
-                ? 'border-slate-200 cursor-not-allowed opacity-70'
-                : 'border-amber-300 hover:border-amber-500 cursor-pointer hover:bg-amber-50/20'
-            }`}
-          >
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition-transform">
-              <Camera className="w-7 h-7" />
+          <Card>
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <Field label="Evidence for visit" htmlFor="evidence-visit">
+                <Select
+                  id="evidence-visit"
+                  value={visitId}
+                  onChange={(e) => setVisitId(e.target.value)}
+                >
+                  {assignedVisits.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.id}, {item.instituteName}
+                      {item.date ? ` (${formatDisplayDate(item.date)})` : ''}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <p className="text-label text-ink-2 sm:pb-2.5">{evidenceFiles.length} files attached</p>
             </div>
-            <h3 className="text-sm font-bold text-slate-900">
-              Upload Geotagged Inspection Photographs & Evidence
-            </h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              {locked
-                ? 'The inspection report is on record; evidence is locked for audit.'
-                : 'Click to attach campus infrastructure photos, laboratory test rigs, or signed biometric registers (JPG, PNG, PDF up to 25 MB).'}
-            </p>
-          </div>
+          </Card>
 
-          {/* Uploaded Evidence List */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-3">
-            <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100 flex items-center justify-between">
-              <span>Attached Evidence ({evidenceFiles.length} records)</span>
-              <span className="text-xs text-slate-400 font-normal">Held against {visit?.id}</span>
-            </h2>
+          <button
+            type="button"
+            onClick={handleSimulatedUpload}
+            disabled={locked}
+            className={
+              locked
+                ? 'w-full cursor-not-allowed rounded-card border-2 border-dashed border-line bg-surface p-8 text-center opacity-60'
+                : 'w-full cursor-pointer rounded-card border-2 border-dashed border-line-strong bg-surface p-8 text-center transition-colors duration-150 hover:border-accent hover:bg-surface-2'
+            }
+          >
+            <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent">
+              <Camera className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
+            </span>
+            <span className="block text-sm font-semibold text-ink">
+              Attach inspection photographs and evidence
+            </span>
+            <span className="mx-auto mt-1 block max-w-sm text-label text-ink-2">
+              {locked
+                ? 'The inspection report is on record, so evidence is locked for audit.'
+                : 'Campus infrastructure photos, laboratory test rigs or signed biometric registers in JPG, PNG or PDF up to 25 MB.'}
+            </span>
+          </button>
+
+          <Card padded="none">
+            <CardHeader
+              title="Attached evidence"
+              description={`${evidenceFiles.length} records held against ${visit?.id}`}
+            />
 
             {evidenceFiles.length === 0 ? (
-              <p className="text-xs text-slate-500 py-3">
-                No evidence attached yet. Photographs and registers added here are listed in the signed report.
+              <p className="px-5 py-6 text-label text-ink-2 sm:px-6">
+                No evidence attached yet. Records added here are listed in the signed report.
               </p>
             ) : (
-              <div className="space-y-2.5">
+              <ul className="divide-y divide-line px-5 sm:px-6">
                 {evidenceFiles.map((title) => (
-                  <div
-                    key={title}
-                    className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/60 flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center space-x-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <li key={title} className="flex items-center justify-between gap-3 py-3.5">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface-2 text-ink-2">
                         {title.toLowerCase().endsWith('.pdf') ? (
-                          <FileText className="w-4 h-4" />
+                          <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                         ) : (
-                          <Image className="w-4 h-4" />
+                          <Image className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                         )}
-                      </div>
+                      </span>
                       <div className="min-w-0">
-                        <div className="font-bold text-slate-900 truncate">{title}</div>
-                        <div className="text-[11px] text-slate-500">
-                          Attached to {visit?.instituteName}
-                        </div>
+                        <p className="truncate text-sm font-medium text-ink">{title}</p>
+                        <p className="text-label text-ink-2">Attached to {visit?.instituteName}</p>
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => visit && removeVisitEvidence(visit.id, title)}
+                    <IconButton
+                      label={`Remove ${title}`}
+                      size="sm"
                       disabled={locked}
-                      className="p-1 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer disabled:cursor-not-allowed disabled:hover:text-slate-400 shrink-0"
-                      title="Remove"
+                      className="hover:text-danger"
+                      onClick={() => visit && removeVisitEvidence(visit.id, title)}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                      <Trash2 className="h-4 w-4" />
+                    </IconButton>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
-          </div>
+          </Card>
         </>
       )}
     </div>

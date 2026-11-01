@@ -363,7 +363,7 @@ export function notificationsForEvent(
         draft(event, {
           title:
             event.type === 'document.expired'
-              ? 'Document expired — renewal required'
+              ? 'Document expired: renewal required'
               : 'Document validity expiring',
           description: String(event.payload?.detail ?? 'Update the validity evidence for this institution.'),
           category: 'system',

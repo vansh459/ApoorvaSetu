@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import {
-  Save,
-  CheckCircle2,
-  Server,
-  Calendar,
-  Users,
-  Clock3,
-  SlidersHorizontal
-} from 'lucide-react';
+import { Check, Save } from 'lucide-react';
 import { authService } from '../../services/authService';
+import { ROLE_LABELS } from '../../services/rbacService';
 import { SystemConfig as ConfigType } from '../../types';
 import { OPERATIONAL_STAGES, getStageMeta } from '../../workflow/stages';
 import { resolveWorkflowConfig } from '../../workflow/config';
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  Field,
+  Input,
+  Notice,
+  PageHeader
+} from '../../components/ui';
 
 const parseWarningDays = (value: string, fallback: number[]): number[] => {
   const days = value
@@ -20,6 +23,39 @@ const parseWarningDays = (value: string, fallback: number[]): number[] => {
     .filter((day) => Number.isFinite(day) && day >= 0);
   return days.length ? days : fallback;
 };
+
+const stageFieldId = (stage: string) =>
+  `config-stage-${stage.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
+interface SettingToggleProps {
+  id: string;
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+const SettingToggle: React.FC<SettingToggleProps> = ({
+  id,
+  label,
+  description,
+  checked,
+  onChange
+}) => (
+  <label htmlFor={id} className="flex cursor-pointer items-start justify-between gap-6 py-4">
+    <span className="min-w-0">
+      <span className="block text-sm font-medium text-ink">{label}</span>
+      <span className="mt-0.5 block text-label text-ink-2">{description}</span>
+    </span>
+    <input
+      id={id}
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+      className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-accent"
+    />
+  </label>
+);
 
 export const SystemConfigPage: React.FC = () => {
   const [config, setConfig] = useState<ConfigType>(() => authService.getSystemConfig());
@@ -59,315 +95,240 @@ export const SystemConfigPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-              Super Admin Control
-            </span>
-            <span className="text-xs text-slate-400">•</span>
-            <span className="text-xs text-slate-500 font-medium">Global Settings</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            System Configuration
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Configure approval cycle dates, inspection quorum thresholds, and regulatory governance parameters.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="System configuration"
+        description="Approval cycle dates, inspection quorum thresholds and the governance parameters that drive every case."
+        meta={
+          <>
+            <Badge tone="info">Super admin console</Badge>
+            <span className="text-xs text-ink-2">Academic year {config.academicYear}</span>
+          </>
+        }
+      />
 
-        {savedSuccess && (
-          <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center space-x-1.5 animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Settings saved successfully!</span>
-          </div>
-        )}
-      </div>
+      {savedSuccess && (
+        <Notice tone="success" icon={Check} title="Settings saved">
+          The new configuration is live across active sessions.
+        </Notice>
+      )}
 
-      <form onSubmit={handleSave} className="space-y-5">
-        {/* Card 1: Academic Cycle Configuration */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-          <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Calendar className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-900">
-                Academic Year Approval Cycle
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                Define the current national intake cycle and statutory deadline.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Active Academic Year
-              </label>
-              <input
+      <form id="system-config-form" onSubmit={handleSave} className="space-y-6">
+        <Card padded="none">
+          <CardHeader
+            title="Academic year"
+            description="The active national intake cycle and its statutory deadline."
+          />
+          <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+            <Field
+              label="Active academic year"
+              htmlFor="config-academic-year"
+              hint="Shown on dashboards, reports and approval letters."
+            >
+              <Input
+                id="config-academic-year"
                 type="text"
                 value={config.academicYear}
                 onChange={(e) => setConfig({ ...config, academicYear: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Approval Cycle Cut-off Date
-              </label>
-              <input
+            <Field
+              label="Approval cycle cut-off date"
+              htmlFor="config-cycle-end"
+              hint="Applications filed after this date roll to the next cycle."
+            >
+              <Input
+                id="config-cycle-end"
                 type="date"
                 value={config.approvalCycleEndDate}
                 onChange={(e) => setConfig({ ...config, approvalCycleEndDate: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-            </div>
+            </Field>
           </div>
-        </div>
+        </Card>
 
-        {/* Card 2: EVC & Inspection Parameters */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-          <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Users className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-900">
-                Inspection & Governance Quorum
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                Mandatory committee thresholds according to AICTE Approval Process Handbook (APH).
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Minimum EVC Committee Inspectors
-              </label>
-              <input
+        <Card padded="none">
+          <CardHeader
+            title="Inspection and governance"
+            description="Committee thresholds set by the AICTE Approval Process Handbook."
+          />
+          <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+            <Field
+              label="Minimum EVC inspectors"
+              htmlFor="config-evc-members"
+              hint="Default of 3: one chairperson, one subject expert and one industry representative."
+            >
+              <Input
+                id="config-evc-members"
                 type="number"
                 min={2}
                 max={5}
                 value={config.evcMinMembers}
                 onChange={(e) => setConfig({ ...config, evcMinMembers: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Default: 3 members (1 Chairman, 1 Subject Expert, 1 Industry Representative)
-              </span>
-            </div>
+            </Field>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Auto-Escalation Threshold (Days)
-              </label>
-              <input
+            <Field
+              label="Auto-escalation threshold"
+              htmlFor="config-auto-escalation"
+              hint="Days pending before an application is flagged automatically."
+            >
+              <Input
+                id="config-auto-escalation"
                 type="number"
                 min={3}
                 max={30}
                 value={config.autoEscalationDays}
-                onChange={(e) => setConfig({ ...config, autoEscalationDays: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
-              />
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Flag applications automatically if pending review exceeds this limit
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 3: Statutory SLA & Alert Configuration */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-          <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
-              <Clock3 className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-900">
-                Statutory SLAs, Alerts & Escalation Matrix
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                Drives deadline tiers, reminder windows and automatic escalation across every case.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            {OPERATIONAL_STAGES.map((stage) => (
-              <div key={stage}>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  {getStageMeta(stage).label}
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={1}
-                    max={365}
-                    value={stageSlas[stage]?.days ?? 30}
-                    onChange={(e) => updateStageSla(stage, Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-teal-500 focus:outline-hidden"
-                  />
-                  <span className="text-[10px] text-slate-400 shrink-0">days</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Undertaking reminder windows (days)
-              </label>
-              <input
-                type="text"
-                value={workflow.undertakingWarningDays.join(', ')}
                 onChange={(e) =>
-                  setConfig({
-                    ...config,
-                    undertakingWarningDays: parseWarningDays(e.target.value, workflow.undertakingWarningDays)
-                  })
+                  setConfig({ ...config, autoEscalationDays: Number(e.target.value) })
                 }
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-teal-500 focus:outline-hidden"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Comma-separated reminder offsets before the evidence deadline.
-              </span>
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Document expiry warning windows (days)
-              </label>
-              <input
-                type="text"
-                value={workflow.documentWarningDays.join(', ')}
-                onChange={(e) =>
-                  setConfig({
-                    ...config,
-                    documentWarningDays: parseWarningDays(e.target.value, workflow.documentWarningDays)
-                  })
-                }
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-teal-500 focus:outline-hidden"
-              />
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                First value opens early warning; second value marks the document critical.
-              </span>
-            </div>
+            </Field>
           </div>
+        </Card>
 
-          <div className="pt-1">
-            <div className="flex items-center space-x-2 mb-2">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-[11px] font-bold text-slate-700">
-                Escalation Matrix (days past the statutory deadline)
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              {matrix.map((rule) => (
-                <div key={rule.level} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-slate-900">Level {rule.level}</span>
-                    <span className="text-[10px] text-slate-500">
-                      {rule.targetRoles.map((role) => role.replace('_', ' ')).join(' + ')}
-                    </span>
-                  </div>
-                  <input
-                    type="number"
-                    min={0}
-                    max={90}
-                    value={rule.breachDays}
-                    onChange={(e) => updateEscalationDays(rule.level, Number(e.target.value))}
-                    className="w-full px-3 py-1.5 bg-white rounded-lg border border-slate-200 focus:border-teal-500 focus:outline-hidden"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 cursor-pointer">
-            <div>
-              <div className="font-bold text-slate-900">Business-day SLA clock</div>
-              <div className="text-[11px] text-slate-500">
-                Count weekdays only when computing statutory deadlines
+        <Card padded="none">
+          <CardHeader
+            title="Statutory SLAs"
+            description="Deadline tiers, reminder windows and automatic escalation for every case."
+          />
+          <div className="space-y-8 p-5 sm:p-6">
+            <section>
+              <h3 className="mb-4 text-sm font-medium text-ink">Stage turnaround in days</h3>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {OPERATIONAL_STAGES.map((stage) => (
+                  <Field
+                    key={stage}
+                    label={getStageMeta(stage).label}
+                    htmlFor={stageFieldId(stage)}
+                  >
+                    <Input
+                      id={stageFieldId(stage)}
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={stageSlas[stage]?.days ?? 30}
+                      onChange={(e) => updateStageSla(stage, Number(e.target.value))}
+                    />
+                  </Field>
+                ))}
               </div>
+            </section>
+
+            <section>
+              <h3 className="mb-4 text-sm font-medium text-ink">Reminder windows in days</h3>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field
+                  label="Undertaking reminders"
+                  htmlFor="config-undertaking-windows"
+                  hint="Comma-separated offsets before the evidence deadline."
+                >
+                  <Input
+                    id="config-undertaking-windows"
+                    type="text"
+                    value={workflow.undertakingWarningDays.join(', ')}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        undertakingWarningDays: parseWarningDays(
+                          e.target.value,
+                          workflow.undertakingWarningDays
+                        )
+                      })
+                    }
+                  />
+                </Field>
+
+                <Field
+                  label="Document expiry warnings"
+                  htmlFor="config-document-windows"
+                  hint="The first value opens the early warning, the second marks the document critical."
+                >
+                  <Input
+                    id="config-document-windows"
+                    type="text"
+                    value={workflow.documentWarningDays.join(', ')}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        documentWarningDays: parseWarningDays(
+                          e.target.value,
+                          workflow.documentWarningDays
+                        )
+                      })
+                    }
+                  />
+                </Field>
+              </div>
+            </section>
+
+            <section>
+              <h3 className="mb-4 text-sm font-medium text-ink">
+                Escalation matrix in days past the deadline
+              </h3>
+              <div className="grid gap-5 sm:grid-cols-3">
+                {matrix.map((rule) => (
+                  <Field
+                    key={rule.level}
+                    label={`Level ${rule.level}`}
+                    htmlFor={`config-escalation-level-${rule.level}`}
+                    hint={rule.targetRoles.map((role) => ROLE_LABELS[role]).join(', ')}
+                  >
+                    <Input
+                      id={`config-escalation-level-${rule.level}`}
+                      type="number"
+                      min={0}
+                      max={90}
+                      value={rule.breachDays}
+                      onChange={(e) => updateEscalationDays(rule.level, Number(e.target.value))}
+                    />
+                  </Field>
+                ))}
+              </div>
+            </section>
+
+            <div className="divide-y divide-line border-t border-line pt-2">
+              <SettingToggle
+                id="config-business-days"
+                label="Business-day SLA clock"
+                description="Count weekdays only when computing statutory deadlines."
+                checked={Boolean(workflow.businessDaysOnly)}
+                onChange={(checked) => setConfig({ ...config, businessDaysOnly: checked })}
+              />
             </div>
-            <input
-              type="checkbox"
-              checked={Boolean(workflow.businessDaysOnly)}
-              onChange={(e) => setConfig({ ...config, businessDaysOnly: e.target.checked })}
-              className="w-4 h-4 text-teal-600 rounded-md border-slate-300"
+          </div>
+        </Card>
+
+        <Card padded="none">
+          <CardHeader
+            title="Security and platform"
+            description="Maintenance mode and outbound notification controls."
+          />
+          <div className="divide-y divide-line px-5 sm:px-6">
+            <SettingToggle
+              id="config-maintenance-mode"
+              label="Portal maintenance mode"
+              description="Suspend new applications while administrative review stays available."
+              checked={config.maintenanceMode}
+              onChange={(checked) => setConfig({ ...config, maintenanceMode: checked })}
             />
-          </label>
-        </div>
-
-        {/* Card 4: Security & Operational Flags */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-          <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-              <Server className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-900">
-                Security & Platform Controls
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                System maintenance mode and security triggers.
-              </p>
-            </div>
+            <SettingToggle
+              id="config-email-alerts"
+              label="Automated notification alerts"
+              description="Send email on status transitions and EVC scheduling."
+              checked={config.notificationEmailAlerts}
+              onChange={(checked) => setConfig({ ...config, notificationEmailAlerts: checked })}
+            />
           </div>
+        </Card>
 
-          <div className="space-y-3 text-xs">
-            <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 cursor-pointer">
-              <div>
-                <div className="font-bold text-slate-900">Portal Maintenance Mode</div>
-                <div className="text-[11px] text-slate-500">
-                  Suspend new application submissions while leaving administrative review active
-                </div>
-              </div>
-              <input
-                type="checkbox"
-                checked={config.maintenanceMode}
-                onChange={(e) => setConfig({ ...config, maintenanceMode: e.target.checked })}
-                className="w-4 h-4 text-purple-600 rounded-md border-slate-300"
-              />
-            </label>
-
-            <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 cursor-pointer">
-              <div>
-                <div className="font-bold text-slate-900">Automated Notification Alerts</div>
-                <div className="text-[11px] text-slate-500">
-                  Dispatch email notifications on status transitions and EVC scheduling
-                </div>
-              </div>
-              <input
-                type="checkbox"
-                checked={config.notificationEmailAlerts}
-                onChange={(e) => setConfig({ ...config, notificationEmailAlerts: e.target.checked })}
-                className="w-4 h-4 text-purple-600 rounded-md border-slate-300"
-              />
-            </label>
-          </div>
-        </div>
-
-        {/* Submit */}
-        <div className="flex items-center justify-end space-x-3 pt-2">
-          <button
-            type="submit"
-            className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center space-x-2 shadow-sm transition-colors cursor-pointer"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>Save Configuration Settings</span>
-          </button>
+        <div className="flex justify-end">
+          <Button type="submit" icon={<Save className="h-4 w-4" />}>
+            Save configuration
+          </Button>
         </div>
       </form>
     </div>
   );
 };
-

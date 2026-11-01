@@ -20,8 +20,23 @@ import {
 } from '../services/rbacService';
 import { authService } from '../services/authService';
 import { StatusBadge } from '../components/common/StatusBadge';
-import { Modal } from '../components/common/Modal';
-import type { Undertaking } from '../types';
+import {
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  Field,
+  Input,
+  Modal,
+  Notice,
+  PageHeader,
+  Select,
+  StatTile,
+  Tabs,
+  Textarea
+} from '../components/ui';
+import type { DataTableColumn } from '../components/ui';
+import type { ComplianceRecord, Undertaking } from '../types';
 import { resolveWorkflowConfig } from '../workflow/config';
 import { routeRequiresStage } from '../workflow/routes';
 import {
@@ -44,6 +59,12 @@ type DialogState =
   | { mode: 'reject'; undertaking: Undertaking }
   | null;
 
+type UndertakingRow = {
+  item: Undertaking;
+  bucket: UndertakingBucket;
+  window: ReturnType<typeof undertakingDueWindow>;
+};
+
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'All', label: 'All' },
   { key: 'Open', label: 'Open' },
@@ -61,9 +82,6 @@ const BUCKET_ORDER: Record<UndertakingBucket, number> = {
   Rejected: 3,
   Verified: 4
 };
-
-const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2';
 
 export const Compliance: React.FC = () => {
   const {
@@ -116,7 +134,7 @@ export const Compliance: React.FC = () => {
 
   const summary = summariseUndertakings(scopedUndertakings, config, now);
 
-  const rows = scopedUndertakings
+  const rows: UndertakingRow[] = scopedUndertakings
     .map((item) => ({
       item,
       bucket: undertakingBucket(item, config, now),
@@ -159,49 +177,6 @@ export const Compliance: React.FC = () => {
     Verified: summary.verified,
     Rejected: summary.rejected
   };
-
-  const cards = [
-    {
-      key: 'Open' as TabKey,
-      label: 'Open conditions',
-      hint: 'Evidence or verification pending',
-      value: summary.open,
-      icon: ClipboardList,
-      iconClass: 'bg-blue-50 text-blue-700'
-    },
-    {
-      key: 'Pending' as TabKey,
-      label: 'Awaiting evidence',
-      hint: 'Institution action required',
-      value: summary.pending,
-      icon: FileClock,
-      iconClass: 'bg-amber-50 text-amber-700'
-    },
-    {
-      key: 'Submitted' as TabKey,
-      label: 'Submitted for verification',
-      hint: 'Officer review pending',
-      value: summary.submitted,
-      icon: ShieldCheck,
-      iconClass: 'bg-sky-50 text-sky-700'
-    },
-    {
-      key: 'Overdue' as TabKey,
-      label: 'Overdue undertakings',
-      hint: 'Escalated by the SLA sweep',
-      value: summary.overdue,
-      icon: AlertTriangle,
-      iconClass: 'bg-rose-50 text-rose-700'
-    },
-    {
-      key: 'Verified' as TabKey,
-      label: 'Verified conditions',
-      hint: 'Cleared for final approval',
-      value: summary.verified,
-      icon: CheckCircle2,
-      iconClass: 'bg-emerald-50 text-emerald-700'
-    }
-  ];
 
   const openCreateDialog = () => {
     const firstApp = eligibleApplications[0];
@@ -303,346 +278,369 @@ export const Compliance: React.FC = () => {
     if (rejectUndertaking(dialog.undertaking.id, rejectionReason)) closeDialog();
   };
 
+  const undertakingColumns: DataTableColumn<UndertakingRow>[] = [
+    {
+      key: 'reference',
+      header: 'Reference',
+      render: ({ item }) => (
+        <span className="whitespace-nowrap font-medium tabular-nums text-ink">{item.id}</span>
+      )
+    },
+    {
+      key: 'condition',
+      header: 'Condition',
+      render: ({ item }) => (
+        <div className="max-w-[220px]">
+          <div className="font-medium leading-snug text-ink">{item.title}</div>
+          <div className="mt-0.5 text-xs text-ink-2">{item.conditionCode}</div>
+        </div>
+      )
+    },
+    {
+      key: 'institution',
+      header: 'Institution',
+      render: ({ item }) => (
+        <div>
+          <div className="text-ink">{item.instituteName}</div>
+          <div className="mt-0.5 text-xs text-ink-2">{item.applicationId}</div>
+        </div>
+      )
+    },
+    {
+      key: 'due',
+      header: 'Evidence due',
+      render: ({ item, bucket, window: dueWindow }) => (
+        <div className="whitespace-nowrap">
+          <div className="text-ink">{formatDisplayDate(item.dueDate)}</div>
+          <div
+            className={`mt-0.5 text-xs ${
+              dueWindow.daysOverdue > 0 && bucket !== 'Verified'
+                ? 'font-semibold text-danger'
+                : 'text-ink-2'
+            }`}
+          >
+            {dueWindow.daysOverdue > 0 && bucket !== 'Verified'
+              ? bucket === 'Submitted'
+                ? `${dueWindow.daysOverdue} day(s) overdue. Evidence submitted.`
+                : `${dueWindow.daysOverdue} day(s) overdue`
+              : bucket === 'Verified'
+                ? 'Condition cleared'
+                : bucket === 'Rejected'
+                  ? 'Evidence rejected'
+                  : `${dueWindow.daysRemaining} day(s) remaining`}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'evidence',
+      header: 'Evidence',
+      render: ({ item, bucket }) => {
+        const evidence = latestEvidence(item);
+        return (
+          <div className="max-w-[220px]">
+            {evidence ? (
+              <div className="truncate text-ink" title={evidence}>
+                {evidence}
+              </div>
+            ) : (
+              <div className="text-ink-2">Not furnished</div>
+            )}
+            {item.evidenceDocumentIds.length > 1 && (
+              <div className="mt-0.5 text-xs text-ink-2">
+                {item.evidenceDocumentIds.length} files on record
+              </div>
+            )}
+            {bucket === 'Rejected' && item.rejectionReason && (
+              <div
+                className="mt-0.5 line-clamp-2 text-xs text-danger"
+                title={item.rejectionReason}
+              >
+                {item.rejectionReason}
+              </div>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: ({ bucket }) => <StatusBadge status={bucket} size="sm" />
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      align: 'right',
+      render: ({ item, bucket }) => {
+        const canSubmit =
+          hasPermission('compliance.submit') &&
+          (bucket === 'Pending' || bucket === 'Overdue' || bucket === 'Rejected');
+        const canReview = hasPermission('compliance.verify') && item.status === 'Submitted';
+
+        return (
+          <div className="flex items-center justify-end gap-2">
+            {canSubmit && (
+              <Button size="sm" onClick={() => openSubmitDialog(item)}>
+                {bucket === 'Rejected' ? 'Resubmit' : 'Submit evidence'}
+              </Button>
+            )}
+            {canReview && (
+              <>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => openRejectDialog(item)}
+                >
+                  Reject
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+                  onClick={() => verifyUndertaking(item.id)}
+                >
+                  Verify
+                </Button>
+              </>
+            )}
+            {!canSubmit && !canReview && (
+              <span className="whitespace-nowrap text-xs text-ink-2">
+                {bucket === 'Verified'
+                  ? 'Cleared'
+                  : bucket === 'Submitted'
+                    ? 'Awaiting officer'
+                    : 'Awaiting institution'}
+              </span>
+            )}
+          </div>
+        );
+      }
+    }
+  ];
+
+  const complianceColumns: DataTableColumn<ComplianceRecord>[] = [
+    {
+      key: 'record',
+      header: 'Record',
+      render: (record) => (
+        <span className="font-medium tabular-nums text-ink">{record.id}</span>
+      )
+    },
+    {
+      key: 'dossier',
+      header: 'Dossier',
+      render: (record) => (
+        <div className="max-w-xs">
+          <div className="font-medium text-ink">{record.title}</div>
+          {record.documentRef && (
+            <div className="mt-0.5 text-xs text-ink-2">{record.documentRef}</div>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'institution',
+      header: 'Institution',
+      render: (record) => <span className="text-ink">{record.instituteName}</span>
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      render: (record) => <span className="text-ink-2">{record.category}</span>
+    },
+    {
+      key: 'due',
+      header: 'Due date',
+      render: (record) => (
+        <span className="whitespace-nowrap text-ink">{formatDisplayDate(record.dueDate)}</span>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (record) => <StatusBadge status={record.status} size="sm" />
+    },
+    {
+      key: 'action',
+      header: 'Action',
+      align: 'right',
+      render: (record) =>
+        record.status !== 'Verified' && hasPermission('compliance.verify') ? (
+          <Button size="sm" variant="secondary" onClick={() => verifyCompliance(record.id)}>
+            Verify and clear
+          </Button>
+        ) : (
+          <span className="inline-flex items-center text-xs text-ink-2">
+            {record.status === 'Verified' ? (
+              <>
+                <CheckCircle2 className="mr-1 h-3.5 w-3.5 text-success" aria-hidden="true" />
+                Complied
+              </>
+            ) : (
+              'Awaiting officer'
+            )}
+          </span>
+        )
+    }
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Undertakings & Statutory Compliance
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Track time-bound conditions, verify evidence, and clear cases for final approval.
-          </p>
-        </div>
+      <PageHeader
+        title="Undertakings and compliance"
+        description="Track time-bound conditions, verify evidence, and clear cases for final approval."
+        actions={
+          <>
+            {hasPermission('compliance.verify') && (
+              <Button
+                variant="secondary"
+                icon={<Plus className="h-4 w-4" />}
+                onClick={openCreateDialog}
+              >
+                Record undertaking
+              </Button>
+            )}
+            {hasPermission('compliance.submit') && (
+              <Button
+                icon={<Upload className="h-4 w-4" />}
+                onClick={() => setActiveModal('upload-compliance')}
+              >
+                Upload compliance dossier
+              </Button>
+            )}
+          </>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          {hasPermission('compliance.verify') && (
-            <button
-              onClick={openCreateDialog}
-              className={`flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer ${focusRing}`}
-            >
-              <Plus className="w-4 h-4" />
-              <span>Record undertaking</span>
-            </button>
-          )}
-          {hasPermission('compliance.submit') && (
-            <button
-              onClick={() => setActiveModal('upload-compliance')}
-              className={`flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer ${focusRing}`}
-            >
-              <Upload className="w-4 h-4" />
-              <span>Upload compliance dossier</span>
-            </button>
-          )}
-        </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <StatTile
+          label="Open conditions"
+          value={summary.open}
+          delta="Evidence or verification pending"
+          icon={ClipboardList}
+          onClick={() => setActiveTab('Open')}
+        />
+        <StatTile
+          label="Awaiting evidence"
+          value={summary.pending}
+          delta="Institution action required"
+         
+          icon={FileClock}
+          onClick={() => setActiveTab('Pending')}
+        />
+        <StatTile
+          label="Submitted"
+          value={summary.submitted}
+          delta="Officer review pending"
+         
+          icon={ShieldCheck}
+          onClick={() => setActiveTab('Submitted')}
+        />
+        <StatTile
+          label="Overdue"
+          value={summary.overdue}
+          delta="Escalated by the SLA sweep"
+         
+          icon={AlertTriangle}
+          onClick={() => setActiveTab('Overdue')}
+        />
+        <StatTile
+          label="Verified"
+          value={summary.verified}
+          delta="Cleared for final approval"
+         
+          icon={CheckCircle2}
+          onClick={() => setActiveTab('Verified')}
+        />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-        {cards.map((card) => {
-          const Icon = card.icon;
-          const active = activeTab === card.key;
-          return (
-            <button
-              key={card.key}
-              onClick={() => setActiveTab(card.key)}
-              aria-pressed={active}
-              className={`text-left bg-white p-4 rounded-2xl border shadow-2xs flex flex-col justify-between transition-colors duration-150 cursor-pointer ${
-                active
-                  ? 'border-slate-900 ring-1 ring-slate-900'
-                  : 'border-slate-200 hover:border-slate-300'
-              } ${focusRing}`}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${card.iconClass}`}
-                >
-                  <Icon className="w-4 h-4" />
-                </span>
-                <span className="text-xl font-black text-slate-900 tabular-nums">
-                  {card.value.toLocaleString()}
-                </span>
-              </div>
-              <div className="mt-3">
-                <div className="text-xs font-semibold text-slate-700 leading-tight">
-                  {card.label}
-                </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">{card.hint}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      <Card>
+        <div className="space-y-3">
+          <div className="relative max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
+            <Input
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by condition, institution, or application"
+              aria-label="Search undertakings and compliance records"
+              className="pl-9"
+            />
+          </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="relative flex-1 w-full max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by condition, institution, or application"
-            aria-label="Search undertakings and compliance records"
-            className={`w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-500 ${focusRing}`}
+          <Tabs
+            ariaLabel="Filter undertakings by state"
+            items={TABS.map((tab) => ({
+              id: tab.key,
+              label: tab.label,
+              count: counts[tab.key]
+            }))}
+            value={activeTab}
+            onChange={(id) => setActiveTab(id as TabKey)}
           />
         </div>
+      </Card>
 
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto self-start lg:self-auto max-w-full">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              aria-pressed={activeTab === tab.key}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${focusRing} ${
-                activeTab === tab.key
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {tab.label}
-              <span className="ml-1.5 text-[11px] font-bold text-slate-400 tabular-nums">
-                {counts[tab.key]}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <section className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-slate-900">Time-bound undertakings</h2>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <h2 className="text-sm font-semibold text-ink">Time-bound undertakings</h2>
+            <p className="mt-0.5 text-xs text-ink-2">
               {filteredRows.length} of {rows.length} conditions in this view
             </p>
           </div>
           {summary.overdue > 0 && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 text-[11px] font-semibold">
-              <AlertTriangle className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-danger">
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
               {summary.overdue} overdue and escalated
             </span>
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500">
-                <th scope="col" className="py-3 px-4">Reference</th>
-                <th scope="col" className="py-3 px-4">Condition</th>
-                <th scope="col" className="py-3 px-4">Institution</th>
-                <th scope="col" className="py-3 px-4">Evidence due</th>
-                <th scope="col" className="py-3 px-4">Evidence</th>
-                <th scope="col" className="py-3 px-4">Status</th>
-                <th scope="col" className="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredRows.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-10 text-center text-slate-400">
-                    No undertakings match this view.
-                    {hasPermission('compliance.verify') && (
-                      <button
-                        onClick={openCreateDialog}
-                        className={`ml-1.5 font-semibold text-blue-600 hover:text-blue-700 underline-offset-2 hover:underline cursor-pointer ${focusRing}`}
-                      >
-                        Record one
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredRows.map(({ item, bucket, window: dueWindow }) => {
-                  const evidence = latestEvidence(item);
-                  const canSubmit =
-                    hasPermission('compliance.submit') &&
-                    (bucket === 'Pending' || bucket === 'Overdue' || bucket === 'Rejected');
-                  const canReview =
-                    hasPermission('compliance.verify') && item.status === 'Submitted';
-
-                  return (
-                    <tr key={item.id} className="hover:bg-blue-50/40 transition-colors duration-150">
-                      <td className="py-3 px-4 font-bold text-blue-600 tabular-nums whitespace-nowrap">
-                        {item.id}
-                      </td>
-                      <td className="py-3 px-4 max-w-[220px]">
-                        <div className="font-semibold text-slate-800 leading-snug">{item.title}</div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">{item.conditionCode}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-slate-700">{item.instituteName}</div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">{item.applicationId}</div>
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="font-medium text-slate-700">
-                          {formatDisplayDate(item.dueDate)}
-                        </div>
-                        <div
-                          className={`text-[11px] mt-0.5 ${
-                            dueWindow.daysOverdue > 0 && bucket !== 'Verified'
-                              ? 'text-rose-600 font-semibold'
-                              : bucket === 'Verified' || bucket === 'Rejected'
-                                ? 'text-slate-400'
-                                : 'text-slate-500'
-                          }`}
-                        >
-                          {dueWindow.daysOverdue > 0 && bucket !== 'Verified'
-                            ? bucket === 'Submitted'
-                              ? `${dueWindow.daysOverdue} day(s) overdue — evidence submitted`
-                              : `${dueWindow.daysOverdue} day(s) overdue`
-                            : bucket === 'Verified'
-                              ? 'Condition cleared'
-                              : bucket === 'Rejected'
-                                ? 'Evidence rejected'
-                                : `${dueWindow.daysRemaining} day(s) remaining`}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 max-w-[200px]">
-                        {evidence ? (
-                          <div className="font-medium text-slate-700 truncate" title={evidence}>
-                            {evidence}
-                          </div>
-                        ) : (
-                          <div className="text-slate-400">Not furnished</div>
-                        )}
-                        {item.evidenceDocumentIds.length > 1 && (
-                          <div className="text-[11px] text-slate-400 mt-0.5">
-                            {item.evidenceDocumentIds.length} files on record
-                          </div>
-                        )}
-                        {bucket === 'Rejected' && item.rejectionReason && (
-                          <div
-                            className="text-[11px] text-rose-600 mt-0.5 line-clamp-2"
-                            title={item.rejectionReason}
-                          >
-                            {item.rejectionReason}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <StatusBadge status={bucket} size="sm" />
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-end gap-2">
-                          {canSubmit && (
-                            <button
-                              onClick={() => openSubmitDialog(item)}
-                              className={`px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold shadow-xs transition-colors cursor-pointer ${focusRing}`}
-                            >
-                              {bucket === 'Rejected' ? 'Resubmit' : 'Submit evidence'}
-                            </button>
-                          )}
-                          {canReview && (
-                            <>
-                              <button
-                                onClick={() => openRejectDialog(item)}
-                                className={`px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${focusRing}`}
-                              >
-                                Reject
-                              </button>
-                              <button
-                                onClick={() => verifyUndertaking(item.id)}
-                                className={`px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-xs transition-colors cursor-pointer ${focusRing}`}
-                              >
-                                Verify
-                              </button>
-                            </>
-                          )}
-                          {!canSubmit && !canReview && (
-                            <span className="text-[11px] text-slate-400 text-right">
-                              {bucket === 'Verified'
-                                ? 'Cleared'
-                                : bucket === 'Submitted'
-                                  ? 'Awaiting officer'
-                                  : 'Awaiting institution'}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DataTable<UndertakingRow>
+          caption="Time-bound undertakings with condition, evidence deadline and status"
+          columns={undertakingColumns}
+          rows={filteredRows}
+          rowKey={(row) => row.item.id}
+          minWidth="1040px"
+          empty={
+            <EmptyState
+              title="No undertakings in this view"
+              description="Record a condition when a case moves into approval subject to undertaking."
+              action={
+                hasPermission('compliance.verify') ? (
+                  <Button variant="secondary" onClick={openCreateDialog}>
+                    Record undertaking
+                  </Button>
+                ) : undefined
+              }
+            />
+          }
+        />
       </section>
 
-      <section className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100">
-          <h2 className="text-sm font-bold text-slate-900">Compliance dossiers</h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold text-ink">Compliance dossiers</h2>
+          <p className="mt-0.5 text-xs text-ink-2">
             Submitted declarations and statutory documents awaiting officer verification.
           </p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500">
-                <th scope="col" className="py-3 px-4">Record</th>
-                <th scope="col" className="py-3 px-4">Dossier</th>
-                <th scope="col" className="py-3 px-4">Institution</th>
-                <th scope="col" className="py-3 px-4">Category</th>
-                <th scope="col" className="py-3 px-4">Due date</th>
-                <th scope="col" className="py-3 px-4">Status</th>
-                <th scope="col" className="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredCompliance.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-10 text-center text-slate-400">
-                    No compliance dossiers match this search.
-                  </td>
-                </tr>
-              ) : (
-                filteredCompliance.map((record) => (
-                  <tr key={record.id} className="hover:bg-blue-50/40 transition-colors duration-150">
-                    <td className="py-3 px-4 font-bold text-blue-600 tabular-nums">{record.id}</td>
-                    <td className="py-3 px-4 font-semibold text-slate-800 max-w-xs">
-                      {record.title}
-                      {record.documentRef && (
-                        <div className="text-[11px] text-slate-400 mt-0.5 font-normal">
-                          {record.documentRef}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-slate-700 font-medium">{record.instituteName}</td>
-                    <td className="py-3 px-4 text-slate-500">{record.category}</td>
-                    <td className="py-3 px-4 font-medium text-slate-600">
-                      {formatDisplayDate(record.dueDate)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <StatusBadge status={record.status} size="sm" />
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      {record.status !== 'Verified' && hasPermission('compliance.verify') ? (
-                        <button
-                          onClick={() => verifyCompliance(record.id)}
-                          className={`px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-xs transition-colors cursor-pointer ${focusRing}`}
-                        >
-                          Verify and clear
-                        </button>
-                      ) : (
-                        <span className="text-emerald-600 font-semibold text-[11px] inline-flex items-center">
-                          {record.status === 'Verified' ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                              Complied
-                            </>
-                          ) : (
-                            <span className="text-slate-400">Awaiting officer</span>
-                          )}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DataTable<ComplianceRecord>
+          caption="Compliance dossiers awaiting officer verification"
+          columns={complianceColumns}
+          rows={filteredCompliance}
+          rowKey={(record) => record.id}
+          minWidth="940px"
+          empty={
+            <EmptyState
+              title="No compliance dossiers match this search"
+              description="Clear the search to see every dossier in your jurisdiction."
+            />
+          }
+        />
       </section>
 
       <Modal
@@ -650,211 +648,189 @@ export const Compliance: React.FC = () => {
         onClose={closeDialog}
         title="Record a time-bound undertaking"
         subtitle="A condition imposed at approval-in-principle, with an evidence deadline."
-        maxWidth="max-w-xl"
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="create-undertaking-form"
+              disabled={eligibleApplications.length === 0}
+            >
+              Record undertaking
+            </Button>
+          </>
+        }
       >
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div>
-            <label htmlFor="undertaking-application" className="block text-xs font-semibold text-slate-700 mb-1">
-              Application
-            </label>
-            <select
+        <form id="create-undertaking-form" onSubmit={handleCreate} className="space-y-4">
+          <Field
+            label="Application"
+            htmlFor="undertaking-application"
+            hint={
+              eligibleApplications.length === 0
+                ? 'Move a case into Approval (Subject to Undertaking) before recording a condition.'
+                : undefined
+            }
+          >
+            <Select
               id="undertaking-application"
               value={createForm.applicationId}
               onChange={(event) => handleCreateApplicationChange(event.target.value)}
-              className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-500 ${focusRing}`}
             >
-              {eligibleApplications.length === 0 && <option value="">No application at conditional approval</option>}
+              {eligibleApplications.length === 0 && (
+                <option value="">No application at conditional approval</option>
+              )}
               {eligibleApplications.map((app) => (
                 <option key={app.id} value={app.id}>
-                  {app.id} — {app.instituteName}
+                  {app.id} / {app.instituteName}
                 </option>
               ))}
-            </select>
-            {eligibleApplications.length === 0 && (
-              <p className="text-[11px] text-slate-500 mt-1.5">
-                Move a case into Approval (Subject to Undertaking) before recording a condition.
-              </p>
-            )}
-          </div>
+            </Select>
+          </Field>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="undertaking-condition" className="block text-xs font-semibold text-slate-700 mb-1">
-                Condition
-              </label>
-              <select
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="Condition" htmlFor="undertaking-condition">
+              <Select
                 id="undertaking-condition"
                 value={createForm.conditionCode}
                 onChange={(event) => handleCreateConditionChange(event.target.value)}
-                className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-500 ${focusRing}`}
               >
                 {UNDERTAKING_CONDITIONS.map((condition) => (
                   <option key={condition.code} value={condition.code}>
                     {condition.title}
                   </option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="undertaking-due" className="block text-xs font-semibold text-slate-700 mb-1">
-                Evidence due
-              </label>
-              <input
+              </Select>
+            </Field>
+            <Field label="Evidence due" htmlFor="undertaking-due">
+              <Input
                 id="undertaking-due"
                 type="date"
                 value={createForm.dueDate}
                 onChange={(event) =>
                   setCreateForm((prev) => ({ ...prev, dueDate: event.target.value }))
                 }
-                className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-500 ${focusRing}`}
               />
-            </div>
+            </Field>
           </div>
 
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
-            <div className="flex items-start gap-2">
-              <FileText className="w-4 h-4 text-slate-500 mt-0.5" />
-              <p className="text-[11px] text-slate-600 leading-relaxed">
-                {getUndertakingCondition(createForm.conditionCode)?.description}
-              </p>
-            </div>
-          </div>
+          <Notice icon={FileText}>
+            {getUndertakingCondition(createForm.conditionCode)?.description}
+          </Notice>
 
-          <div>
-            <label htmlFor="undertaking-note" className="block text-xs font-semibold text-slate-700 mb-1">
-              Officer note <span className="font-normal text-slate-400">(optional)</span>
-            </label>
-            <textarea
+          <Field label="Officer note" htmlFor="undertaking-note" hint="Optional.">
+            <Textarea
               id="undertaking-note"
               rows={3}
               value={createForm.note}
               onChange={(event) => setCreateForm((prev) => ({ ...prev, note: event.target.value }))}
               placeholder="Record why this condition is being imposed."
-              className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-500 ${focusRing}`}
             />
-          </div>
+          </Field>
 
-          {formError && <p className="text-[11px] font-semibold text-rose-600">{formError}</p>}
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={closeDialog}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer ${focusRing}`}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={eligibleApplications.length === 0}
-              className={`px-5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-colors ${focusRing} ${
-                eligibleApplications.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-              }`}
-            >
-              Record undertaking
-            </button>
-          </div>
+          {formError && (
+            <p role="alert" className="text-xs font-medium text-danger">
+              {formError}
+            </p>
+          )}
         </form>
       </Modal>
 
       <Modal
         isOpen={dialog?.mode === 'submit'}
         onClose={closeDialog}
-        title={dialog?.mode === 'submit' ? `Submit evidence — ${dialog.undertaking.title}` : 'Submit evidence'}
+        title={
+          dialog?.mode === 'submit'
+            ? `Submit evidence: ${dialog.undertaking.title}`
+            : 'Submit evidence'
+        }
         subtitle={
           dialog?.mode === 'submit'
-            ? `${dialog.undertaking.applicationId} · due ${formatDisplayDate(dialog.undertaking.dueDate)}`
+            ? `${dialog.undertaking.applicationId}, due ${formatDisplayDate(dialog.undertaking.dueDate)}`
             : undefined
         }
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button type="submit" form="submit-evidence-form">
+              Submit evidence
+            </Button>
+          </>
+        }
       >
-        <form onSubmit={handleSubmitEvidence} className="space-y-4">
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
-            <div className="flex items-start gap-2">
-              <ShieldCheck className="w-4 h-4 text-slate-500 mt-0.5" />
-              <p className="text-[11px] text-slate-600 leading-relaxed">
-                {dialog?.mode === 'submit'
-                  ? getUndertakingCondition(dialog.undertaking.conditionCode)?.description
-                  : 'Attach the evidence that satisfies this condition.'}
-              </p>
-            </div>
-          </div>
+        <form id="submit-evidence-form" onSubmit={handleSubmitEvidence} className="space-y-4">
+          <Notice icon={ShieldCheck}>
+            {dialog?.mode === 'submit'
+              ? getUndertakingCondition(dialog.undertaking.conditionCode)?.description
+              : 'Attach the evidence that satisfies this condition.'}
+          </Notice>
 
-          <div>
-            <label htmlFor="evidence-title" className="block text-xs font-semibold text-slate-700 mb-1">
-              Evidence file name
-            </label>
-            <input
+          <Field
+            label="Evidence file name"
+            htmlFor="evidence-title"
+            hint="Demo mode records the document metadata. Production uploads the file to the secure documents bucket."
+          >
+            <Input
               id="evidence-title"
               type="text"
               value={evidenceTitle}
               onChange={(event) => setEvidenceTitle(event.target.value)}
-              className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-500 ${focusRing}`}
             />
-            <p className="text-[11px] text-slate-400 mt-1.5">
-              Demo mode records the document metadata. Production uploads the file to the secure
-              documents bucket.
+          </Field>
+
+          {formError && (
+            <p role="alert" className="text-xs font-medium text-danger">
+              {formError}
             </p>
-          </div>
-
-          {formError && <p className="text-[11px] font-semibold text-rose-600">{formError}</p>}
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={closeDialog}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer ${focusRing}`}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`px-5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition-colors cursor-pointer ${focusRing}`}
-            >
-              Submit evidence
-            </button>
-          </div>
+          )}
         </form>
       </Modal>
 
       <Modal
         isOpen={dialog?.mode === 'reject'}
         onClose={closeDialog}
-        title={dialog?.mode === 'reject' ? `Reject evidence — ${dialog.undertaking.title}` : 'Reject evidence'}
+        title={
+          dialog?.mode === 'reject'
+            ? `Reject evidence: ${dialog.undertaking.title}`
+            : 'Reject evidence'
+        }
         subtitle="The institution receives the reason and can resubmit."
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="reject-evidence-form"
+              variant="danger"
+              icon={<XCircle className="h-4 w-4" />}
+            >
+              Reject evidence
+            </Button>
+          </>
+        }
       >
-        <form onSubmit={handleReject} className="space-y-4">
-          <div>
-            <label htmlFor="rejection-reason" className="block text-xs font-semibold text-slate-700 mb-1">
-              Reason for rejection
-            </label>
-            <textarea
+        <form id="reject-evidence-form" onSubmit={handleReject} className="space-y-4">
+          <Field label="Reason for rejection" htmlFor="rejection-reason" required>
+            <Textarea
               id="rejection-reason"
               rows={4}
               value={rejectionReason}
               onChange={(event) => setRejectionReason(event.target.value)}
               placeholder="State what is missing or non-compliant so the institution can correct it."
-              className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-500 ${focusRing}`}
             />
-          </div>
+          </Field>
 
-          {formError && <p className="text-[11px] font-semibold text-rose-600">{formError}</p>}
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={closeDialog}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer ${focusRing}`}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition-colors cursor-pointer ${focusRing}`}
-            >
-              <XCircle className="w-4 h-4" />
-              Reject evidence
-            </button>
-          </div>
+          {formError && (
+            <p role="alert" className="text-xs font-medium text-danger">
+              {formError}
+            </p>
+          )}
         </form>
       </Modal>
     </div>

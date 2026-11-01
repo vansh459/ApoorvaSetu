@@ -7,15 +7,16 @@ import { useAuth } from '../../context/AuthContext';
 import { filterApplicationsForUser } from '../../services/rbacService';
 import { regionBreakdown } from '../../workflow/selectors';
 import type { Region } from '../../types';
+import { Card } from '../ui';
 
 const REGION_COLORS: Record<Region, string> = {
-  Northern: '#2563eb',
-  Southern: '#0ea5e9',
-  Eastern: '#8b5cf6',
-  Western: '#f59e0b',
-  Central: '#0d9488',
-  'North Eastern': '#f43f5e',
-  Others: '#64748b'
+  Northern: 'var(--color-chart-1)',
+  Southern: 'var(--color-chart-2)',
+  Eastern: 'var(--color-chart-3)',
+  Western: 'var(--color-chart-4)',
+  Central: 'var(--color-chart-5)',
+  'North Eastern': 'var(--color-chart-6)',
+  Others: 'var(--color-ink-3)'
 };
 
 export const RegionalDonutChart: React.FC = () => {
@@ -35,34 +36,31 @@ export const RegionalDonutChart: React.FC = () => {
   const activeItem = activeIndex !== null ? chartData[activeIndex] : null;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200/60 p-4 sm:p-4.5 shadow-xs flex flex-col justify-between h-full min-w-0">
-      <div className="flex items-center space-x-2 mb-2.5 shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-          <BarChart2 className="w-4 h-4" />
-        </div>
-        <h2 className="text-xs sm:text-sm font-bold text-slate-800 tracking-tight whitespace-nowrap">
-          Applications by region
-        </h2>
+    <Card padded="none" className="flex h-full min-w-0 flex-col">
+      <div className="flex items-center gap-2.5 border-b border-line px-5 py-4">
+        <BarChart2 className="h-4 w-4 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+        <h2 className="text-sm font-semibold text-ink">Applications by region</h2>
       </div>
 
       {chartData.length === 0 ? (
-        <p className="text-xs text-slate-500 my-auto py-6 text-center">
+        <p className="my-auto px-5 py-10 text-center text-sm text-ink-2">
           No applications in scope yet.
         </p>
       ) : (
-        <div className="flex items-center gap-3 sm:gap-4 my-auto min-w-0">
-          <div className="w-[124px] h-[124px] shrink-0 relative flex items-center justify-center">
-            <PieChart width={124} height={124}>
+        <div className="my-auto flex min-w-0 items-center gap-3 px-5 py-5">
+          <div className="relative flex h-[112px] w-[112px] shrink-0 items-center justify-center">
+            <PieChart width={112} height={112}>
               <Pie
                 data={chartData}
-                cx={62}
-                cy={62}
-                innerRadius={38}
-                outerRadius={56}
-                paddingAngle={2.5}
+                cx={56}
+                cy={56}
+                innerRadius={36}
+                outerRadius={50}
+                paddingAngle={2}
                 dataKey="value"
-                stroke="#ffffff"
-                strokeWidth={1.5}
+                isAnimationActive={false}
+                stroke="var(--color-surface)"
+                strokeWidth={2}
                 onMouseEnter={(_, index) => setActiveIndex(index)}
                 onMouseLeave={() => setActiveIndex(null)}
                 onClick={(entry: any) => {
@@ -79,8 +77,6 @@ export const RegionalDonutChart: React.FC = () => {
                       key={`cell-${entry.name}`}
                       fill={entry.color}
                       opacity={!isAnyHovered || isHovered ? 1 : 0.35}
-                      stroke={isHovered ? entry.color : '#ffffff'}
-                      strokeWidth={isHovered ? 2.5 : 1.5}
                       className="cursor-pointer outline-none"
                     />
                   );
@@ -88,75 +84,50 @@ export const RegionalDonutChart: React.FC = () => {
               </Pie>
             </PieChart>
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-center px-1">
-              <span className="text-xs sm:text-sm font-black text-slate-900 leading-none tracking-tight">
+            <div className="pointer-events-none absolute inset-0 flex select-none flex-col items-center justify-center px-1 text-center">
+              <span className="text-lg font-semibold leading-none tracking-tight text-ink">
                 {activeItem ? activeItem.value.toLocaleString() : totalApplications.toLocaleString()}
               </span>
-              <span
-                className="text-[7.5px] sm:text-[8px] font-bold mt-0.5 truncate max-w-[70px]"
-                style={{ color: activeItem ? activeItem.color : '#94a3b8' }}
-              >
+              <span className="mt-1 max-w-[76px] truncate text-xs text-ink-2">
                 {activeItem ? activeItem.name : 'Total'}
               </span>
-              {activeItem && (
-                <span className="text-[7px] sm:text-[7.5px] font-semibold text-slate-400 leading-none mt-0.5">
-                  ({activeItem.percentage}%)
-                </span>
-              )}
+              {activeItem && <span className="mt-0.5 text-xs text-ink-2">({activeItem.percentage}%)</span>}
             </div>
           </div>
 
-          <div className="flex-1 min-w-0 space-y-0.5">
+          <div className="min-w-0 flex-1 space-y-1">
             {chartData.map((reg, index) => {
               const isHovered = activeIndex === index;
               return (
-                <div
+                <button
                   key={reg.name}
-                  role="button"
-                  tabIndex={0}
+                  type="button"
                   onMouseEnter={() => setActiveIndex(index)}
                   onMouseLeave={() => setActiveIndex(null)}
                   onFocus={() => setActiveIndex(index)}
                   onBlur={() => setActiveIndex(null)}
                   onClick={() => navigate(`/applications?region=${encodeURIComponent(reg.name)}`)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      navigate(`/applications?region=${encodeURIComponent(reg.name)}`);
-                    }
-                  }}
-                  className={`flex items-center justify-between gap-1 text-xs cursor-pointer group py-0.5 px-1.5 rounded min-w-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
-                    isHovered ? 'bg-slate-100 font-semibold' : 'hover:bg-slate-50/80'
+                  aria-label={`${reg.name}: ${reg.value} applications, ${reg.percentage} per cent`}
+                  title={`${reg.value} applications, ${reg.percentage}%`}
+                  className={`flex w-full min-w-0 items-center justify-between gap-2 rounded-control px-1.5 py-1 text-left text-xs transition-colors duration-150 ${
+                    isHovered ? 'bg-surface-2' : 'hover:bg-surface-2'
                   }`}
                 >
-                  <div className="flex items-center space-x-1.5 min-w-0 flex-1">
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5">
                     <span
-                      className="rounded-full shrink-0 w-1.5 h-1.5"
+                      className="h-1.5 w-1.5 shrink-0 rounded-full"
                       style={{ backgroundColor: reg.color }}
+                      aria-hidden="true"
                     />
-                    <span
-                      className={`truncate text-[10px] sm:text-[11px] ${
-                        isHovered ? 'text-blue-700 font-bold' : 'text-slate-700 font-medium'
-                      }`}
-                    >
-                      {reg.name}
-                    </span>
-                  </div>
-
-                  <div className="shrink-0 text-right whitespace-nowrap text-[10px] sm:text-[11px] font-medium text-slate-800 ml-auto tabular-nums">
-                    <span className={isHovered ? 'font-bold text-blue-700' : 'font-bold text-slate-900'}>
-                      {reg.value.toLocaleString()}
-                    </span>{' '}
-                    <span className={isHovered ? 'text-blue-500' : 'text-slate-400 font-normal'}>
-                      ({reg.percentage}%)
-                    </span>
-                  </div>
-                </div>
+                    <span className="truncate text-ink">{reg.name}</span>
+                  </span>
+                  <span className="shrink-0 tabular-nums text-ink-2">{reg.value.toLocaleString()}</span>
+                </button>
               );
             })}
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };

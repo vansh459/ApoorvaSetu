@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 import { ChatMessageItem } from '../../services/assistantService';
 
 interface ChatMessageProps {
@@ -34,7 +33,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onActionClick
           return (
             <strong
               key={pIdx}
-              className={`font-semibold ${isAssistant ? 'text-slate-900' : 'text-white'}`}
+              className={`font-semibold ${isAssistant ? 'text-ink' : 'text-white'}`}
             >
               {part.slice(2, -2)}
             </strong>
@@ -45,7 +44,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onActionClick
 
       if (isBullet) {
         return (
-          <li key={idx} className="ml-4 list-disc text-xs leading-relaxed my-0.5">
+          <li key={idx} className="my-0.5 ml-4 list-disc text-xs leading-relaxed">
             {renderedParts}
           </li>
         );
@@ -56,7 +55,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onActionClick
       }
 
       return (
-        <p key={idx} className="text-xs leading-relaxed my-0.5">
+        <p key={idx} className="my-0.5 text-xs leading-relaxed">
           {renderedParts}
         </p>
       );
@@ -64,42 +63,38 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onActionClick
   };
 
   return (
-    <div className={`flex w-full my-2.5 animate-message-in ${isAssistant ? 'justify-start' : 'justify-end'}`}>
+    <div className={`my-2.5 flex w-full ${isAssistant ? 'justify-start' : 'justify-end'}`}>
       <div
-        className={`max-w-[85%] px-3.5 py-2.5 text-xs transition-all ${
+        className={`max-w-[85%] rounded-card px-3.5 py-2.5 text-xs shadow-raise ${
           isAssistant
             ? message.isError
-              ? 'bg-amber-50/90 border border-amber-200 text-amber-900 rounded-2xl rounded-tl-xs shadow-2xs'
-              : 'bg-slate-100 text-slate-800 rounded-2xl rounded-tl-xs shadow-2xs'
-            : 'bg-blue-600 text-white rounded-2xl rounded-tr-xs shadow-xs'
+              ? 'rounded-tl-xs bg-warning-soft text-warning'
+              : 'rounded-tl-xs bg-surface-2 text-ink'
+            : 'rounded-tr-xs bg-action text-white'
         }`}
       >
-        {/* Message Text */}
         <div className="leading-relaxed">
           {renderFormattedText(message.text)}
         </div>
 
-        {/* Action Link Pills */}
         {isAssistant && message.actionLinks && message.actionLinks.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap gap-1.5">
+          <div className="mt-2 flex flex-wrap gap-1.5 border-t border-line pt-2">
             {message.actionLinks.map((link, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => handleActionNavigate(link.path)}
-                className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-blue-600 border border-slate-200 hover:border-blue-200 active:scale-95 text-[11px] font-medium transition-all duration-150 cursor-pointer shadow-2xs group"
+                className="inline-flex items-center gap-1 rounded-pill bg-surface px-2.5 py-1 text-xs font-medium text-accent transition-colors duration-150 hover:bg-accent-soft active:scale-95"
               >
                 <span>{link.label}</span>
-                <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform duration-150" />
               </button>
             ))}
           </div>
         )}
 
-        {/* Timestamp */}
         <div
-          className={`text-[9px] mt-1 ${
-            isAssistant ? 'text-slate-400 text-left' : 'text-blue-200 text-right'
+          className={`mt-1 text-xs ${
+            isAssistant ? 'text-left text-ink-2' : 'text-right text-white/70'
           }`}
         >
           {message.timestamp}

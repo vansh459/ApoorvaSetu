@@ -648,6 +648,65 @@ stack, the hourly deadline sweep (Vercel function) and container hot reload are 
 
 ---
 
+### P13 — Premium UI/UX redesign (Hallmark custom run) — done
+
+Presentational-only redesign of every screen, in the spirit of Airbnb and Apple: warm off-white
+ground, generous and consistent margins, one font at one type scale, restrained vibrant colour,
+sparing glass, small purposeful motion and page transitions. No workflow, RBAC, data-shape, route,
+handler or audit change. The direction is locked in [`design.md`](../design.md).
+
+| Phase | Scope | Status |
+|---|---|---|
+| P13.1 | Tokens, base CSS, self-hosted Manrope, motion classes | done |
+| P13.2 | `src/components/ui/` primitives (20 components) and `statusTone` | done |
+| P13.3 | Shell: paper rail sidebar, glass header, page transitions, bottom-centre toasts | done |
+| P13.4 | Demo flow: dashboards, login, applications, detail modal/drawer, workflow, alerts, reports, scenarios | done |
+| P13.5 | Operational surfaces: documents, compliance, pendency, institutes, EVC scheduling, notifications, officials, regional escalations | done |
+| P13.6 | Admin, institution and EVC screens; emoji and `alert()` validation removed | done |
+| P13.7 | Global sweep, keyboard/contrast pass, responsive matrix, build, Docker smoke, docs | done |
+
+**Token layer.** One literal-value `@theme` block in `src/index.css` generates every utility used
+by the app: paper `#F7F5F1`, surface `#FFFFFF`, line `#E7E2D8`, ink `#17181B` / `#6B6862` /
+`#9A958A`, accent `#2B4C7E`, semantic success/warning/danger pairs and six chart colours. Type is
+Manrope 400–700 at 12/13/14/16/20/24/32/40px; 10px and 11px are gone. Radii are 10/14/20/999px,
+elevation is three shadow tokens, and motion is CSS-only (`transform`/`opacity`, 120–450ms) with a
+`prefers-reduced-motion` fallback. Raw hex is confined to the token block and `statusTone.ts`.
+
+**Component layer.** `src/components/ui/` holds `Button`, `IconButton`, `Card`, `PageHeader`,
+`StatTile`, `Badge`, `DataTable`, `Field`/`Input`/`Select`/`Textarea`, `Modal`, `Drawer`, `Tabs`,
+`EmptyState`, `Notice`, `ProgressBar`, `Skeleton`, `Spinner`, `Tooltip` and `Avatar`. The shell
+(`Header`, `Sidebar`, `ProtectedRoute`) stays in `components/common/`; `StatusBadge` remains exported
+as a thin wrapper over `Badge` + `statusTone()` so no page needed a simultaneous import change.
+
+**Signature.** The light paper rail with a single white active pill, and the calm stat strip — the
+only saturated surfaces left are status badges and chart marks. The only gradient is the ambient
+wash behind the login panel; dashboards are flat paper with hairline dividers.
+
+**Verification (2026-11-01).** A fresh-context Hallmark finish review returned `fix` with eight
+findings — nested card surfaces, uncapped ledes, the login fold at 768, clipped demo accounts, the
+dashboard wash, a floating assistant launcher over page actions, unreadable mobile queues and coin
+icons. All eight were fixed and recaptured. Final gates: `tsc` clean, lint 0 errors (26 pre-existing
+warnings), 174/174 tests, production build green; sloplint app scope 0 FAIL, 2 REFLEX waived (7b
+pure-white surfaces, recorded in the stamp), 8 WARN dismissed (documented glass on overlays,
+whole-surface action cards); a 90-combination audit across the five roles at 390/768/1280/1920 shows
+zero horizontal overflow; an interaction probe passes 12/12 — header assistant toggle, modal
+labelled `role="dialog"` with focus trap, Escape and focus restore, mobile drawer navigation, and
+`prefers-reduced-motion` removal of the page transition. Screenshots before and after are stored in
+`.hallmark/before/` and `.hallmark/after/`; the container was rebuilt and smoke-tested at
+`http://localhost:8080`. No workflow, RBAC, data-shape, route, handler or audit line changed.
+
+**Evidence.** `npm run build`, `npm run lint` (0 errors) and `npm run test:run` (174 tests, 17 files)
+pass. `sloplint --scope app` reports 0 FAIL, with the two pure-white-surface REFLEX items waived
+(the locked palette keeps cards pure white) and the glass WARNs dismissed by the documented glass
+budget. Responsive captures at 390/768/1280/1440/1920 and per-role dashboard captures live in
+`.hallmark/after/`; the measured overflow report is `.hallmark/after/responsive-audit.json`.
+Docker: `docker compose up --build -d` serves the redesigned app at `http://localhost:8080`.
+
+**Scope boundary:** no dark mode, no new routes or features, no new runtime dependency (motion is
+CSS), no chart-library replacement, no copy rewrite beyond removing decorative eyebrow labels.
+
+---
+
 ## 8. Test plan
 
 | File | Covers |

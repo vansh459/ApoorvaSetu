@@ -44,26 +44,27 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="px-3 py-2 bg-white border-t border-slate-100 shrink-0">
-      <div className="relative flex items-center bg-slate-50 border border-slate-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 rounded-2xl px-3 py-1.5 transition-all">
+    <form onSubmit={handleSubmit} className="shrink-0 border-t border-line bg-surface px-3 py-2.5">
+      <div className="flex items-end gap-2 rounded-card bg-surface-2 px-3 py-2 transition-shadow duration-150 focus-within:shadow-raise">
         <textarea
           ref={textareaRef}
           rows={1}
           value={text}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder="Ask ApoorvaSetu..."
+          placeholder="Ask about this screen"
           disabled={disabled}
-          className="w-full bg-transparent resize-none outline-none text-xs text-slate-800 placeholder-slate-400 py-1 pr-2 max-h-24 leading-relaxed"
+          aria-label="Message the ApoorvaSetu assistant"
+          className="max-h-24 w-full resize-none bg-transparent py-1 text-sm leading-relaxed text-ink outline-none placeholder:text-ink-3 disabled:cursor-not-allowed"
         />
 
         <button
           type="submit"
           disabled={!text.trim() || disabled}
           aria-label="Send message"
-          className="shrink-0 w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-90 disabled:opacity-30 disabled:hover:bg-blue-600 disabled:active:scale-100 text-white flex items-center justify-center transition-all duration-150 cursor-pointer disabled:cursor-not-allowed shadow-2xs"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-action text-white transition-[background-color,transform] duration-150 ease-swift hover:bg-action-hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
         >
-          <ArrowUp className="w-4 h-4 stroke-[2.5]" />
+          <ArrowUp className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
         </button>
       </div>
     </form>

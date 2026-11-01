@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
-import {
-  Building2,
-  Save,
-  CheckCircle2,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  GraduationCap,
-  ShieldCheck
-} from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { Save } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  Textarea
+} from '../../components/ui';
 
 export const InstitutionProfile: React.FC = () => {
-  const { user } = useAuth();
   const { showToast } = useApp();
 
   const [name, setName] = useState('ABC Institute of Technology');
@@ -34,185 +33,146 @@ export const InstitutionProfile: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Header */}
-      <div>
-        <div className="flex items-center space-x-2 mb-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-            Institution Profile
-          </span>
-          <span className="text-xs text-slate-400">•</span>
-          <span className="text-xs text-slate-500 font-medium">Permanent AICTE Directory</span>
-        </div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Institutional Details & Governance Profile
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Maintain verified campus information, permanent identification number (PID), and authorized institutional signatories.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Institution profile"
+        description="Verified campus information, the permanent identification number and the authorised signatories held in the AICTE directory."
+        meta={
+          <>
+            <Badge tone="info">Institution admin</Badge>
+            <Badge tone="success">AICTE approved</Badge>
+          </>
+        }
+      />
 
-      <form onSubmit={handleSave} className="space-y-5">
-        {/* Core Institution Details */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100 flex items-center justify-between">
-            <span>Primary Institutional Identification</span>
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-              AICTE Approved
-            </span>
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-700 mb-1">
-                Institution Legal Name
-              </label>
-              <input
+      <form onSubmit={handleSave} className="space-y-6">
+        <Card padded="none">
+          <CardHeader
+            title="Primary identification"
+            description="Legal name, permanent identifiers and academic category."
+          />
+          <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+            <Field
+              label="Institution legal name"
+              htmlFor="institution-name"
+              required
+              className="sm:col-span-2"
+            >
+              <Input
+                id="institution-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Permanent AICTE Institute ID (PID)
-              </label>
-              <input
-                type="text"
-                value={pid}
-                disabled
-                className="w-full px-3 py-2 bg-slate-100 text-slate-500 rounded-xl border border-slate-200 cursor-not-allowed font-mono"
-              />
-            </div>
+            <Field
+              label="Permanent AICTE institute ID (PID)"
+              htmlFor="institution-pid"
+              hint="Assigned by AICTE and cannot be edited."
+            >
+              <Input id="institution-pid" type="text" value={pid} disabled className="font-mono" />
+            </Field>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                AICTE Application / Reference Code
-              </label>
-              <input
-                type="text"
-                value={code}
-                disabled
-                className="w-full px-3 py-2 bg-slate-100 text-slate-500 rounded-xl border border-slate-200 cursor-not-allowed font-mono"
-              />
-            </div>
+            <Field
+              label="AICTE application reference"
+              htmlFor="institution-code"
+              hint="Assigned by AICTE and cannot be edited."
+            >
+              <Input id="institution-code" type="text" value={code} disabled className="font-mono" />
+            </Field>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Institution Discipline / Category
-              </label>
-              <select
+            <Field label="Discipline or category" htmlFor="institution-category">
+              <Select
+                id="institution-category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               >
                 <option value="Engineering & Technology">Engineering & Technology</option>
                 <option value="Management">Management</option>
                 <option value="Pharmacy">Pharmacy</option>
                 <option value="Architecture">Architecture</option>
                 <option value="Polytechnic">Polytechnic</option>
-              </select>
-            </div>
+              </Select>
+            </Field>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Year of Establishment
-              </label>
-              <input
+            <Field label="Year of establishment" htmlFor="institution-est-year">
+              <Input
+                id="institution-est-year"
                 type="text"
                 value={estYear}
                 onChange={(e) => setEstYear(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-            </div>
+            </Field>
           </div>
-        </div>
+        </Card>
 
-        {/* Head of Institution / Signatory */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-          <h2 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100">
-            Head of Institution & Principal Signatory
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Principal / Director Full Name
-              </label>
-              <input
+        <Card padded="none">
+          <CardHeader
+            title="Head of institution"
+            description="The principal or director who signs statutory submissions on behalf of the campus."
+          />
+          <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+            <Field label="Principal or director full name" htmlFor="institution-principal" required>
+              <Input
+                id="institution-principal"
                 type="text"
                 value={principalName}
                 onChange={(e) => setPrincipalName(e.target.value)}
                 required
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Official Institutional Email
-              </label>
-              <input
+            <Field label="Official institutional email" htmlFor="institution-email" required>
+              <Input
+                id="institution-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Authorized Mobile / Phone
-              </label>
-              <input
+            <Field label="Authorised phone" htmlFor="institution-phone">
+              <Input
+                id="institution-phone"
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Approved Annual Intake Capacity
-              </label>
-              <input
+            <Field label="Approved annual intake" htmlFor="institution-intake">
+              <Input
+                id="institution-intake"
                 type="text"
                 value={approvedSeats}
                 onChange={(e) => setApprovedSeats(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-            </div>
+            </Field>
 
-            <div className="sm:col-span-2">
-              <label className="block font-semibold text-slate-700 mb-1">
-                Registered Physical Campus Address
-              </label>
-              <textarea
-                rows={2}
+            <Field
+              label="Registered campus address"
+              htmlFor="institution-address"
+              className="sm:col-span-2"
+            >
+              <Textarea
+                id="institution-address"
+                rows={3}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-blue-500 focus:outline-hidden"
               />
-            </div>
+            </Field>
           </div>
-        </div>
+        </Card>
 
-        <div className="flex items-center justify-end space-x-3 pt-2">
-          <button
-            type="submit"
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center space-x-2 shadow-sm transition-colors cursor-pointer"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>Save & Update Profile</span>
-          </button>
+        <div className="flex justify-end">
+          <Button type="submit" icon={<Save className="h-4 w-4" />}>
+            Save profile
+          </Button>
         </div>
       </form>
     </div>
   );
 };
-

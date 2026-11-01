@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { UploadCloud, FileText, Building } from 'lucide-react';
+import { UploadCloud, FileText } from 'lucide-react';
 import { Modal } from '../common/Modal';
+import { Button, Field, Input, Select } from '../ui';
 import { useApp } from '../../context/AppContext';
 import { Region } from '../../types';
 
@@ -40,115 +41,94 @@ export const UploadComplianceModal: React.FC = () => {
     <Modal
       isOpen={activeModal === 'upload-compliance'}
       onClose={() => setActiveModal(null)}
-      title="Upload Compliance & Undertaking"
+      title="Upload compliance and undertaking"
       subtitle="Submit regulatory compliance dossiers and legal affidavits"
-      maxWidth="max-w-xl"
+      footer={
+        <>
+          <Button variant="secondary" onClick={() => setActiveModal(null)}>
+            Cancel
+          </Button>
+          <Button type="submit" form="compliance-upload-form">
+            Submit compliance dossier
+          </Button>
+        </>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Institute */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Select Institution
-          </label>
-          <div className="relative">
-            <Building className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
-            <select
-              value={selectedInstId}
-              onChange={(e) => setSelectedInstId(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:border-blue-500"
-            >
-              {institutes.map((inst) => (
-                <option key={inst.id} value={inst.id}>
-                  {inst.name} ({inst.region} Region)
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+      <form id="compliance-upload-form" onSubmit={handleSubmit} className="space-y-4">
+        <Field label="Institution" htmlFor="compliance-institute">
+          <Select
+            id="compliance-institute"
+            value={selectedInstId}
+            onChange={(e) => setSelectedInstId(e.target.value)}
+          >
+            {institutes.map((inst) => (
+              <option key={inst.id} value={inst.id}>
+                {inst.name} ({inst.region} Region)
+              </option>
+            ))}
+          </Select>
+        </Field>
 
-        {/* Category & Title */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Compliance Category
-            </label>
-            <select
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Compliance category" htmlFor="compliance-category">
+            <Select
+              id="compliance-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:border-blue-500"
             >
               <option value="Compliance Submissions">Compliance Submissions</option>
               <option value="Institutional Undertakings">Institutional Undertakings</option>
               <option value="Lease Documents">Lease Documents</option>
               <option value="Valid Documents">Valid Documents</option>
-            </select>
-          </div>
+            </Select>
+          </Field>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Urgency Level
-            </label>
-            <select
+          <Field label="Urgency level" htmlFor="compliance-urgency">
+            <Select
+              id="compliance-urgency"
               value={urgency}
               onChange={(e) => setUrgency(e.target.value as any)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:border-blue-500"
             >
               <option value="low">Standard / Low</option>
               <option value="medium">Medium Urgency</option>
               <option value="high">High (Urgent Escalation)</option>
-            </select>
-          </div>
+            </Select>
+          </Field>
         </div>
 
-        {/* Title */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Compliance Document Description / Title
-          </label>
-          <input
+        <Field
+          label="Document description or title"
+          htmlFor="compliance-title"
+          required
+        >
+          <Input
+            id="compliance-title"
             type="text"
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:border-blue-500"
           />
-        </div>
+        </Field>
 
-        {/* File Upload Dropzone Simulation */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Upload PDF / Stamped Document
-          </label>
-          <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center bg-slate-50/50 hover:bg-slate-50 hover:border-blue-400 transition-colors">
-            <UploadCloud className="w-8 h-8 text-blue-500 mx-auto mb-1.5" />
-            <p className="text-xs font-bold text-slate-700">
-              Drag & drop document or <span className="text-blue-600">browse files</span>
+          <span className="mb-1.5 block text-label font-medium text-ink">
+            PDF or stamped document
+          </span>
+          <div className="rounded-card border border-dashed border-line-strong bg-surface-2 px-4 py-6 text-center">
+            <UploadCloud
+              className="mx-auto h-7 w-7 text-accent"
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <p className="mt-2 text-sm font-medium text-ink">
+              Drag and drop a document or <span className="text-accent">browse files</span>
             </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Supports digitally signed PDF, max 25MB
-            </p>
-            <div className="inline-flex items-center space-x-1.5 mt-2 px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 shadow-2xs">
-              <FileText className="w-3.5 h-3.5 text-blue-600" />
-              <span>{fileName}</span>
-            </div>
+            <p className="mt-0.5 text-xs text-ink-2">Digitally signed PDF accepted, up to 25 MB</p>
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-control bg-surface px-3 py-1.5 text-label font-medium text-ink-2">
+              <FileText className="h-4 w-4 text-accent" strokeWidth={1.75} aria-hidden="true" />
+              {fileName}
+            </span>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
-          <button
-            type="button"
-            onClick={() => setActiveModal(null)}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm"
-          >
-            Submit Compliance Dossier
-          </button>
         </div>
       </form>
     </Modal>

@@ -3,7 +3,6 @@ import {
   Building2,
   CheckCircle2,
   Clock,
-  ArrowRight,
   RotateCcw,
   Check,
   XCircle,
@@ -13,12 +12,12 @@ import {
   AlertTriangle,
   Undo2
 } from 'lucide-react';
-import { Modal } from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../common/StatusBadge';
 import { canonicalStage } from '../../workflow/stages';
 import { getApplicationStagePath } from '../../workflow/routes';
 import { reasonCodesFor } from '../../workflow/codes';
+import { Badge, Button, Field, Modal, Notice, Select, Textarea } from '../ui';
 
 export const ApplicationDetailModal: React.FC = () => {
   const {
@@ -99,69 +98,51 @@ export const ApplicationDetailModal: React.FC = () => {
     <Modal
       isOpen={activeModal === 'app-detail'}
       onClose={closeModal}
-      title={`Application Dossier — ${app.id}`}
-      subtitle={`${app.instituteName} • ${app.region} Region`}
-      maxWidth="max-w-3xl"
-    >
-      <div className="space-y-6">
-        {/* Top Summary Banner */}
-        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                {app.id}
-              </span>
-              <StatusBadge status={app.status} />
-            </div>
-            <h3 className="text-base font-bold text-slate-900 mt-1">
-              {app.instituteName}
-            </h3>
-            <p className="text-xs text-slate-500">
-              {app.type} • Proposed Intake: <span className="font-semibold text-slate-700">{app.intakeProposed} Seats</span>
-            </p>
-          </div>
-
-          <div className="text-right text-xs text-slate-500">
-            <div>Applied: <span className="font-semibold text-slate-700">{app.appliedDate}</span></div>
-            <div>Last Updated: <span className="font-semibold text-slate-700">{app.lastUpdated}</span></div>
-          </div>
-        </div>
-
-        {/* Action Controls for Workflow */}
-        <div className="bg-blue-50/50 border border-blue-200/70 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3 gap-3">
-            <span className="text-xs font-bold text-slate-800">Statutory Case Actions</span>
-            <span className="text-[11px] text-blue-700 font-medium text-right">
-              Current Stage: <span className="font-bold">{app.stage}</span>
+      title={`Application ${app.id}`}
+      subtitle={`${app.instituteName}, ${app.region} Region`}
+      size="lg"
+      maxWidth="max-w-4xl"
+      footer={
+        <div className="w-full">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs text-ink-2">
+              Current stage: <span className="font-medium text-ink">{app.stage}</span>
             </span>
+            <StatusBadge status={app.status} size="sm" />
           </div>
 
           {isTerminal ? (
-            <div className="rounded-xl bg-white border border-slate-200 p-3 text-xs text-slate-600">
-              <div className="font-bold text-slate-800">
+            <div className="mt-3 space-y-1.5 rounded-control bg-surface-2 p-3 text-sm">
+              <div className="font-medium text-ink">
                 Decision recorded: {app.decision?.outcome ?? app.status}
               </div>
               {app.decision && (
                 <>
-                  <div className="mt-1">
-                    Authority: <strong className="text-slate-800">{app.decision.competentAuthority ?? app.decision.by}</strong>
-                    {' '}({app.decision.code})
+                  <div className="text-xs text-ink-2">
+                    Authority:{' '}
+                    <span className="font-medium text-ink">
+                      {app.decision.competentAuthority ?? app.decision.by}
+                    </span>{' '}
+                    ({app.decision.code})
                   </div>
-                  <p className="mt-1 text-slate-500">{app.decision.note}</p>
+                  <p className="text-xs text-ink-2">{app.decision.note}</p>
                 </>
               )}
-              <p className="mt-2 text-[11px] text-slate-400">
+              <p className="text-xs text-ink-3">
                 Terminal cases are immutable; the record can only be read or exported.
               </p>
             </div>
           ) : isReturned ? (
-            <div className="space-y-2">
-              <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
-                Case returned for correction. The statutory clock is paused until the institution resubmits.
-              </p>
+            <div className="mt-3 space-y-2">
+              <Notice tone="warning">
+                Case returned for correction. The statutory clock is paused until the institution
+                resubmits.
+              </Notice>
               <div className="flex flex-wrap items-center gap-2">
                 {resubmitCheck.code !== 'FORBIDDEN' ? (
-                  <button
+                  <Button
+                    disabled={!resubmitCheck.ok}
+                    title={resubmitCheck.ok ? undefined : resubmitCheck.message}
                     onClick={() => {
                       transitionApplication(app.id, {
                         action: 'RESUBMIT',
@@ -170,44 +151,40 @@ export const ApplicationDetailModal: React.FC = () => {
                       });
                       setActiveModal(null);
                     }}
-                    disabled={!resubmitCheck.ok}
-                    title={resubmitCheck.ok ? undefined : resubmitCheck.message}
-                    className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                    icon={<Undo2 className="h-4 w-4" strokeWidth={1.75} />}
                   >
-                    <Undo2 className="w-3.5 h-3.5" />
-                    <span>Resubmit Corrections</span>
-                  </button>
+                    Resubmit corrections
+                  </Button>
                 ) : (
-                  <p className="text-[11px] text-slate-600">
+                  <p className="text-xs text-ink-2">
                     Awaiting the institution to resubmit the corrected application.
                   </p>
                 )}
               </div>
               {resubmitCheck.code !== 'FORBIDDEN' && !resubmitCheck.ok && (
-                <p className="text-[11px] text-rose-600">{resubmitCheck.message}</p>
+                <p className="text-xs text-danger">{resubmitCheck.message}</p>
               )}
             </div>
           ) : pendingAction ? (
-            <div className="space-y-2.5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <label className="text-[11px] font-semibold text-slate-600 space-y-1">
-                  <span>Reason code</span>
-                  <select
+            <div className="mt-3 space-y-2.5">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Field label="Reason code" htmlFor="detail-reason" required>
+                  <Select
+                    id="detail-reason"
                     value={reasonCode}
                     onChange={(event) => setReasonCode(event.target.value)}
-                    className="w-full px-2.5 py-2 text-xs bg-white border border-slate-300 rounded-lg"
                   >
                     <option value="">Select statutory reason…</option>
                     {reasonCodesFor(pendingAction).map((reason) => (
                       <option key={reason.code} value={reason.code}>
-                        {reason.code} — {reason.label}
+                        {reason.code}: {reason.label}
                       </option>
                     ))}
-                  </select>
-                </label>
-                <label className="text-[11px] font-semibold text-slate-600 space-y-1">
-                  <span>Officer note {note.trim() ? '' : '(required)'}</span>
-                  <textarea
+                  </Select>
+                </Field>
+                <Field label="Officer note" htmlFor="detail-note" required>
+                  <Textarea
+                    id="detail-note"
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
                     rows={2}
@@ -216,59 +193,52 @@ export const ApplicationDetailModal: React.FC = () => {
                         ? 'State the deficiency and what the institution must correct…'
                         : 'Record the statutory grounds for rejection…'
                     }
-                    className="w-full px-2.5 py-2 text-xs bg-white border border-slate-300 rounded-lg resize-none"
+                    className="resize-none"
                   />
-                </label>
+                </Field>
               </div>
-              <div className="flex items-center space-x-2 justify-end">
-                <button
-                  onClick={resetActionForm}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg"
-                >
+              <div className="flex items-center justify-end gap-2">
+                <Button variant="secondary" onClick={resetActionForm}>
                   Cancel
-                </button>
-                <button
-                  onClick={submitAction}
+                </Button>
+                <Button
+                  variant={pendingAction === 'RETURN' ? 'primary' : 'danger'}
                   disabled={!reasonCode || !note.trim()}
-                  className={`px-4 py-1.5 text-xs font-bold text-white rounded-lg disabled:bg-slate-300 disabled:cursor-not-allowed ${
-                    pendingAction === 'RETURN'
-                      ? 'bg-amber-600 hover:bg-amber-700'
-                      : 'bg-rose-600 hover:bg-rose-700'
-                  }`}
+                  onClick={submitAction}
                 >
-                  {pendingAction === 'RETURN' ? 'Confirm Return for Correction' : 'Confirm Rejection'}
-                </button>
+                  {pendingAction === 'RETURN' ? 'Confirm return' : 'Confirm rejection'}
+                </Button>
               </div>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               {showForward && (
-                <button
+                <Button
+                  disabled={!forwardCheck.ok}
+                  title={forwardCheck.ok ? undefined : forwardCheck.message}
                   onClick={() => {
                     transitionApplication(app.id, { action: 'FORWARD', expectedVersion: app.version });
                     setActiveModal(null);
                   }}
-                  disabled={!forwardCheck.ok}
-                  title={forwardCheck.ok ? undefined : forwardCheck.message}
-                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
                 >
-                  <span>Advance to Next Stage</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                  Advance stage
+                </Button>
               )}
 
               {showReturn && (
-                <button
+                <Button
+                  variant="secondary"
                   onClick={() => setPendingAction('RETURN')}
-                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                  icon={<RotateCcw className="h-4 w-4" strokeWidth={1.75} />}
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Return for Correction</span>
-                </button>
+                  Return for correction
+                </Button>
               )}
 
               {showApprove && (
-                <button
+                <Button
+                  disabled={!approveCheck.ok}
+                  title={approveCheck.ok ? undefined : approveCheck.message}
                   onClick={() => {
                     transitionApplication(app.id, {
                       action: 'APPROVE',
@@ -278,28 +248,26 @@ export const ApplicationDetailModal: React.FC = () => {
                     });
                     setActiveModal(null);
                   }}
-                  disabled={!approveCheck.ok}
-                  title={approveCheck.ok ? undefined : approveCheck.message}
-                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                  icon={<Check className="h-4 w-4" strokeWidth={1.75} />}
                 >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Grant Final Approval</span>
-                </button>
+                  Grant final approval
+                </Button>
               )}
 
               {showReject && (
-                <button
+                <Button
+                  variant="danger"
                   onClick={() => setPendingAction('REJECT')}
-                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors ml-auto"
+                  icon={<XCircle className="h-4 w-4" strokeWidth={1.75} />}
+                  className="ml-auto"
                 >
-                  <XCircle className="w-3.5 h-3.5" />
-                  <span>Reject</span>
-                </button>
+                  Reject
+                </Button>
               )}
 
               {!hasActions && (
-                <p className="text-[11px] text-slate-500">
-                  Read-only view — no statutory action is available to your role at this stage.
+                <p className="text-xs text-ink-2">
+                  Read-only view. No statutory action is available to your role at this stage.
                 </p>
               )}
             </div>
@@ -308,175 +276,185 @@ export const ApplicationDetailModal: React.FC = () => {
           {!isTerminal && !isReturned && !pendingAction && denialHints.length > 0 && (
             <div className="mt-3 space-y-1">
               {denialHints.map((hint) => (
-                <p key={hint} className="text-[11px] text-rose-700 flex items-start gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                <p key={hint} className="flex items-start gap-1.5 text-xs text-danger">
+                  <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
                   <span>{hint}</span>
                 </p>
               ))}
             </div>
           )}
         </div>
-
-        {openDeficiencies.length > 0 && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-            <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2">
-              Open Deficiencies ({openDeficiencies.length})
-            </h4>
-            <div className="space-y-2">
-              {openDeficiencies.map((deficiency, index) => (
-                <div key={`${deficiency.code}-${index}`} className="text-[11px] text-amber-900">
-                  <span className="font-bold font-mono">{deficiency.code}</span>
-                  {' · '}
-                  <span>{deficiency.note}</span>
-                  <span className="text-amber-700"> — raised at {deficiency.stage} on {deficiency.raisedAt} by {deficiency.raisedBy}</span>
-                </div>
-              ))}
+      }
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <div className="rounded-card bg-surface-2 p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="info">{app.id}</Badge>
+              <span className="text-xs text-ink-2">{app.type}</span>
             </div>
+            <h3 className="mt-2 text-base font-semibold text-ink">{app.instituteName}</h3>
+            <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <dt className="text-ink-2">Proposed intake</dt>
+                <dd className="font-medium text-ink">{app.intakeProposed} seats</dd>
+              </div>
+              <div>
+                <dt className="text-ink-2">Applied</dt>
+                <dd className="font-medium text-ink">{app.appliedDate}</dd>
+              </div>
+              <div>
+                <dt className="text-ink-2">Last updated</dt>
+                <dd className="font-medium text-ink">{app.lastUpdated}</dd>
+              </div>
+              <div>
+                <dt className="text-ink-2">Version</dt>
+                <dd className="font-medium text-ink">{app.version}</dd>
+              </div>
+            </dl>
           </div>
-        )}
 
-        {/* Multi-Stage Visual Stepper */}
-        <div>
-          <h4 className="text-xs font-bold text-slate-800 mb-3 uppercase tracking-wider">
-            Approval Stages Pipeline
-          </h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {stages.map((stg, i) => {
-              const isPast = i < currentIdx;
-              const isNow = i === currentIdx;
+          <section>
+            <h4 className="text-sm font-semibold text-ink">Approval pipeline</h4>
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              {stages.map((stg, i) => {
+                const isPast = i < currentIdx;
+                const isNow = i === currentIdx;
+                return (
+                  <div
+                    key={stg}
+                    className={`rounded-control p-2.5 text-xs ${
+                      isPast
+                        ? 'bg-success-soft text-success'
+                        : isNow
+                          ? 'bg-accent-soft text-accent'
+                          : 'bg-surface-2 text-ink-2'
+                    }`}
+                  >
+                    <div className="mb-1 flex items-center gap-1.5">
+                      {isPast ? (
+                        <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
+                      ) : isNow ? (
+                        <Clock className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      ) : (
+                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded-pill border border-line-strong text-xs">
+                          {i + 1}
+                        </span>
+                      )}
+                      <span className="font-medium">Stage {i + 1}</span>
+                    </div>
+                    <div className="truncate font-semibold">{stg}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
 
-              return (
-                <div
-                  key={stg}
-                  className={`p-3 rounded-xl border text-xs transition-colors ${
-                    isPast
-                      ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
-                      : isNow
-                      ? 'bg-blue-50 border-blue-300 text-blue-900 ring-2 ring-blue-100 font-bold'
-                      : 'bg-slate-50 border-slate-200 text-slate-400'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2 mb-1">
-                    {isPast ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    ) : isNow ? (
-                      <Clock className="w-4 h-4 text-blue-600 animate-spin" />
-                    ) : (
-                      <span className="w-4 h-4 rounded-full border border-slate-300 text-[10px] flex items-center justify-center">
-                        {i + 1}
-                      </span>
-                    )}
-                    <span className="text-[10px] font-bold uppercase tracking-wider">
-                      Stage {i + 1}
+          {openDeficiencies.length > 0 && (
+            <section className="rounded-card bg-warning-soft p-3.5">
+              <h4 className="text-sm font-semibold text-warning">
+                Open deficiencies ({openDeficiencies.length})
+              </h4>
+              <div className="mt-2 space-y-2">
+                {openDeficiencies.map((deficiency, index) => (
+                  <div key={`${deficiency.code}-${index}`} className="text-xs text-warning">
+                    <span className="font-mono font-semibold">{deficiency.code}</span>{' '}
+                    <span>{deficiency.note}</span>
+                    <span className="block opacity-80">
+                      Raised at {deficiency.stage} on {deficiency.raisedAt} by {deficiency.raisedBy}
                     </span>
                   </div>
-                  <div className="truncate font-semibold">{stg}</div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <div className="grid grid-cols-1 gap-3">
+            <div className="rounded-card bg-surface-2 p-3.5 text-sm">
+              <div className="flex items-center gap-2 font-medium text-ink">
+                <Building2 className="h-4 w-4 text-ink-2" strokeWidth={1.75} />
+                Contact and jurisdiction
+              </div>
+              <div className="mt-2 space-y-1.5 text-xs text-ink-2">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+                  <span className="truncate">{app.contactEmail}</span>
                 </div>
-              );
-            })}
+                <div className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+                  <span>{app.contactPhone}</span>
+                </div>
+                <div>
+                  {app.state}, {app.region} Region
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-card bg-surface-2 p-3.5 text-sm">
+              <div className="flex items-center gap-2 font-medium text-ink">
+                <GraduationCap className="h-4 w-4 text-ink-2" strokeWidth={1.75} />
+                Academic programs
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {app.programs.map((prog) => (
+                  <span
+                    key={prog}
+                    className="rounded-pill bg-surface px-2 py-0.5 text-xs text-ink-2"
+                  >
+                    {prog}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-2 text-xs text-ink-2">
+                Intake capacity: <span className="font-medium text-ink">{app.intakeProposed} students</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Institution Contact & Programs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
-            <div className="font-bold text-slate-800 flex items-center space-x-2">
-              <Building2 className="w-4 h-4 text-blue-600" />
-              <span>Contact & Jurisdiction</span>
-            </div>
-            <div className="flex items-center space-x-2 text-slate-600">
-              <Mail className="w-3.5 h-3.5 text-slate-400" />
-              <span>{app.contactEmail}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-slate-600">
-              <Phone className="w-3.5 h-3.5 text-slate-400" />
-              <span>{app.contactPhone}</span>
-            </div>
-            <div className="text-slate-500">
-              State: <span className="font-medium text-slate-700">{app.state}</span> ({app.region} Region)
-            </div>
-          </div>
-
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
-            <div className="font-bold text-slate-800 flex items-center space-x-2">
-              <GraduationCap className="w-4 h-4 text-blue-600" />
-              <span>Academic Programs</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {app.programs.map((prog) => (
-                <span
-                  key={prog}
-                  className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-medium text-[11px]"
-                >
-                  {prog}
-                </span>
+        <div className="space-y-6">
+          <section>
+            <h4 className="text-sm font-semibold text-ink">
+              Verification dossiers ({app.documents.length})
+            </h4>
+            <div className="mt-2.5 divide-y divide-line overflow-hidden rounded-card bg-surface-2">
+              {app.documents.map((doc) => (
+                <div key={doc.name} className="flex items-center justify-between gap-3 p-3 text-sm">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-surface text-xs font-semibold text-ink-2">
+                      PDF
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-ink">{doc.name}</div>
+                      <div className="text-xs text-ink-2">Uploaded {doc.uploadedOn}</div>
+                    </div>
+                  </div>
+                  <StatusBadge status={doc.status} size="sm" />
+                </div>
               ))}
             </div>
-            <div className="text-slate-500 text-[11px]">
-              Intake Capacity: <span className="font-bold text-slate-800">{app.intakeProposed} students</span>
-            </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Documents */}
-        <div>
-          <h4 className="text-xs font-bold text-slate-800 mb-2 uppercase tracking-wider">
-            Uploaded Verification Dossiers ({app.documents.length})
-          </h4>
-          <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white">
-            {app.documents.map((doc) => (
-              <div
-                key={doc.name}
-                className="p-3 flex items-center justify-between text-xs hover:bg-slate-50"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[10px]">
-                    PDF
-                  </div>
-                  <div>
-                    <div className="font-semibold text-slate-800">{doc.name}</div>
-                    <div className="text-[11px] text-slate-400">
-                      Uploaded on {doc.uploadedOn}
-                    </div>
-                  </div>
-                </div>
-                <StatusBadge status={doc.status} size="sm" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Timeline audit trail */}
-        <div>
-          <h4 className="text-xs font-bold text-slate-800 mb-2 uppercase tracking-wider">
-            Audit Trail & Officer Notes
-          </h4>
-          <div className="space-y-2">
-            {app.timeline.map((event, idx) => (
-              <div
-                key={idx}
-                className="flex items-start space-x-3 text-xs p-2.5 rounded-xl bg-slate-50/80 border border-slate-100"
-              >
-                <div className="w-2 h-2 rounded-full bg-blue-600 mt-1.5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800">{event.stage}</span>
-                    <span className="text-[11px] text-slate-400">{event.date}</span>
+          <section>
+            <h4 className="text-sm font-semibold text-ink">Audit trail and officer notes</h4>
+            <div className="mt-2.5 space-y-2">
+              {app.timeline.map((event, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-control bg-surface-2 p-3 text-sm"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-ink">{event.stage}</span>
+                    <span className="text-xs text-ink-2">{event.date}</span>
                   </div>
                   {event.officer && (
-                    <div className="text-[11px] text-blue-600 font-medium">
-                      Handler: {event.officer}
-                    </div>
+                    <div className="mt-0.5 text-xs text-accent">Handler: {event.officer}</div>
                   )}
-                  {event.notes && (
-                    <div className="text-slate-600 mt-0.5 text-[11px]">
-                      {event.notes}
-                    </div>
-                  )}
+                  {event.notes && <p className="mt-1 text-xs text-ink-2">{event.notes}</p>}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
     </Modal>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ClipboardList, Search, CalendarPlus, ArrowUpRight, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CalendarPlus, Check, ClipboardList, Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { filterApplicationsForUser } from '../../services/rbacService';
@@ -8,13 +8,33 @@ import type { EVCQueueState } from '../../workflow/evc';
 import { getStageMeta } from '../../workflow/stages';
 import { routeForApplication } from '../../workflow/routes';
 import { formatDisplayDate } from '../../utils/dates';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Input,
+  PageHeader,
+  StatTile,
+  Tabs
+} from '../../components/ui';
+import type { Tone } from '../../utils/statusTone';
 
-const STATE_STYLES: Record<EVCQueueState, string> = {
-  'Report overdue': 'bg-rose-50 text-rose-700 border-rose-200',
-  'Awaiting scheduling': 'bg-amber-50 text-amber-700 border-amber-200',
-  Scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
-  Completed: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+const STATE_TONE: Record<EVCQueueState, Tone> = {
+  'Report overdue': 'danger',
+  'Awaiting scheduling': 'warning',
+  Scheduled: 'info',
+  Completed: 'success'
 };
+
+const STATES = [
+  'All',
+  'Awaiting scheduling',
+  'Scheduled',
+  'Report overdue',
+  'Completed'
+] as const;
 
 export const EVCQueue: React.FC = () => {
   const { user } = useAuth();
@@ -67,160 +87,153 @@ export const EVCQueue: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-              Inspection Operations
-            </span>
-            <span className="text-xs text-slate-400">•</span>
-            <span className="text-xs text-slate-500 font-medium">Route-derived work queue</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">EVC Work Queue</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Every case that has reached the Expert Visit Committee stage, with its inspection and report deadline.
-          </p>
-        </div>
+      <PageHeader
+        title="EVC work queue"
+        description="Every case that has reached the Expert Visit Committee stage, with its inspection and report deadline."
+        meta={
+          <>
+            <Badge>Inspection operations</Badge>
+            <span className="text-xs text-ink-2">Route-derived queue</span>
+          </>
+        }
+        actions={
+          <Button
+            onClick={() => setActiveModal('schedule-evc')}
+            icon={<CalendarPlus className="h-4 w-4" />}
+          >
+            Schedule visit
+          </Button>
+        }
+      />
 
-        <button
-          onClick={() => setActiveModal('schedule-evc')}
-          className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
-        >
-          <CalendarPlus className="w-4 h-4" />
-          <span>Schedule EVC Visit</span>
-        </button>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatTile
+          label="Awaiting scheduling"
+          value={counts.awaiting}
+          delta="No active visit linked"
+         
+        />
+        <StatTile
+          label="Scheduled"
+          value={counts.scheduled}
+          delta="Committee constituted"
+         
+        />
+        <StatTile
+          label="Report overdue"
+          value={counts.overdue}
+          delta="Past the report SLA"
+         
+        />
+        <StatTile label="Completed" value={counts.completed} delta="Report on record" />
       </div>
 
-      {/* Queue stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-100 shadow-2xs">
-          <div className="text-xs font-semibold text-amber-800">Awaiting scheduling</div>
-          <div className="text-2xl font-bold text-amber-950 mt-0.5">{counts.awaiting}</div>
-          <div className="text-[11px] text-amber-700 font-medium mt-1">No active visit linked</div>
-        </div>
-        <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-100 shadow-2xs">
-          <div className="text-xs font-semibold text-blue-800">Scheduled</div>
-          <div className="text-2xl font-bold text-blue-950 mt-0.5">{counts.scheduled}</div>
-          <div className="text-[11px] text-blue-700 font-medium mt-1">Committee constituted</div>
-        </div>
-        <div className="bg-rose-50/70 p-4 rounded-2xl border border-rose-100 shadow-2xs">
-          <div className="text-xs font-semibold text-rose-800">Report overdue</div>
-          <div className="text-2xl font-bold text-rose-950 mt-0.5">{counts.overdue}</div>
-          <div className="text-[11px] text-rose-700 font-medium mt-1">Past the report SLA</div>
-        </div>
-        <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-100 shadow-2xs">
-          <div className="text-xs font-semibold text-emerald-800">Completed</div>
-          <div className="text-2xl font-bold text-emerald-950 mt-0.5">{counts.completed}</div>
-          <div className="text-[11px] text-emerald-700 font-medium mt-1">Report on record</div>
-        </div>
-      </div>
+      <Card>
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <Field label="Search" htmlFor="evc-queue-search" className="w-full md:max-w-sm">
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
+                aria-hidden="true"
+              />
+              <Input
+                id="evc-queue-search"
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Case, institute or committee"
+                className="pl-9"
+              />
+            </div>
+          </Field>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex flex-col md:flex-row md:items-center gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search case, institute or committee..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-hidden focus:border-blue-500"
+          <Tabs
+            items={STATES.map((state) => ({ id: state, label: state }))}
+            value={stateFilter}
+            onChange={(value) => setStateFilter(value as 'All' | EVCQueueState)}
+            ariaLabel="Filter by queue state"
           />
         </div>
+      </Card>
 
-        <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl overflow-x-auto">
-          {(['All', 'Awaiting scheduling', 'Scheduled', 'Report overdue', 'Completed'] as const).map((state) => (
-            <button
-              key={state}
-              onClick={() => setStateFilter(state)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                stateFilter === state ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              {state}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Queue rows */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-10 text-center">
-          <ClipboardList className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-          <div className="text-sm font-semibold text-slate-700">Nothing in this queue</div>
-          <p className="text-xs text-slate-500 mt-1">
-            Forward a case to the Expert Visit Committee stage and it will appear here for scheduling.
-          </p>
-        </div>
+        <Card>
+          <EmptyState
+            icon={ClipboardList}
+            title="Nothing in this queue"
+            description="Forward a case to the Expert Visit Committee stage and it will appear here for scheduling."
+          />
+        </Card>
       ) : (
         <div className="space-y-3">
           {filtered.map(({ application, visit, state, daysOverdue }) => (
-            <div
-              key={application.id}
-              className="bg-white rounded-2xl border border-slate-200/90 p-4.5 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4"
-            >
-              <div className="space-y-2 min-w-0">
-                <div className="flex items-center space-x-2 flex-wrap">
-                  <span className="font-bold text-slate-900 text-sm">{application.instituteName}</span>
-                  <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                    {application.id}
-                  </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATE_STYLES[state]}`}>
-                    {state}
-                  </span>
-                  {daysOverdue > 0 && (
-                    <span className="text-[10px] font-semibold text-rose-700 flex items-center space-x-1">
-                      <AlertTriangle className="w-3 h-3" />
-                      <span>{daysOverdue} day(s) overdue</span>
+            <Card key={application.id} padded="sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-ink">
+                      {application.instituteName}
                     </span>
-                  )}
+                    <span className="rounded-control bg-surface-2 px-2 py-0.5 font-mono text-xs text-ink-2">
+                      {application.id}
+                    </span>
+                    <Badge tone={STATE_TONE[state]}>{state}</Badge>
+                    {daysOverdue > 0 && (
+                      <Badge className="gap-1">
+                        <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+                        {daysOverdue} days overdue
+                      </Badge>
+                    )}
+                  </div>
+
+                  <p className="text-label text-ink-2">
+                    {routeForApplication(application).label}, stage{' '}
+                    {getStageMeta(application.stage).label}, {application.region} region
+                  </p>
+
+                  <p className="text-label text-ink-2">
+                    {visit ? (
+                      <>
+                        Visit {formatDisplayDate(visit.date)}, {visit.assignedCommittee}
+                      </>
+                    ) : (
+                      <span className="text-warning">No visit scheduled</span>
+                    )}
+                  </p>
+
+                  {visit?.reportSubmitted ? (
+                    <p className="flex items-center gap-1.5 text-label text-success">
+                      <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                      Report {visit.report?.id} submitted,{' '}
+                      {visit.report?.recommendations ?? 'on record'}
+                    </p>
+                  ) : visit?.reportDueAt ? (
+                    <p className="text-label text-ink-2">
+                      Report due {formatDisplayDate(visit.reportDueAt)}
+                    </p>
+                  ) : null}
                 </div>
 
-                <div className="text-xs text-slate-500 flex items-center space-x-3 flex-wrap gap-y-1">
-                  <span>{routeForApplication(application).label}</span>
-                  <span>Stage: {getStageMeta(application.stage).label}</span>
-                  <span>{application.region} Region</span>
-                  {visit ? (
-                    <span>Visit {formatDisplayDate(visit.date)} · {visit.assignedCommittee}</span>
-                  ) : (
-                    <span className="text-amber-700 font-medium">No visit scheduled</span>
+                <div className="flex shrink-0 items-center gap-2 self-end lg:self-center">
+                  {state === 'Awaiting scheduling' && (
+                    <Button
+                      size="sm"
+                      onClick={() => scheduleVisit(application.id)}
+                      icon={<CalendarPlus className="h-3.5 w-3.5" />}
+                    >
+                      Schedule visit
+                    </Button>
                   )}
-                </div>
-
-                {visit?.reportSubmitted ? (
-                  <div className="text-[11px] text-emerald-700 flex items-center space-x-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>
-                      Report {visit.report?.id} submitted — {visit.report?.recommendations ?? 'on record'}
-                    </span>
-                  </div>
-                ) : visit?.reportDueAt ? (
-                  <div className="text-[11px] text-slate-500">
-                    Report due {formatDisplayDate(visit.reportDueAt)}
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="flex items-center space-x-2 shrink-0 self-end lg:self-center">
-                {state === 'Awaiting scheduling' && (
-                  <button
-                    onClick={() => scheduleVisit(application.id)}
-                    className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center space-x-1.5"
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => openCase(application.id)}
                   >
-                    <CalendarPlus className="w-3.5 h-3.5" />
-                    <span>Schedule visit</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => openCase(application.id)}
-                  className="px-3.5 py-2 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex items-center space-x-1.5"
-                >
-                  <span>Open case</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </button>
+                    Open case
+                  </Button>
+                </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

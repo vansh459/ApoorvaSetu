@@ -35,7 +35,7 @@ export function reasonCodesFor(action: 'RETURN' | 'REJECT'): ReasonCode[] {
 }
 
 export const DECISION_CODES = [
-  { code: 'APPROVED_FINAL', label: 'Approved — final' },
+  { code: 'APPROVED_FINAL', label: 'Approved, final' },
   { code: 'APPROVED_CONDITIONAL', label: 'Approved subject to undertaking' },
   { code: 'REJECTED_STATUTORY', label: 'Rejected on statutory grounds' },
   { code: 'REJECTED_INELIGIBLE', label: 'Rejected as ineligible' }

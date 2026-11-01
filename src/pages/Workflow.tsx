@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Workflow as WorkflowIcon,
-  ChevronRight
-} from 'lucide-react';
+import { Workflow as WorkflowIcon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { Badge, Button, DataTable, PageHeader } from '../components/ui';
 import { Application, ApplicationStage } from '../types';
+import type { DataTableColumn } from '../components/ui';
 import { OPERATIONAL_STAGES, STAGE_META, canonicalStage } from '../workflow/stages';
 
 export const Workflow: React.FC = () => {
@@ -23,9 +22,7 @@ export const Workflow: React.FC = () => {
       title: meta.label,
       description: meta.description,
       avgDays: meta.slaDays,
-      count: applications.filter((app) => canonicalStage(app.stage) === stage).length,
-      color: meta.color,
-      responsible: meta.responsible
+      count: applications.filter((app) => canonicalStage(app.stage) === stage).length
     };
   });
 
@@ -33,146 +30,129 @@ export const Workflow: React.FC = () => {
     (app: Application) => canonicalStage(app.stage) === canonicalStage(activeStageFilter)
   );
 
+  const openDossier = (app: Application) => {
+    setSelectedApplication(app);
+    setActiveModal('app-detail');
+  };
+
+  const columns: DataTableColumn<Application>[] = [
+    {
+      key: 'id',
+      header: 'Application ID',
+      render: (app) => <span className="font-semibold text-accent">{app.id}</span>
+    },
+    {
+      key: 'institute',
+      header: 'Institution',
+      render: (app) => <span className="font-medium">{app.instituteName}</span>
+    },
+    { key: 'region', header: 'Region', render: (app) => app.region },
+    { key: 'status', header: 'Status', render: (app) => <StatusBadge status={app.status} size="sm" /> },
+    {
+      key: 'remarks',
+      header: 'Latest note',
+      render: (app) => (
+        <span className="line-clamp-1 max-w-xs text-ink-2">
+          {app.remarks || 'Standard progression without reported deficiencies.'}
+        </span>
+      )
+    },
+    {
+      key: 'action',
+      header: '',
+      align: 'right',
+      render: (app) => (
+        <Button size="sm" variant="secondary" onClick={() => openDossier(app)}>
+          Inspect dossier
+        </Button>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Approval Stages & Workflow Engine
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Visual operational pipeline, SLA monitoring, and stage-wise bottlenecks.
-        </p>
-      </div>
+      <PageHeader
+        title="Approval stages"
+        description="The operational pipeline, its service-level targets and the cases sitting in each gate."
+        meta={
+          <Badge tone="info">
+            {workflowStages.length} sequential verification gates
+          </Badge>
+        }
+      />
 
-      {/* Interactive Workflow Pipeline Diagram */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <WorkflowIcon className="w-5 h-5 text-blue-600" />
-            <h2 className="text-sm font-bold text-slate-800">
-              National Approval Lifecycle (AY 2026-27 Process)
-            </h2>
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <WorkflowIcon className="h-4 w-4 text-accent" />
+            <h2 className="text-sm font-semibold text-ink">National approval lifecycle</h2>
           </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-            {workflowStages.length} Sequential Verification Gates
-          </span>
+          <span className="text-xs text-ink-2">Select a stage to inspect its queue</span>
         </div>
 
-        {/* Pipeline Stepper Horizontal */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {workflowStages.map((stage) => {
             const isSelected = activeStageFilter === stage.id;
             return (
-              <div
+              <button
                 key={stage.id}
+                type="button"
                 onClick={() => setActiveStageFilter(stage.id)}
-                className={`p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 active:scale-[0.98] ${
+                aria-pressed={isSelected}
+                className={`relative rounded-card border p-3.5 text-left transition-[background-color,border-color,box-shadow,transform] duration-150 ease-swift active:scale-[0.98] ${
                   isSelected
-                    ? 'border-blue-600 bg-blue-50/50 shadow-md ring-2 ring-blue-100 -translate-y-0.5'
-                    : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50/90 hover:-translate-y-0.5'
+                    ? 'border-accent bg-accent-soft shadow-raise'
+                    : 'border-line bg-surface hover:border-line-strong hover:bg-surface-2'
                 }`}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2 flex items-center justify-between">
                   <span
-                    className="w-6 h-6 rounded-lg text-white font-bold text-xs flex items-center justify-center shadow-xs"
-                    style={{ backgroundColor: stage.color }}
+                    className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                      isSelected ? 'bg-accent text-white' : 'bg-surface-2 text-ink-2'
+                    }`}
                   >
                     {stage.number}
                   </span>
-                  <span className="text-xs font-bold text-slate-900">
-                    {stage.count.toLocaleString()}
-                  </span>
+                  <span className="text-sm font-semibold text-ink">{stage.count.toLocaleString()}</span>
                 </div>
 
-                <h3 className="text-xs font-bold text-slate-800 line-clamp-1">
-                  {stage.title}
-                </h3>
-                <p className="text-[10px] text-slate-500 mt-1 leading-snug line-clamp-2">
-                  {stage.description}
-                </p>
+                <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{stage.title}</h3>
+                <p className="mt-1 line-clamp-2 text-xs leading-snug text-ink-2">{stage.description}</p>
 
-                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400">Target SLA:</span>
-                  <span className="font-bold text-slate-700">{stage.avgDays} days</span>
+                <div className="mt-3 flex items-center justify-between border-t border-line pt-2 text-xs">
+                  <span className="text-ink-2">Target SLA</span>
+                  <span className="font-semibold text-ink">{stage.avgDays} days</span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* Active Stage Deep Dive */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">
-              Inspecting Active Stage
-            </span>
-            <h3 className="text-base font-bold text-slate-900">
-              {activeStageFilter}
-            </h3>
+      <section className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs text-ink-2">Inspecting active stage</p>
+            <h3 className="truncate text-base font-semibold text-ink">{activeStageFilter}</h3>
           </div>
-
-          <button
+          <Button
+            variant="link"
+            size="sm"
             onClick={() => navigate(`/applications?stage=${encodeURIComponent(activeStageFilter)}`)}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
           >
-            <span>Open in Full Applications View</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
+            Open in applications
+          </Button>
         </div>
 
-        {/* Applications currently in this stage */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <th className="py-2.5 px-3">Application ID</th>
-                <th className="py-2.5 px-3">Institution Name</th>
-                <th className="py-2.5 px-3">Region</th>
-                <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3">Latest Note / Action Required</th>
-                <th className="py-2.5 px-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {stageApplications.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    No active sample applications in this stage currently.
-                  </td>
-                </tr>
-              ) : (
-                stageApplications.map((app: Application) => (
-                  <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-3 font-bold text-blue-600">{app.id}</td>
-                    <td className="py-3 px-3 font-medium text-slate-800">{app.instituteName}</td>
-                    <td className="py-3 px-3 text-slate-600">{app.region}</td>
-                    <td className="py-3 px-3">
-                      <StatusBadge status={app.status} size="sm" />
-                    </td>
-                    <td className="py-3 px-3 text-slate-600 truncate max-w-xs">
-                      {app.remarks || 'Standard progression without reported deficiencies.'}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <button
-                        onClick={() => {
-                          setSelectedApplication(app);
-                          setActiveModal('app-detail');
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 font-semibold text-xs hover:bg-blue-600 hover:text-white transition-colors cursor-pointer"
-                      >
-                        Inspect Dossier
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <DataTable
+          caption={`Applications in ${activeStageFilter}`}
+          columns={columns}
+          rows={stageApplications}
+          rowKey={(app) => app.id}
+          minWidth="840px"
+          empty="No active sample applications in this stage currently."
+        />
+      </section>
     </div>
   );
 };

@@ -1,0 +1,22 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app shell: paper rail, glass header, capped column; login 56/44 split with a product frame",
+  "theme": "custom — a calm institutional desk (warm paper, quiet ink, one cobalt thread)",
+  "axes": "warm off-white/sans/cobalt · posture: desk",
+  "hero": "login: 40px headline and one sentence beside a real product capture in a hairline frame; dashboards open on a flat greeting band",
+  "nav": "left paper rail with one white active pill; sticky glass header",
+  "footer": "none (app)",
+  "imagery": "the real product captured at 1440x1000 in a hairline frame on the login",
+  "photos": [],
+  "entry": "shell: paper rail, glass header, capped content column, page transitions",
+  "fingerprint": "paper #F7F5F1 · Manrope 400–700 · cobalt #2B4C7E",
+  "sections": "login · dashboard · applications · workflow · pendency · alerts · reports · documents · compliance · institutes · EVC · notifications · admin · institution · 403",
+  "signature": "a light paper rail with a single white pill over a calm stat strip",
+  "waived": "7b pure-white surfaces against warm paper; glass limited to header, overlays and the assistant panel",
+  "prompt": "redesign the whole ApoorvaSetu application premium and minimal in the spirit of Airbnb and Apple, small purposeful motion, never overwhelming",
+  "date": "2026-11-01"
+ }
+]

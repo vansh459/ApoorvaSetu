@@ -1,99 +1,85 @@
 import React from 'react';
-import { MapPin, Mail, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone } from 'lucide-react';
 import { regionalOffices } from '../data/initialData';
 import { RegionalOffice } from '../types';
+import { Avatar, Badge, PageHeader } from '../components/ui';
 
-export const RegionsOfficials: React.FC = () => {
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Regional Offices & Jurisdiction Officials
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Directory of AICTE Regional Offices (ROs), zonal jurisdictions, and appointed Regional Officers.
-        </p>
-      </div>
+export const RegionsOfficials: React.FC = () => (
+  <div className="space-y-6">
+    <PageHeader
+      title="Regional offices"
+      description="Directory of AICTE regional offices, zonal jurisdictions and appointed regional officers."
+    />
 
-      {/* Grid of Regional Offices */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {regionalOffices.map((office: RegionalOffice) => (
-          <div
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {regionalOffices.map((office: RegionalOffice) => {
+        const initials = office.officerName
+          .split(' ')
+          .map((name: string) => name[0])
+          .join('')
+          .substring(0, 2);
+
+        return (
+          <article
             key={office.id}
-            className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between"
+            className="flex flex-col justify-between rounded-card border border-line bg-surface p-5 shadow-raise"
           >
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  {office.region} Region
-                </span>
-                <span className="text-xs text-slate-400 font-medium">
-                  {office.headquarters}
-                </span>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <Badge tone="info">{office.region} Region</Badge>
+                <span className="text-xs text-ink-2">{office.headquarters}</span>
               </div>
 
-              {/* Officer details */}
-              <div className="flex items-start space-x-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-[#1e3a8a] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                  {office.officerName.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">{office.officerName}</h3>
-                  <p className="text-xs text-slate-500 font-medium">{office.designation}</p>
+              <div className="mb-4 flex items-start gap-3">
+                <Avatar initials={initials} size="lg" />
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-semibold text-ink">{office.officerName}</h3>
+                  <p className="text-xs text-ink-2">{office.designation}</p>
                 </div>
               </div>
 
-              {/* Contacts */}
-              <div className="space-y-2 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                <div className="flex items-center space-x-2">
-                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="text-blue-600 font-medium truncate">{office.email}</span>
+              <div className="space-y-2 rounded-control border border-line bg-surface-2 p-3.5 text-xs text-ink-2">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-3.5 w-3.5 shrink-0 text-ink-3" aria-hidden="true" />
+                  <span className="truncate font-medium text-accent">{office.email}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <div className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-ink-3" aria-hidden="true" />
                   <span>{office.phone}</span>
                 </div>
-                <div className="flex items-start space-x-2 pt-1 border-t border-slate-200/60">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                  <span className="text-[11px] text-slate-500 leading-tight">
-                    HQ: {office.headquarters}
-                  </span>
+                <div className="flex items-start gap-2 border-t border-line pt-2">
+                  <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-3" aria-hidden="true" />
+                  <span className="leading-tight">Headquarters: {office.headquarters}</span>
                 </div>
               </div>
 
-              {/* Jurisdiction States */}
               <div className="mt-3">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  States in Jurisdiction:
-                </div>
+                <p className="mb-1.5 text-xs font-medium text-ink-2">States in jurisdiction</p>
                 <div className="flex flex-wrap gap-1">
-                  {office.jurisdiction.map((st: string) => (
-                    <span
-                      key={st}
-                      className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md text-[10px] font-medium"
-                    >
-                      {st}
-                    </span>
+                  {office.jurisdiction.map((state: string) => (
+                    <Badge key={state} tone="neutral">
+                      {state}
+                    </Badge>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Bottom Workload Metrics */}
-            <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-center text-xs">
-              <div className="p-2 bg-slate-50 rounded-xl">
-                <div className="font-bold text-slate-800 text-sm">{office.totalInstitutes}</div>
-                <div className="text-[10px] text-slate-400">Total Institutes</div>
+            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-line pt-3 text-center">
+              <div className="rounded-control bg-surface-2 p-2">
+                <div className="text-sm font-semibold text-ink">{office.totalInstitutes}</div>
+                <div className="text-xs text-ink-2">Institutes</div>
               </div>
-              <div className="p-2 bg-amber-50 rounded-xl">
-                <div className="font-bold text-amber-900 text-sm">{office.pendingApplications}</div>
-                <div className="text-[10px] text-amber-700">Active Workflow</div>
+              <div className="rounded-control bg-warning-soft p-2">
+                <div className="text-sm font-semibold text-warning">
+                  {office.pendingApplications}
+                </div>
+                <div className="text-xs text-warning">Active workflow</div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          </article>
+        );
+      })}
     </div>
-  );
-};
+  </div>
+);

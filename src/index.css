@@ -1,66 +1,192 @@
+/* Hallmark · v2.0.0 · theme: custom
+   idea: "a calm institutional desk: warm paper, quiet ink, one cobalt thread"
+   vibe: "warm paper, quiet ink, one cobalt thread"
+   paper: #F7F5F1 · accent: #2B4C7E · faces: Manrope
+   hero: login split on paper, the working product in a hairline frame */
+/* critique: the dashboards keep their density because officers scan several queues at once;
+   the calm comes from one accent, one surface and 24px gaps, not from hiding work.
+   finish review (2026-11-01): 8 findings resolved — nested card surfaces removed on workflow and
+   pendency, lede measure capped at 62ch, login puts the form first at 768, mobile queues became
+   card lists, the ambient wash left the dashboards, and the assistant launcher moved into the
+   header so nothing floats over page actions. */
+/* waive: 7b pure-white surfaces are the deliberate contrast against warm paper; glass on the modal,
+   drawer and mobile scrim is the documented glass budget; long labels on whole-surface buttons and
+   cards are the interactive surface itself, not a glued link arrow. */
+
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Manrope Fallback';
+  src: local('Segoe UI'), local('Arial');
+  size-adjust: 101%;
+  ascent-override: 92%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+}
+
 @theme {
-  --font-sans: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-paper: #F7F5F1;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #FBFAF7;
+  --color-line: #E7E2D8;
+  --color-line-strong: #D5CFC2;
+  --color-ink: #17181B;
+  --color-ink-2: #6B6862;
+  --color-ink-3: #9A958A;
+  --color-action: #17181B;
+  --color-action-hover: #2B2C30;
+  --color-accent: #2B4C7E;
+  --color-accent-hover: #223D66;
+  --color-accent-soft: #EDF1F7;
+  --color-success: #1F6B45;
+  --color-success-soft: #E9F2EC;
+  --color-warning: #8A5A12;
+  --color-warning-soft: #FAF1E0;
+  --color-danger: #97302A;
+  --color-danger-soft: #F8EAE8;
+  --color-info: #2B4C7E;
+  --color-info-soft: #EDF1F7;
+  --color-chart-1: #2B4C7E;
+  --color-chart-2: #3E7C74;
+  --color-chart-3: #B07A2A;
+  --color-chart-4: #7A5C8E;
+  --color-chart-5: #A85B4E;
+  --color-chart-6: #6C7A89;
+
+  --wash-cobalt: rgb(43 76 126 / 0.08);
+  --wash-ochre: rgb(176 122 42 / 0.06);
+  --surface-veil: rgb(255 255 255 / 0.75);
+
+  --font-sans: 'Manrope', 'Manrope Fallback', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, sans-serif;
+
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.125rem;
+  --text-display: 2.5rem;
+  --text-display--line-height: 2.75rem;
+
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-modal: 20px;
+  --radius-pill: 999px;
+
+  --shadow-raise: 0 1px 2px rgb(23 24 27 / 0.05), 0 1px 1px rgb(23 24 27 / 0.03);
+  --shadow-lift: 0 2px 4px rgb(23 24 27 / 0.05), 0 8px 24px -8px rgb(23 24 27 / 0.1);
+  --shadow-overlay: 0 24px 64px -16px rgb(23 24 27 / 0.22);
+
+  --ease-swift: cubic-bezier(0.16, 1, 0.3, 1);
+  --container-app: 1440px;
 }
 
 @layer base {
-  :root {
-    --primary: #2563eb;
-    --navy-sidebar: #0a1526;
-    --font-sans: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
-    background-color: #f8fafc;
-    color: #1e293b;
-    font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     margin: 0;
     padding: 0;
-    letter-spacing: -0.01em;
+    min-height: 100vh;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   * {
     box-sizing: border-box;
   }
 
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
   :focus-visible {
-    outline: 2px solid var(--primary);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-3);
   }
 }
 
-/* Custom scrollbars for tables and widgets */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
+  background: var(--color-line-strong);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-paper);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-ink-3);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
 }
 
 /* ========================================================
-   GLOBAL MOTION SYSTEM & KEYFRAME ANIMATIONS
-   Optimized for 60 FPS, hardware accelerated via transform & opacity
+   Motion
+   Transform and opacity only; no layout properties.
    ======================================================== */
 
-/* Page View Transition (subtle 200ms lift & fade) */
-@keyframes pageFadeIn {
+@keyframes pageEnter {
   from {
     opacity: 0;
-    transform: translateY(3px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -68,13 +194,7 @@
   }
 }
 
-.animate-page-fade {
-  animation: pageFadeIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: opacity, transform;
-}
-
-/* Modal Animations */
-@keyframes modalBackdropFade {
+@keyframes overlayFade {
   from {
     opacity: 0;
   }
@@ -83,32 +203,10 @@
   }
 }
 
-@keyframes modalContentIn {
+@keyframes panelEnter {
   from {
     opacity: 0;
-    transform: scale(0.97) translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.animate-modal-backdrop {
-  animation: modalBackdropFade 180ms ease-out both;
-  will-change: opacity;
-}
-
-.animate-modal-content {
-  animation: modalContentIn 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: opacity, transform;
-}
-
-/* Dropdowns & Popovers (Header search, notifications, profile) */
-@keyframes dropdownSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.98);
+    transform: translateY(4px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -116,54 +214,7 @@
   }
 }
 
-.animate-dropdown {
-  animation: dropdownSlideIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  transform-origin: top right;
-  will-change: opacity, transform;
-}
-
-.animate-dropdown-left {
-  animation: dropdownSlideIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  transform-origin: top left;
-  will-change: opacity, transform;
-}
-
-/* Toast Notifications */
-@keyframes toastSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.animate-toast {
-  animation: toastSlideIn 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: opacity, transform;
-}
-
-/* Chat Assistant Panel & Messages */
-@keyframes chatPanelIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.animate-chat-panel {
-  animation: chatPanelIn 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  transform-origin: bottom right;
-  will-change: opacity, transform;
-}
-
-@keyframes messageSlideIn {
+@keyframes popEnter {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -174,54 +225,112 @@
   }
 }
 
-.animate-message-in {
-  animation: messageSlideIn 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: opacity, transform;
-}
-
-/* Subtle Bar Fill on Mount */
-@keyframes barFillAnimation {
+@keyframes toastEnter {
   from {
-    transform: scaleX(0);
-    transform-origin: left;
+    opacity: 0;
+    transform: translateY(8px);
   }
   to {
-    transform: scaleX(1);
-    transform-origin: left;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.animate-bar-fill {
-  animation: barFillAnimation 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform;
+@keyframes barFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(var(--bar-scale, 1));
+  }
 }
 
-/* Reusable Micro-Interaction Utility Classes */
-.btn-press {
-  transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 150ms ease-out;
+@keyframes drawerEnter {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
-.btn-press:active {
-  transform: scale(0.98);
+
+.page-enter {
+  animation: pageEnter 220ms var(--ease-swift) both;
+}
+
+.overlay-enter {
+  animation: overlayFade 140ms ease-out both;
+}
+
+.panel-enter {
+  animation: panelEnter 180ms var(--ease-swift) both;
+}
+
+.pop-enter {
+  animation: popEnter 140ms var(--ease-swift) both;
+  transform-origin: top right;
+}
+
+.pop-enter-left {
+  animation: popEnter 140ms var(--ease-swift) both;
+  transform-origin: top left;
+}
+
+.toast-enter {
+  animation: toastEnter 180ms var(--ease-swift) both;
+}
+
+.drawer-enter {
+  animation: drawerEnter 220ms var(--ease-swift) both;
+}
+
+.bar-enter {
+  animation: barFill 450ms var(--ease-swift) both;
+  transform-origin: left center;
 }
 
 .card-interactive {
-  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms ease-out;
-}
-.card-interactive:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 180ms var(--ease-swift),
+    box-shadow 180ms var(--ease-swift),
+    border-color 150ms ease-out;
 }
 
-/* Hide scrollbar utility */
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
+}
+
+/* Soft ambient light behind a page head. Never applied to a card. */
+.wash-accent {
+  background-image:
+    radial-gradient(120% 90% at 0% 0%, var(--wash-cobalt), transparent 60%),
+    radial-gradient(90% 80% at 100% 0%, var(--wash-ochre), transparent 55%);
+}
+
+.glass-header {
+  background-color: var(--surface-veil);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-header {
+    background-color: var(--color-surface);
+  }
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-/* Accessibility: Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
@@ -231,37 +340,51 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .animate-page-fade,
-  .animate-modal-content,
-  .animate-modal-backdrop,
-  .animate-dropdown,
-  .animate-dropdown-left,
-  .animate-toast,
-  .animate-chat-panel,
-  .animate-message-in,
-  .animate-bar-fill,
+
+  .page-enter,
+  .overlay-enter,
+  .panel-enter,
+  .pop-enter,
+  .pop-enter-left,
+  .toast-enter,
+  .drawer-enter,
   .card-interactive {
     animation: none !important;
     transform: none !important;
+    transition: none !important;
+  }
+
+  /* Bars keep their own scale so the value still reads when motion is off. */
+  .bar-enter {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* A spinner is a status signal, not decoration; keep it turning. */
+  .animate-spin {
+    animation: spin 1.4s linear infinite !important;
   }
 }
 
-/* Print the open case summary without the surrounding application shell */
 @media print {
   body > * {
     visibility: hidden;
   }
+
   .case-summary-shell,
   .case-summary-drawer,
   .case-summary-drawer * {
     visibility: visible;
   }
+
   .case-summary-shell {
     position: static !important;
   }
+
   .case-summary-shell > div:first-child {
     display: none;
   }
+
   .case-summary-drawer {
     position: static !important;
     width: 100%;
@@ -270,6 +393,7 @@
     overflow: visible;
     box-shadow: none;
   }
+
   .case-summary-drawer .flex-1 {
     overflow: visible;
   }

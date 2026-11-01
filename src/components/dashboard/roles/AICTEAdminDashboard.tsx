@@ -1,19 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  FileText,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Calendar
-} from 'lucide-react';
-import { StatCard } from '../StatCard';
+import { FileText, Clock, CheckCircle2, AlertTriangle, Calendar } from 'lucide-react';
 import { StageMovementChart } from '../StageMovementChart';
 import { RegionalDonutChart } from '../RegionalDonutChart';
 import { UpcomingEVCList } from '../UpcomingEVCList';
 import { RecentApplicationsTable } from '../RecentApplicationsTable';
 import { ComplianceValidityWidget } from '../ComplianceValidityWidget';
 import { QuickActionsPanel } from '../QuickActionsPanel';
+import { DashboardScaffold } from '../DashboardScaffold';
 import { useApp } from '../../../context/AppContext';
 import { useAuth } from '../../../context/AuthContext';
 import { filterApplicationsForUser } from '../../../services/rbacService';
@@ -21,6 +15,7 @@ import { authService } from '../../../services/authService';
 import { resolveWorkflowConfig } from '../../../workflow/config';
 import { latestUpdated, pipelineMetrics } from '../../../workflow/selectors';
 import { formatDisplayDate, getNow } from '../../../utils/dates';
+import { Button } from '../../ui';
 
 export const AICTEAdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -33,87 +28,86 @@ export const AICTEAdminDashboard: React.FC = () => {
   const updated = latestUpdated(scoped);
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight">
-          Dashboard
-        </h1>
-
-        <div className="flex items-center space-x-1.5 text-xs text-slate-400">
-          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          <span>{updated ? `Updated ${formatDisplayDate(updated)}` : 'No activity recorded yet'}</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total applications"
-          value={metrics.total.toLocaleString()}
-          trendText={`${metrics.breached} breached`}
-          trendColor="rose"
-          icon={FileText}
-          variant="blue"
-          onClick={() => navigate('/applications')}
-        />
-
-        <StatCard
-          title="Pending at current stage"
-          value={metrics.pending.toLocaleString()}
-          trendText={`${metrics.approaching} approaching`}
-          trendColor="amber"
-          icon={Clock}
-          variant="amber"
-          onClick={() => navigate('/applications')}
-        />
-
-        <StatCard
-          title="Approved"
-          value={metrics.approved.toLocaleString()}
-          trendText={`${metrics.rejected} rejected`}
-          trendColor="green"
-          icon={CheckCircle2}
-          variant="green"
-          onClick={() => navigate('/applications?status=Approved')}
-        />
-
-        <StatCard
-          title="Requiring action"
-          value={metrics.actionRequired.toLocaleString()}
-          trendText={`${metrics.dueToday} due today`}
-          trendColor="rose"
-          icon={AlertTriangle}
-          variant="rose"
-          onClick={() => navigate('/applications?status=Action+Required')}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5 items-stretch">
-        <div className="flex flex-col min-w-0">
+    <DashboardScaffold
+      title="Dashboard"
+      description="National overview of affiliation applications, scrutiny, inspections and compliance."
+      meta={
+        <>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface/60 px-2.5 py-1">
+            AICTE central office
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" strokeWidth={1.75} />
+            {updated ? `Updated ${formatDisplayDate(updated)}` : 'No activity recorded yet'}
+          </span>
+        </>
+      }
+      actions={
+        <>
+          <Button variant="secondary" onClick={() => navigate('/reports')}>
+            Reports
+          </Button>
+          <Button
+            onClick={() => navigate('/applications')}
+          >
+            Review applications
+          </Button>
+        </>
+      }
+      stats={[
+        {
+          label: 'Total applications',
+          value: metrics.total.toLocaleString(),
+          delta: `${metrics.breached} breached`,
+          icon: FileText,
+          onClick: () => navigate('/applications')
+        },
+        {
+          label: 'Pending at current stage',
+          value: metrics.pending.toLocaleString(),
+          delta: `${metrics.approaching} approaching`,
+          icon: Clock,
+          onClick: () => navigate('/applications')
+        },
+        {
+          label: 'Approved',
+          value: metrics.approved.toLocaleString(),
+          delta: `${metrics.rejected} rejected`,
+          icon: CheckCircle2,
+          onClick: () => navigate('/applications?status=Approved')
+        },
+        {
+          label: 'Requiring action',
+          value: metrics.actionRequired.toLocaleString(),
+          delta: `${metrics.dueToday} due today`,
+          icon: AlertTriangle,
+          onClick: () => navigate('/applications?status=Action+Required')
+        }
+      ]}
+    >
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3 lg:gap-5">
+        <div className="flex min-w-0 flex-col">
           <StageMovementChart />
         </div>
-
-        <div className="flex flex-col min-w-0">
+        <div className="flex min-w-0 flex-col">
           <RegionalDonutChart />
         </div>
-
-        <div className="flex flex-col min-w-0">
+        <div className="flex min-w-0 flex-col">
           <UpcomingEVCList />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-stretch">
-        <div className="lg:col-span-6 flex flex-col min-w-0">
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12 lg:gap-5">
+        <div className="flex min-w-0 flex-col lg:col-span-6">
           <RecentApplicationsTable />
         </div>
-
-        <div className="lg:col-span-3 flex flex-col min-w-0">
+        <div className="flex min-w-0 flex-col lg:col-span-3">
           <ComplianceValidityWidget />
         </div>
-
-        <div className="lg:col-span-3 flex flex-col min-w-0">
+        <div className="flex min-w-0 flex-col lg:col-span-3">
           <QuickActionsPanel />
         </div>
       </div>
-    </div>
+    </DashboardScaffold>
   );
 };

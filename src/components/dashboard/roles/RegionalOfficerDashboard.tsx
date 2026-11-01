@@ -8,8 +8,6 @@ import {
   Calendar,
   FileCheck,
   ShieldCheck,
-  AlertCircle,
-  ArrowRight,
   MapPin,
   ChevronRight
 } from 'lucide-react';
@@ -33,6 +31,8 @@ import {
 import { canonicalStage } from '../../../workflow/stages';
 import { regionalOffices } from '../../../data/initialData';
 import { formatDisplayDate, getNow, parseDate } from '../../../utils/dates';
+import { DashboardScaffold } from '../DashboardScaffold';
+import { Badge, Button, Card, EmptyState, ProgressBar } from '../../ui';
 
 export const RegionalOfficerDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -87,197 +87,127 @@ export const RegionalOfficerDashboard: React.FC = () => {
       : Math.round((snapshot.undertakings.verified / snapshot.undertakings.total) * 100);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-teal-900 via-slate-900 to-slate-950 border border-teal-800/60 rounded-2xl p-5 sm:p-6 text-white flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-        <div>
-          <div className="flex items-center space-x-2 mb-1.5 flex-wrap">
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center space-x-1">
-              <MapPin className="w-3 h-3" />
-              <span>
-                {userRegion} Regional Office
-                {regionalOffice?.headquarters ? ` (${regionalOffice.headquarters})` : ''}
-              </span>
-            </span>
-            <span className="text-xs text-teal-200">
-              Jurisdiction: {jurisdictionStates.length ? jurisdictionStates.join(', ') : 'No institutions mapped'}
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-            Regional applications and inspection operations
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            Verify documents, coordinate expert visits, and forward compliant cases to the competent authority.
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2.5 shrink-0">
-          <button
-            onClick={() => navigate('/documents')}
-            className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-sm"
-          >
-            <FileCheck className="w-3.5 h-3.5" />
-            <span>Verify documents</span>
-          </button>
-          <button
-            onClick={() => navigate('/regional/escalations')}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer border border-slate-700"
-          >
-            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-            <span>Escalate issue</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div
-          onClick={() => navigate('/applications')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <FileText className="w-4.5 h-4.5" />
+    <DashboardScaffold
+      title="Regional operations"
+      description="Verify documents, coordinate expert visits and forward compliant cases to the competent authority."
+      meta={
+        <>
+          <span className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-surface/60 px-2.5 py-1">
+            <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+            {userRegion} Regional Office
+            {regionalOffice?.headquarters ? `, ${regionalOffice.headquarters}` : ''}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-surface/60 px-2.5 py-1">
+            {jurisdictionStates.length ? jurisdictionStates.join(', ') : 'No institutions mapped'}
+          </span>
+        </>
+      }
+      actions={
+        <>
+          <Button variant="secondary" onClick={() => navigate('/regional/escalations')}>
+            Escalations
+          </Button>
+          <Button onClick={() => navigate('/documents')}>Verify documents</Button>
+        </>
+      }
+      stats={[
+        {
+          label: 'Regional applications',
+          value: totalRegional.toLocaleString(),
+          delta: userRegion,
+          icon: FileText,
+          onClick: () => navigate('/applications')
+        },
+        {
+          label: 'Under scrutiny',
+          value: underScrutiny,
+          delta: 'In review',
+          icon: Clock,
+          onClick: () => navigate('/applications?stage=Scrutiny+%2F+Re-scrutiny')
+        },
+        {
+          label: 'Forwarded',
+          value: forwardedApps,
+          delta: 'For inspection or approval',
+          icon: Send,
+          onClick: () => navigate('/applications?stage=Expert+Visit+Committee+(EVC)')
+        },
+        {
+          label: 'Requiring correction',
+          value: requiringCorrection,
+          delta: 'Deficiencies',
+          icon: AlertTriangle,
+          onClick: () => navigate('/applications?status=Action+Required')
+        },
+        {
+          label: 'Active EVC visits',
+          value: activeVisits,
+          delta: 'Inspections',
+          icon: Calendar,
+          onClick: () => navigate('/evc-scheduling')
+        }
+      ]}
+    >
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12 lg:gap-5">
+        <Card padded="none" className="flex flex-col lg:col-span-7">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <FileText className="h-4 w-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+              <h2 className="text-sm font-semibold leading-snug text-ink">Stage pendency in {userRegion}</h2>
             </div>
-            <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-              {userRegion}
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">
-            {totalRegional.toLocaleString()}
-          </div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">Regional applications</div>
-        </div>
-
-        <div
-          onClick={() => navigate('/applications?stage=Scrutiny+%2F+Re-scrutiny')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
-              <Clock className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-semibold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full">
-              In review
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">{underScrutiny}</div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">Under scrutiny</div>
-        </div>
-
-        <div
-          onClick={() => navigate('/applications?stage=Expert+Visit+Committee+(EVC)')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
-              <Send className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-semibold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
-              Forwarded
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">{forwardedApps}</div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">Forwarded for inspection or approval</div>
-        </div>
-
-        <div
-          onClick={() => navigate('/applications?status=Action+Required')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <AlertTriangle className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-              Deficiencies
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">{requiringCorrection}</div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">Requiring correction</div>
-        </div>
-
-        <div
-          onClick={() => navigate('/evc-scheduling')}
-          className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Calendar className="w-4.5 h-4.5" />
-            </div>
-            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-              Inspections
-            </span>
-          </div>
-          <div className="text-2xl font-black text-slate-900 mt-2.5">{activeVisits}</div>
-          <div className="text-xs font-medium text-slate-500 mt-0.5">Active EVC visits</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
-                <FileText className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Stage pendency in {userRegion}
-              </h2>
-            </div>
-            <span className="text-[11px] text-slate-400">AY {systemConfig.academicYear}</span>
+            <span className="shrink-0 text-xs text-ink-2">AY {systemConfig.academicYear}</span>
           </div>
 
           {regionalStages.length === 0 ? (
-            <p className="text-xs text-slate-500 my-auto py-6 text-center">
-              No cases are pending in this jurisdiction.
-            </p>
+            <EmptyState
+              title="No pending cases"
+              description="No cases are pending in this jurisdiction."
+              className="py-10"
+            />
           ) : (
-            <div className="space-y-3 my-auto">
+            <div className="my-auto space-y-4 px-5 py-5">
               {regionalStages.map((stage) => (
-                <div key={stage.stage} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-slate-700">{stage.label}</span>
-                    <span className="font-bold text-slate-900 tabular-nums">
-                      {stage.count}{' '}
-                      <span className="font-normal text-slate-400">({stage.share}%)</span>
+                <div key={stage.stage} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="truncate font-medium text-ink">{stage.label}</span>
+                    <span className="shrink-0 tabular-nums text-ink-2">
+                      <span className="font-semibold text-ink">{stage.count}</span> ({stage.share}%)
                     </span>
                   </div>
-                  <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.max(stage.share, 3)}%`,
-                        backgroundColor: stage.color
-                      }}
-                    />
-                  </div>
+                  <ProgressBar
+                    value={stage.share}
+                    label={`${stage.label}: ${stage.count}`}
+                    className="h-1"
+                  />
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                <Calendar className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-800">Scheduled EVC visits</h2>
+        <Card padded="none" className="flex flex-col lg:col-span-5">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Calendar className="h-4 w-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+              <h2 className="text-sm font-semibold leading-snug text-ink">Scheduled EVC visits</h2>
             </div>
             <button
+              type="button"
               onClick={() => navigate('/evc-scheduling')}
-              className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+              className="shrink-0 text-xs font-medium text-accent transition-colors duration-150 hover:text-accent-hover cursor-pointer"
             >
               All visits
             </button>
           </div>
 
           {visitQueue.length === 0 ? (
-            <p className="text-xs text-slate-500 my-auto py-6 text-center">
-              No inspections are scheduled in this region.
-            </p>
+            <EmptyState
+              title="No visits scheduled"
+              description="No inspections are scheduled in this region."
+              className="py-10"
+            />
           ) : (
-            <div className="space-y-2.5 my-auto">
+            <div className="my-auto space-y-1 px-3 py-3">
               {visitQueue.map((visit) => {
                 const date = parseDate(visit.date);
                 const day = date ? String(date.getDate()).padStart(2, '0') : visit.displayDate.day;
@@ -286,150 +216,142 @@ export const RegionalOfficerDashboard: React.FC = () => {
                   : visit.displayDate.month;
                 const overdue = isReportOverdue(visit, config, now);
                 return (
-                  <div
+                  <button
                     key={visit.id}
+                    type="button"
                     onClick={() => navigate('/evc-scheduling')}
-                    className="p-2.5 rounded-xl border border-slate-200/70 hover:bg-slate-50 transition-colors flex items-center justify-between text-xs cursor-pointer"
+                    className="flex w-full min-w-0 items-center justify-between gap-3 rounded-control p-2 text-left transition-colors duration-150 hover:bg-surface-2 cursor-pointer"
                   >
-                    <div className="flex items-center space-x-3 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 flex flex-col items-center justify-center font-bold text-[10px] leading-tight shrink-0">
-                        <span>{day}</span>
-                        <span className="text-[8px] font-semibold">{month}</span>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-control bg-surface-2 text-center">
+                        <span className="text-sm font-semibold leading-none text-ink">{day}</span>
+                        <span className="mt-1 text-xs leading-none text-ink-2">{month}</span>
                       </div>
                       <div className="min-w-0">
-                        <div className="font-bold text-slate-900 leading-tight truncate">
+                        <div className="truncate text-sm font-medium leading-tight text-ink">
                           {visit.instituteName}
                         </div>
-                        <div className="text-[11px] text-slate-500 truncate">
-                          {visit.stateRegion}
-                        </div>
+                        <div className="truncate text-xs text-ink-2">{visit.stateRegion}</div>
                       </div>
                     </div>
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ml-2 ${
-                        overdue
-                          ? 'bg-rose-50 text-rose-700'
-                          : visit.status === 'Pending'
-                            ? 'bg-amber-50 text-amber-700'
-                            : 'bg-emerald-50 text-emerald-700'
-                      }`}
+                    <Badge
+                      size="sm"
+                      tone={overdue ? 'danger' : visit.status === 'Pending' ? 'warning' : 'success'}
                     >
                       {overdue ? 'Report overdue' : visit.status === 'Pending' ? 'Panel pending' : 'Scheduled'}
-                    </span>
-                  </div>
+                    </Badge>
+                  </button>
                 );
               })}
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-                <FileCheck className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-800">Document verification queue</h2>
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-12 lg:gap-5">
+        <Card padded="none" className="flex flex-col lg:col-span-8">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <FileCheck className="h-4 w-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+              <h2 className="text-sm font-semibold leading-snug text-ink">Document verification queue</h2>
             </div>
             <button
+              type="button"
               onClick={() => navigate('/documents')}
-              className="text-xs text-purple-600 hover:text-purple-700 font-semibold"
+              className="shrink-0 text-xs font-medium text-accent transition-colors duration-150 hover:text-accent-hover cursor-pointer"
             >
-              Verify documents
+              Verify
             </button>
           </div>
 
           {pendingDocuments.length === 0 ? (
-            <p className="text-xs text-slate-500 my-auto py-6 text-center">
-              No documents are waiting for verification.
-            </p>
+            <EmptyState
+              title="Nothing to verify"
+              description="No documents are waiting for verification."
+              className="py-10"
+            />
           ) : (
-            <div className="space-y-2.5 my-auto">
+            <div className="my-auto space-y-1 px-3 py-3">
               {pendingDocuments.map((doc) => (
-                <div
+                <button
                   key={doc.id}
+                  type="button"
                   onClick={() => navigate('/documents')}
-                  className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-between gap-3 text-xs hover:bg-blue-50/50 transition-colors cursor-pointer"
+                  className="flex w-full items-center justify-between gap-3 rounded-control p-3 text-left transition-colors duration-150 hover:bg-surface-2 cursor-pointer"
                 >
                   <div className="min-w-0">
-                    <div className="font-bold text-slate-900 truncate">{doc.title}</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5 truncate">
-                      {doc.instituteName} · uploaded {formatDisplayDate(doc.uploadDate)}
+                    <div className="truncate text-sm font-medium text-ink">{doc.title}</div>
+                    <div className="mt-0.5 truncate text-xs text-ink-2">
+                      {doc.instituteName}, uploaded {formatDisplayDate(doc.uploadDate)}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 shrink-0">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge tone="warning" size="sm">
                       Pending
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                    </Badge>
+                    <ChevronRight className="h-4 w-4 text-ink-3" strokeWidth={1.75} />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-800">Regional compliance</h2>
+        <Card padded="none" className="flex flex-col lg:col-span-4">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden="true" />
+              <h2 className="text-sm font-semibold leading-snug text-ink">Regional compliance</h2>
             </div>
             <button
+              type="button"
               onClick={() => navigate('/compliance')}
-              className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold"
+              className="shrink-0 text-xs font-medium text-accent transition-colors duration-150 hover:text-accent-hover cursor-pointer"
             >
               All
             </button>
           </div>
 
-          <div className="space-y-3 my-auto">
-            <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-100 flex items-center justify-between text-xs">
+          <div className="my-auto space-y-2.5 px-5 py-5 text-sm">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="font-bold text-emerald-950">Verified undertakings</div>
-                <div className="text-[10px] text-emerald-700">
+                <div className="font-medium text-ink">Verified undertakings</div>
+                <div className="text-xs text-ink-2">
                   {snapshot.undertakings.verified} of {snapshot.undertakings.total} recorded
                 </div>
               </div>
-              <span className="text-base font-black text-emerald-700">{verifiedShare}%</span>
+              <span className="font-semibold tabular-nums text-ink">{verifiedShare}%</span>
             </div>
-
-            <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-100 flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between gap-3 border-t border-line pt-2.5">
               <div>
-                <div className="font-bold text-amber-950">Open undertakings</div>
-                <div className="text-[10px] text-amber-700">
+                <div className="font-medium text-ink">Open undertakings</div>
+                <div className="text-xs text-ink-2">
                   {snapshot.undertakings.submitted} evidence awaiting verification
                 </div>
               </div>
-              <span className="text-base font-black text-amber-700">{snapshot.undertakings.open}</span>
+              <span className="font-semibold tabular-nums text-ink">{snapshot.undertakings.open}</span>
             </div>
-
-            <div className="p-3 rounded-xl bg-rose-50/60 border border-rose-100 flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between gap-3 border-t border-line pt-2.5">
               <div>
-                <div className="font-bold text-rose-950">Expired documents</div>
-                <div className="text-[10px] text-rose-700">
+                <div className="font-medium text-ink">Expired documents</div>
+                <div className="text-xs text-ink-2">
                   {snapshot.documents.expiringSoon} expiring soon
                 </div>
               </div>
-              <span className="text-base font-black text-rose-700">{snapshot.documents.expired}</span>
+              <span className="font-semibold tabular-nums text-ink">{snapshot.documents.expired}</span>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100">
-            <button
+          <div className="border-t border-line px-5 py-4">
+            <Button
+              fullWidth
               onClick={() => navigate('/compliance')}
-              className="w-full py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
             >
-              <span>Manage regional compliance</span>
-              <ArrowRight className="w-3.5 h-3.5 ml-1" />
-            </button>
+              Manage regional compliance
+            </Button>
           </div>
-        </div>
+        </Card>
       </div>
-    </div>
+    </DashboardScaffold>
   );
 };

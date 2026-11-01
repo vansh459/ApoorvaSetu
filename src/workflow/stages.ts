@@ -24,7 +24,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Central Portal Automation',
     slaDays: 2,
     ownerRole: 'INSTITUTION_ADMIN',
-    color: '#64748b',
+    color: 'var(--color-chart-6)',
     active: true
   },
   'Scrutiny / Re-scrutiny': {
@@ -36,7 +36,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Regional Scrutiny Committee',
     slaDays: 30,
     ownerRole: 'REGIONAL_OFFICER',
-    color: '#3b82f6',
+    color: 'var(--color-chart-1)',
     active: true
   },
   'Expert Visit Committee (EVC)': {
@@ -48,7 +48,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Constituted Expert Visit Committee',
     slaDays: 21,
     ownerRole: 'EVC_MEMBER',
-    color: '#8b5cf6',
+    color: 'var(--color-chart-4)',
     active: true
   },
   'SAC / SHC': {
@@ -60,7 +60,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Appellate Hearing Bench',
     slaDays: 21,
     ownerRole: 'AICTE_ADMIN',
-    color: '#0d9488',
+    color: 'var(--color-chart-2)',
     active: true
   },
   'Compliance / Undertaking Verification': {
@@ -72,7 +72,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Regional Compliance Cell',
     slaDays: 15,
     ownerRole: 'AICTE_ADMIN',
-    color: '#0ea5e9',
+    color: 'var(--color-chart-1)',
     active: true
   },
   'Approval (Subject to Undertaking)': {
@@ -84,7 +84,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Approval Bureau / Regional Officer',
     slaDays: 15,
     ownerRole: 'AICTE_ADMIN',
-    color: '#f59e0b',
+    color: 'var(--color-chart-3)',
     active: true
   },
   'Final Approval': {
@@ -96,7 +96,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Member Secretary & Council',
     slaDays: 10,
     ownerRole: 'SUPER_ADMIN',
-    color: '#10b981',
+    color: 'var(--color-chart-2)',
     active: true
   },
   'Initial Scrutiny': {
@@ -108,7 +108,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Regional Scrutiny Committee',
     slaDays: 30,
     ownerRole: 'REGIONAL_OFFICER',
-    color: '#3b82f6',
+    color: 'var(--color-chart-1)',
     active: false,
     legacyAliasOf: 'Scrutiny / Re-scrutiny'
   },
@@ -121,7 +121,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Regional Office',
     slaDays: 30,
     ownerRole: 'REGIONAL_OFFICER',
-    color: '#3b82f6',
+    color: 'var(--color-chart-1)',
     active: false,
     legacyAliasOf: 'Scrutiny / Re-scrutiny'
   },
@@ -134,7 +134,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Approval Bureau',
     slaDays: 10,
     ownerRole: 'AICTE_ADMIN',
-    color: '#f59e0b',
+    color: 'var(--color-chart-3)',
     active: false,
     legacyAliasOf: 'Approval (Subject to Undertaking)'
   },
@@ -147,7 +147,7 @@ export const STAGE_META: Record<ApplicationStage, StageMeta> = {
     responsible: 'Bureau',
     slaDays: 15,
     ownerRole: 'AICTE_ADMIN',
-    color: '#94a3b8',
+    color: 'var(--color-chart-6)',
     active: false,
     legacyAliasOf: 'Scrutiny / Re-scrutiny'
   }

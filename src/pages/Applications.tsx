@@ -1,13 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  Search,
-  Plus,
-  ArrowUpDown,
-  Eye,
-  FileText,
-  RotateCcw
-} from 'lucide-react';
+import { Search, Plus, ArrowUpDown, Eye, FileText, RotateCcw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { filterApplicationsForUser, hasPermission } from '../services/rbacService';
@@ -15,6 +8,21 @@ import { StatusBadge } from '../components/common/StatusBadge';
 import { ApplicationStage, Region } from '../types';
 import { APPLICATION_TYPE_OPTIONS } from '../workflow/routes';
 import { OPERATIONAL_STAGES, STAGE_META, canonicalStage } from '../workflow/stages';
+import {
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  Field,
+  IconButton,
+  Input,
+  Notice,
+  PageHeader,
+  Select,
+  type DataTableColumn
+} from '../components/ui';
+
+type ApplicationRow = ReturnType<typeof filterApplicationsForUser>[number];
 
 export const Applications: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -22,12 +30,7 @@ export const Applications: React.FC = () => {
   const initialStatus = searchParams.get('status') || 'All';
   const initialRegion = searchParams.get('region') || 'All';
 
-  const {
-    applications,
-    setSelectedApplication,
-    setActiveModal,
-    addNewApplication
-  } = useApp();
+  const { applications, setSelectedApplication, setActiveModal, addNewApplication } = useApp();
 
   const [search, setSearch] = useState('');
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
@@ -72,7 +75,8 @@ export const Applications: React.FC = () => {
 
         const matchesRegion = selectedRegion === 'All' || app.region === selectedRegion;
         const matchesStage =
-          selectedStage === 'All' || canonicalStage(app.stage) === canonicalStage(selectedStage as ApplicationStage);
+          selectedStage === 'All' ||
+          canonicalStage(app.stage) === canonicalStage(selectedStage as ApplicationStage);
         const matchesStatus = selectedStatus === 'All' || app.status === selectedStatus;
 
         return matchesSearch && matchesRegion && matchesStage && matchesStatus;
@@ -104,95 +108,136 @@ export const Applications: React.FC = () => {
     setIsCreating(false);
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Applications Management
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Full repository of institutional applications, approval stages, scrutiny, and approvals.
-          </p>
+  const columns: DataTableColumn<ApplicationRow>[] = [
+    {
+      key: 'id',
+      header: 'Application',
+      render: (app) => (
+        <div className="min-w-0">
+          <div className="font-medium text-accent">{app.id}</div>
+          <div className="text-xs text-ink-2">{app.type}</div>
         </div>
-
-        {canCreateApplication && (
-          <button
-            onClick={() => setIsCreating(true)}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
+      )
+    },
+    {
+      key: 'institute',
+      header: 'Institution',
+      render: (app) => (
+        <div className="min-w-0">
+          <div className="truncate font-medium text-ink">{app.instituteName}</div>
+          <div className="text-xs text-ink-2">Intake {app.intakeProposed} seats</div>
+        </div>
+      )
+    },
+    {
+      key: 'region',
+      header: 'Region',
+      cellClassName: 'whitespace-nowrap',
+      render: (app) => <span className="text-ink-2">{app.region}</span>
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (app) => (
+        <div className="space-y-1">
+          <StatusBadge status={app.status} size="sm" />
+          <div className="text-xs text-ink-2">{app.stage}</div>
+        </div>
+      )
+    },
+    {
+      key: 'updated',
+      header: 'Last updated',
+      cellClassName: 'whitespace-nowrap',
+      render: (app) => <span className="text-ink-2">{app.lastUpdated}</span>
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (app) => (
+        <div className="inline-flex items-center gap-1.5">
+          <IconButton
+            label={`Open case summary for ${app.id}`}
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setSelectedApplication(app);
+              setActiveModal('case-summary');
+            }}
           >
-            <Plus className="w-4 h-4" />
-            <span>New Application</span>
-          </button>
-        )}
-      </div>
-
-      {/* Scope banner for Regional Officer or Institution Admin */}
-      {user?.role === 'REGIONAL_OFFICER' && (
-        <div className="flex items-center justify-between p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-900">
-          <div className="flex items-center space-x-2">
-            <span className="font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-amber-200/70 text-amber-900">
-              Regional Officer Scope
-            </span>
-            <span>
-              Restricted to <strong>{user.region} Region</strong> jurisdiction ({scopedApps.length} applications).
-            </span>
-          </div>
+            <FileText className="h-3.5 w-3.5" strokeWidth={1.75} />
+          </IconButton>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<Eye className="h-3.5 w-3.5" strokeWidth={1.75} />}
+            onClick={() => {
+              setSelectedApplication(app);
+              setActiveModal('app-detail');
+            }}
+          >
+            Inspect
+          </Button>
         </div>
+      )
+    }
+  ];
+
+  return (
+    <div className="space-y-5">
+      <PageHeader
+        title="Applications"
+        description="Every institutional application with its current stage, scrutiny and approval status."
+        actions={
+          canCreateApplication && (
+            <Button icon={<Plus className="h-4 w-4" strokeWidth={1.75} />} onClick={() => setIsCreating(true)}>
+              New application
+            </Button>
+          )
+        }
+      />
+
+      {user?.role === 'REGIONAL_OFFICER' && (
+        <Notice tone="warning" title="Regional officer scope">
+          Restricted to <strong className="font-semibold">{user.region} Region</strong> jurisdiction (
+          {scopedApps.length} applications).
+        </Notice>
       )}
 
       {user?.role === 'INSTITUTION_ADMIN' && (
-        <div className="flex items-center justify-between p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-blue-900">
-          <div className="flex items-center space-x-2">
-            <span className="font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-blue-200/70 text-blue-900">
-              Institutional Scope
-            </span>
-            <span>
-              Showing submissions for <strong>{user.instituteName}</strong> ({user.instituteId}).
-            </span>
-          </div>
-        </div>
+        <Notice tone="info" title="Institutional scope">
+          Showing submissions for <strong className="font-semibold">{user.instituteName}</strong>{' '}
+          ({user.instituteId}).
+        </Notice>
       )}
 
-      {/* New Application Inline Modal/Card */}
       {isCreating && canCreateApplication && (
-        <div className="bg-white rounded-2xl border border-blue-200 p-5 shadow-sm space-y-4 animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h3 className="text-sm font-bold text-slate-800">
-              Register New Application for AY 2026-27
-            </h3>
-            <button
-              onClick={() => setIsCreating(false)}
-              className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
-            >
+        <Card className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-ink">Register a new application</h2>
+            <Button variant="ghost" size="sm" onClick={() => setIsCreating(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
 
-          <form onSubmit={handleCreateSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <div className="sm:col-span-2">
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                Institution Name
-              </label>
-              <input
+          <form onSubmit={handleCreateSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <Field label="Institution name" htmlFor="new-inst-name" className="sm:col-span-2">
+              <Input
+                id="new-inst-name"
                 type="text"
                 required
                 value={newInstName}
                 onChange={(e) => setNewInstName(e.target.value)}
-                placeholder="e.g. Apex Institute of Technology"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                placeholder="Apex Institute of Technology"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                Region
-              </label>
-              <select
+            <Field label="Region" htmlFor="new-region">
+              <Select
+                id="new-region"
                 value={newRegion}
                 onChange={(e) => setNewRegion(e.target.value as Region)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
               >
                 <option value="Northern">Northern</option>
                 <option value="Southern">Southern</option>
@@ -200,279 +245,238 @@ export const Applications: React.FC = () => {
                 <option value="Western">Western</option>
                 <option value="Central">Central</option>
                 <option value="North Eastern">North Eastern</option>
-              </select>
-            </div>
+              </Select>
+            </Field>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                Application Type
-              </label>
-              <select
-                value={newType}
-                onChange={(e) => setNewType(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-              >
+            <Field label="Application type" htmlFor="new-type">
+              <Select id="new-type" value={newType} onChange={(e) => setNewType(e.target.value)}>
                 {APPLICATION_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.value}
                   </option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </Field>
 
-            <div className="sm:col-span-4 flex items-center justify-between pt-2">
-              <div className="text-xs text-slate-500">
-                Proposed Intake: <input type="number" value={newIntake} onChange={(e) => setNewIntake(Number(e.target.value))} className="w-20 px-2 py-1 bg-slate-50 border rounded-md" />
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreating(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer"
-                >
-                  Submit Application
-                </button>
-              </div>
+            <Field label="Proposed intake" htmlFor="new-intake" className="sm:col-span-1">
+              <Input
+                id="new-intake"
+                type="number"
+                value={newIntake}
+                onChange={(e) => setNewIntake(Number(e.target.value))}
+              />
+            </Field>
+
+            <div className="flex items-end justify-end gap-2 sm:col-span-3">
+              <Button variant="secondary" onClick={() => setIsCreating(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Submit application</Button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
-      {/* Filter Toolbar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-3">
-        <div className="flex flex-col md:flex-row gap-3">
-          {/* Search */}
+      <Card className="space-y-3">
+        <div className="flex flex-col gap-3 md:flex-row">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
-            <input
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
+              strokeWidth={1.75}
+            />
+            <Input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter by Application ID, Institute Name..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-medium transition-all duration-150"
+              placeholder="Filter by application ID or institution"
+              aria-label="Filter applications"
+              className="pl-9"
             />
           </div>
 
-          {/* Region dropdown */}
-          <div className="w-full md:w-44">
-            <select
-              value={selectedRegion}
-              onChange={(e) => setSelectedRegion(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
-            >
-              <option value="All">All Regions</option>
-              <option value="Northern">Northern</option>
-              <option value="Southern">Southern</option>
-              <option value="Eastern">Eastern</option>
-              <option value="Western">Western</option>
-              <option value="Central">Central</option>
-              <option value="North Eastern">North Eastern</option>
-            </select>
-          </div>
+          <Select
+            value={selectedRegion}
+            onChange={(e) => setSelectedRegion(e.target.value)}
+            aria-label="Filter by region"
+            className="md:w-44"
+          >
+            <option value="All">All regions</option>
+            <option value="Northern">Northern</option>
+            <option value="Southern">Southern</option>
+            <option value="Eastern">Eastern</option>
+            <option value="Western">Western</option>
+            <option value="Central">Central</option>
+            <option value="North Eastern">North Eastern</option>
+          </Select>
 
-          {/* Stage dropdown */}
-          <div className="w-full md:w-56">
-            <select
-              value={selectedStage}
-              onChange={(e) => setSelectedStage(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
-            >
-              <option value="All">All Stages</option>
-              {OPERATIONAL_STAGES.map((stage) => (
-                <option key={stage} value={stage}>
-                  {STAGE_META[stage].label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            value={selectedStage}
+            onChange={(e) => setSelectedStage(e.target.value)}
+            aria-label="Filter by stage"
+            className="md:w-56"
+          >
+            <option value="All">All stages</option>
+            {OPERATIONAL_STAGES.map((stage) => (
+              <option key={stage} value={stage}>
+                {STAGE_META[stage].label}
+              </option>
+            ))}
+          </Select>
 
-          {/* Status dropdown */}
-          <div className="w-full md:w-44">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
-            >
-              <option value="All">All Statuses</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Pending">Pending</option>
-              <option value="Action Required">Action Required</option>
-              <option value="Approved">Approved</option>
-              <option value="Returned">Returned</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
+          <Select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            aria-label="Filter by status"
+            className="md:w-44"
+          >
+            <option value="All">All statuses</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Pending">Pending</option>
+            <option value="Action Required">Action Required</option>
+            <option value="Approved">Approved</option>
+            <option value="Returned">Returned</option>
+            <option value="Rejected">Rejected</option>
+          </Select>
 
           {(selectedRegion !== 'All' || selectedStage !== 'All' || selectedStatus !== 'All' || search) && (
-            <button
+            <IconButton
+              label="Reset filters"
+              variant="secondary"
               onClick={() => {
                 setSelectedRegion('All');
                 setSelectedStage('All');
                 setSelectedStatus('All');
                 setSearch('');
               }}
-              className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 active:scale-95 transition-all duration-150 flex items-center justify-center shrink-0 cursor-pointer"
-              title="Reset Filters"
             >
-              <RotateCcw className="w-4 h-4" />
-            </button>
+              <RotateCcw className="h-4 w-4" strokeWidth={1.75} />
+            </IconButton>
           )}
         </div>
 
-        {/* Results summary bar */}
-        <div className="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-xs text-ink-2">
           <span>
-            Showing <span className="font-bold text-slate-800">{filteredApps.length}</span> applications
+            Showing <span className="font-semibold text-ink">{filteredApps.length}</span> applications
           </span>
-          <div className="flex items-center space-x-2">
-            <span>Sort by:</span>
-            <button
-              onClick={() => {
-                setSortField('lastUpdated');
-                setSortAsc(!sortAsc);
-              }}
-              className="font-semibold text-blue-600 flex items-center space-x-0.5 hover:underline cursor-pointer"
-            >
-              <span>Date</span>
-              <ArrowUpDown className="w-3 h-3" />
-            </button>
-          </div>
+          <Button
+            variant="link"
+            onClick={() => {
+              setSortField('lastUpdated');
+              setSortAsc(!sortAsc);
+            }}
+            icon={<ArrowUpDown className="h-3.5 w-3.5" strokeWidth={1.75} />}
+          >
+            Sort by date
+          </Button>
         </div>
-      </div>
+      </Card>
 
-      {/* Main Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <th className="py-3.5 px-4">Application ID</th>
-                <th className="py-3.5 px-4">Institution Name</th>
-                <th className="py-3.5 px-4">Type</th>
-                <th className="py-3.5 px-4">Region</th>
-                <th className="py-3.5 px-4">Current Stage</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4">Last Updated</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {paginatedApps.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    No applications match the selected criteria.
-                  </td>
-                </tr>
-              ) : (
-                paginatedApps.map((app) => (
-                  <tr
-                    key={app.id}
-                    className="hover:bg-blue-50/40 transition-colors group"
+      {paginatedApps.length === 0 ? (
+        <Card padded="none">
+          <EmptyState
+            icon={FileText}
+            title="No applications match"
+            description="Adjust the filters or start a new application."
+            action={
+              canCreateApplication && (
+                <Button size="sm" onClick={() => setIsCreating(true)}>
+                  New application
+                </Button>
+              )
+            }
+          />
+        </Card>
+      ) : (
+        <>
+          <ul className="space-y-2 md:hidden">
+            {paginatedApps.map((app) => (
+              <li
+                key={app.id}
+                className="rounded-card border border-line bg-surface p-4 shadow-raise"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-accent">{app.id}</p>
+                    <p className="truncate text-sm text-ink">{app.instituteName}</p>
+                    <p className="mt-0.5 text-xs text-ink-2">
+                      {app.type}, {app.region} Region
+                    </p>
+                  </div>
+                  <StatusBadge status={app.status} size="sm" />
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3 text-xs text-ink-2">
+                  <span>
+                    {app.stage}, updated {app.lastUpdated}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setSelectedApplication(app);
+                      setActiveModal('app-detail');
+                    }}
                   >
-                    <td className="py-3.5 px-4 font-bold text-blue-600">
-                      {app.id}
-                    </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-800">
-                      <div>{app.instituteName}</div>
-                      <div className="text-[11px] text-slate-400 font-normal">
-                        Intake: {app.intakeProposed} seats
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600">
-                      {app.type}
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-slate-700">
-                      {app.region}
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-slate-800">
-                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px]">
-                        {app.stage}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <StatusBadge status={app.status} size="sm" />
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-500 font-medium">
-                      {app.lastUpdated}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="inline-flex items-center gap-1.5">
-                        <button
-                          onClick={() => {
-                            setSelectedApplication(app);
-                            setActiveModal('case-summary');
-                          }}
-                          className="inline-flex items-center space-x-1 px-2.5 py-1 bg-white border border-slate-200 hover:border-blue-300 hover:text-blue-700 active:scale-95 rounded-lg text-slate-600 font-semibold text-xs transition-all duration-150 cursor-pointer"
-                          title="Open printable case summary"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>Summary</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedApplication(app);
-                            setActiveModal('app-detail');
-                          }}
-                          className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white active:scale-95 rounded-lg text-slate-700 font-semibold text-xs transition-all duration-150 cursor-pointer shadow-2xs"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Inspect</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    Inspect
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
 
-        {/* Pagination Bar */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs">
-            <span className="text-slate-500">
-              Page <span className="font-bold text-slate-800">{currentPage}</span> of{' '}
-              <span className="font-bold text-slate-800">{totalPages}</span>
-            </span>
-
-            <div className="flex items-center space-x-1">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-700 disabled:opacity-40 font-medium cursor-pointer active:scale-95 transition-all duration-150 hover:bg-slate-50"
-              >
-                Previous
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`w-7 h-7 rounded-md text-xs font-semibold cursor-pointer active:scale-90 transition-all duration-150 ${
-                    currentPage === i + 1
-                      ? 'bg-blue-600 text-white shadow-2xs'
-                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-700 disabled:opacity-40 font-medium cursor-pointer active:scale-95 transition-all duration-150 hover:bg-slate-50"
-              >
-                Next
-              </button>
-            </div>
+          <div className="hidden md:block">
+            <DataTable
+              caption="Institutional applications with stage, status and available actions"
+              columns={columns}
+              rows={paginatedApps}
+              rowKey={(app) => app.id}
+              minWidth="900px"
+            />
           </div>
-        )}
-      </div>
+        </>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs text-ink-2">
+            Page <span className="font-semibold text-ink">{currentPage}</span> of{' '}
+            <span className="font-semibold text-ink">{totalPages}</span>
+          </span>
+
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i + 1}
+                type="button"
+                onClick={() => setCurrentPage(i + 1)}
+                aria-current={currentPage === i + 1 ? 'page' : undefined}
+                className={`h-9 w-9 rounded-control text-sm font-medium transition-colors duration-150 cursor-pointer ${
+                  currentPage === i + 1
+                    ? 'bg-action text-white'
+                    : 'border border-line bg-surface text-ink-2 hover:bg-surface-2'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

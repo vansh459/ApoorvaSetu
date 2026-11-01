@@ -1,14 +1,40 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
-  ArrowRight,
-  Check
+  CalendarCheck,
+  Check,
+  FileText,
+  ShieldCheck
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { filterNotificationsForUser } from '../services/rbacService';
-import { NotificationItem } from '../types';
+import { Badge, Button, Card, EmptyState, PageHeader, Tabs } from '../components/ui';
+import type { NotificationItem } from '../types';
+import type { Tone } from '../utils/statusTone';
+
+type NotificationFilter = 'All' | 'Unread' | 'High';
+
+const CATEGORY_ICON = {
+  application: FileText,
+  evc: CalendarCheck,
+  compliance: ShieldCheck,
+  system: Bell
+} as const;
+
+const PRIORITY_TONE: Record<NotificationItem['priority'], Tone> = {
+  high: 'danger',
+  medium: 'warning',
+  low: 'neutral'
+};
+
+const CATEGORY_LABEL: Record<NotificationItem['category'], string> = {
+  application: 'Application',
+  evc: 'Expert visit',
+  compliance: 'Compliance',
+  system: 'System'
+};
 
 export const Notifications: React.FC = () => {
   const navigate = useNavigate();
@@ -19,149 +45,139 @@ export const Notifications: React.FC = () => {
     markAllNotificationsAsRead
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'All' | 'Unread' | 'High'>('All');
+  const [activeTab, setActiveTab] = useState<NotificationFilter>('All');
 
-  const scopedNotifs = React.useMemo(() => {
-    return filterNotificationsForUser(notifications, user);
-  }, [notifications, user]);
+  const scopedNotifs = useMemo(
+    () => filterNotificationsForUser(notifications, user),
+    [notifications, user]
+  );
 
-  const filteredNotifs = scopedNotifs.filter((n: NotificationItem) => {
-    if (activeTab === 'Unread') return !n.read;
-    if (activeTab === 'High') return n.priority === 'high';
+  const unreadCount = scopedNotifs.filter((notif) => !notif.read).length;
+  const highCount = scopedNotifs.filter((notif) => notif.priority === 'high').length;
+
+  const filteredNotifs = scopedNotifs.filter((notif: NotificationItem) => {
+    if (activeTab === 'Unread') return !notif.read;
+    if (activeTab === 'High') return notif.priority === 'high';
     return true;
   });
 
-  const unreadCount = scopedNotifs.filter((n: NotificationItem) => !n.read).length;
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Notifications & System Alerts
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Real-time critical alerts, pending undertakings, and scheduled EVC updates.
-          </p>
-        </div>
-
-        {unreadCount > 0 && (
-          <button
-            onClick={markAllNotificationsAsRead}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition-colors self-start sm:self-auto cursor-pointer"
-          >
-            <Check className="w-4 h-4" />
-            <span>Mark All as Read ({unreadCount})</span>
-          </button>
-        )}
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-2xs flex items-center justify-between">
-        <div className="flex items-center space-x-1">
-          {(['All', 'Unread', 'High'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === tab
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
+      <PageHeader
+        title="Notifications"
+        description="Deadline alerts, pending undertakings and scheduled expert visit updates, scoped to your role."
+        actions={
+          unreadCount > 0 ? (
+            <Button
+              variant="secondary"
+              icon={<Check className="h-4 w-4" />}
+              onClick={markAllNotificationsAsRead}
             >
-              {tab === 'All'
-                ? `All Notifications (${scopedNotifs.length})`
-                : tab === 'Unread'
-                ? `Unread (${unreadCount})`
-                : 'High Priority Only'}
-            </button>
-          ))}
-        </div>
-      </div>
+              Mark all as read
+            </Button>
+          ) : undefined
+        }
+      />
 
-      {/* Notifications List */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs divide-y divide-slate-100 overflow-hidden">
+      <Card padded="none">
+        <div className="border-b border-line p-4">
+          <Tabs
+            ariaLabel="Filter notifications"
+            items={[
+              { id: 'All', label: 'All', count: scopedNotifs.length },
+              { id: 'Unread', label: 'Unread', count: unreadCount },
+              { id: 'High', label: 'High priority', count: highCount }
+            ]}
+            value={activeTab}
+            onChange={(id) => setActiveTab(id as NotificationFilter)}
+          />
+        </div>
+
         {filteredNotifs.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs">
-            No notifications in this category.
-          </div>
+          <EmptyState
+            icon={Bell}
+            title={scopedNotifs.length === 0 ? 'No notifications yet' : 'Nothing in this filter'}
+            description={
+              scopedNotifs.length === 0
+                ? 'Alerts appear here when a stage, report, undertaking or document approaches its due date.'
+                : 'Choose another filter or mark the current items as read.'
+            }
+          />
         ) : (
-          filteredNotifs.map((notif: NotificationItem) => (
-            <div
-              key={notif.id}
-              className={`p-4 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                !notif.read ? 'bg-blue-50/40 hover:bg-blue-50/70' : 'hover:bg-slate-50'
-              }`}
-            >
-              <div className="flex items-start space-x-3.5">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                    notif.priority === 'high'
-                      ? 'bg-rose-100 text-rose-600'
-                      : notif.category === 'evc'
-                      ? 'bg-purple-100 text-purple-600'
-                      : 'bg-blue-100 text-blue-600'
+          <ul className="divide-y divide-line">
+            {filteredNotifs.map((notif: NotificationItem) => {
+              const Icon = CATEGORY_ICON[notif.category];
+
+              return (
+                <li
+                  key={notif.id}
+                  className={`flex flex-col gap-3 p-4 transition-colors duration-150 sm:flex-row sm:items-start sm:justify-between ${
+                    notif.read ? 'hover:bg-surface-2/60' : 'bg-accent-soft/30 hover:bg-accent-soft/50'
                   }`}
                 >
-                  <Bell className="w-4 h-4" />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-xs font-bold text-slate-900">{notif.title}</h3>
-                    {!notif.read && (
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                    )}
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                        notif.priority === 'high'
-                          ? 'bg-rose-100 text-rose-700'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {notif.priority}
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface-2 text-ink-2">
+                      <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                     </span>
+
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <h3
+                          className={`text-sm leading-snug ${
+                            notif.read ? 'font-medium text-ink' : 'font-semibold text-ink'
+                          }`}
+                        >
+                          {notif.title}
+                        </h3>
+                        {!notif.read && <Badge tone="info">Unread</Badge>}
+                        <Badge tone={PRIORITY_TONE[notif.priority]}>
+                          {notif.priority === 'high' ? 'High' : notif.priority === 'medium' ? 'Medium' : 'Low'} priority
+                        </Badge>
+                      </div>
+
+                      <p className="max-w-[62ch] text-sm leading-relaxed text-ink-2 [text-wrap:pretty]">
+                        {notif.description}
+                      </p>
+
+                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-2">
+                        <span>{notif.timestamp}</span>
+                        <span aria-hidden="true" className="text-line-strong">
+                          /
+                        </span>
+                        <span>{CATEGORY_LABEL[notif.category]}</span>
+                      </p>
+                    </div>
                   </div>
 
-                  <p className="text-xs text-slate-600 leading-normal max-w-2xl">
-                    {notif.description}
-                  </p>
+                  <div className="flex shrink-0 items-center gap-2 self-end sm:self-start">
+                    {!notif.read && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => markNotificationAsRead(notif.id)}
+                      >
+                        Mark read
+                      </Button>
+                    )}
 
-                  <div className="text-[11px] text-slate-400 font-medium">
-                    {notif.timestamp} • Category: {notif.category.toUpperCase()}
+                    {notif.link && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          markNotificationAsRead(notif.id);
+                          navigate(notif.link!);
+                        }}
+                      >
+                        Inspect
+                      </Button>
+                    )}
                   </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center space-x-2 self-end sm:self-center shrink-0">
-                {!notif.read && (
-                  <button
-                    onClick={() => markNotificationAsRead(notif.id)}
-                    className="px-3 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-200 active:scale-95 transition-all duration-150 cursor-pointer"
-                  >
-                    Mark Read
-                  </button>
-                )}
-
-                {notif.link && (
-                  <button
-                    onClick={() => {
-                      markNotificationAsRead(notif.id);
-                      navigate(notif.link!);
-                    }}
-                    className="flex items-center space-x-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-2xs transition-all duration-150 cursor-pointer"
-                  >
-                    <span>Inspect</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
+                </li>
+              );
+            })}
+          </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

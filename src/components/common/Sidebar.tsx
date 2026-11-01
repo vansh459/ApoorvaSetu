@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -31,7 +31,9 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { filterAlertsForUser } from '../../services/rbacService';
-import { UserRole } from '../../types';
+import { Avatar, IconButton } from '../ui';
+import { cn } from '../../utils/cn';
+import type { UserRole } from '../../types';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -41,8 +43,13 @@ interface SidebarProps {
 interface NavItem {
   name: string;
   path: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   badge?: number;
+}
+
+interface NavGroup {
+  title: string;
+  items: NavItem[];
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
@@ -55,222 +62,291 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     (alert) => alert.status !== 'Resolved'
   ).length;
 
-  // Build role-specific navigation strictly matching prompt specifications
-  const getNavItems = (): NavItem[] => {
-    switch (user?.role) {
+  const getNavGroups = (): NavGroup[] => {
+    switch (user?.role as UserRole | undefined) {
       case 'SUPER_ADMIN':
         return [
-          { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-          { name: 'User Management', path: '/admin/users', icon: Users },
-          { name: 'Role & Permissions', path: '/admin/roles', icon: KeyRound },
-          { name: 'Institution Management', path: '/institutes', icon: Building2 },
-          { name: 'Regional Management', path: '/regions-officials', icon: MapPin },
-          { name: 'System Configuration', path: '/admin/system-config', icon: Sliders },
-          { name: 'Audit Logs', path: '/admin/audit-logs', icon: History },
-          { name: 'Pendency & Workload', path: '/pendency', icon: TrendingUp },
-          { name: 'Reports & Analytics', path: '/reports', icon: FileBarChart },
-          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+          {
+            title: 'Workspace',
+            items: [
+              { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+              { name: 'User management', path: '/admin/users', icon: Users },
+              { name: 'Roles & permissions', path: '/admin/roles', icon: KeyRound },
+              { name: 'Institutions', path: '/institutes', icon: Building2 },
+              { name: 'Regional offices', path: '/regions-officials', icon: MapPin }
+            ]
+          },
+          {
+            title: 'Oversight',
+            items: [
+              { name: 'Pendency & workload', path: '/pendency', icon: TrendingUp },
+              { name: 'Reports', path: '/reports', icon: FileBarChart },
+              { name: 'Alert center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+              { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+            ]
+          },
+          {
+            title: 'System',
+            items: [
+              { name: 'Configuration', path: '/admin/system-config', icon: Sliders },
+              { name: 'Audit logs', path: '/admin/audit-logs', icon: History }
+            ]
+          }
         ];
 
       case 'AICTE_ADMIN':
         return [
-          { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-          { name: 'Applications', path: '/applications', icon: Clock3 },
-          { name: 'Institutes', path: '/institutes', icon: Building2 },
-          { name: 'Stages & Workflow', path: '/workflow', icon: Workflow },
-          { name: 'Pendency & Workload', path: '/pendency', icon: TrendingUp },
-          { name: 'EVC Scheduling', path: '/evc-scheduling', icon: CalendarDays },
-          { name: 'EVC Queue', path: '/evc/queue', icon: ClipboardList },
-          { name: 'Undertakings & Compliance', path: '/compliance', icon: ShieldCheck },
-          { name: 'Documents', path: '/documents', icon: FolderArchive },
-          { name: 'Reports & Evidence', path: '/reports', icon: FileBarChart },
-          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+          {
+            title: 'Workspace',
+            items: [
+              { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+              { name: 'Applications', path: '/applications', icon: Clock3 },
+              { name: 'Institutions', path: '/institutes', icon: Building2 },
+              { name: 'Stages & workflow', path: '/workflow', icon: Workflow }
+            ]
+          },
+          {
+            title: 'Operations',
+            items: [
+              { name: 'Pendency & workload', path: '/pendency', icon: TrendingUp },
+              { name: 'EVC scheduling', path: '/evc-scheduling', icon: CalendarDays },
+              { name: 'EVC queue', path: '/evc/queue', icon: ClipboardList },
+              { name: 'Compliance', path: '/compliance', icon: ShieldCheck },
+              { name: 'Documents', path: '/documents', icon: FolderArchive }
+            ]
+          },
+          {
+            title: 'Oversight',
+            items: [
+              { name: 'Reports', path: '/reports', icon: FileBarChart },
+              { name: 'Alert center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+              { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+            ]
+          }
         ];
 
       case 'REGIONAL_OFFICER':
         return [
-          { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-          { name: 'Regional Applications', path: '/applications', icon: Clock3 },
-          { name: 'Institutes', path: '/institutes', icon: Building2 },
-          { name: 'Document Verification', path: '/documents', icon: FileCheck },
-          { name: 'EVC Coordination', path: '/evc-scheduling', icon: CalendarDays },
-          { name: 'EVC Queue', path: '/evc/queue', icon: ClipboardList },
-          { name: 'Compliance Monitoring', path: '/compliance', icon: ShieldCheck },
-          { name: 'Pendency & Workload', path: '/pendency', icon: TrendingUp },
-          { name: 'Escalations', path: '/regional/escalations', icon: AlertCircle },
-          { name: 'Regional Reports', path: '/reports', icon: FileBarChart },
-          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+          {
+            title: 'Workspace',
+            items: [
+              { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+              { name: 'Regional applications', path: '/applications', icon: Clock3 },
+              { name: 'Institutions', path: '/institutes', icon: Building2 },
+              { name: 'Document verification', path: '/documents', icon: FileCheck },
+              { name: 'EVC coordination', path: '/evc-scheduling', icon: CalendarDays },
+              { name: 'EVC queue', path: '/evc/queue', icon: ClipboardList }
+            ]
+          },
+          {
+            title: 'Oversight',
+            items: [
+              { name: 'Compliance monitoring', path: '/compliance', icon: ShieldCheck },
+              { name: 'Pendency & workload', path: '/pendency', icon: TrendingUp },
+              { name: 'Escalations', path: '/regional/escalations', icon: AlertCircle },
+              { name: 'Regional reports', path: '/reports', icon: FileBarChart },
+              { name: 'Alert center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+              { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+            ]
+          }
         ];
 
       case 'EVC_MEMBER':
         return [
-          { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-          { name: 'My Assigned Visits', path: '/evc/my-visits', icon: CalendarDays },
-          { name: 'EVC Queue', path: '/evc/queue', icon: ClipboardList },
-          { name: 'EVC Calendar', path: '/evc-scheduling', icon: Clock3 },
-          { name: 'Institution Details', path: '/institutes', icon: Building2 },
-          { name: 'Inspection Checklist', path: '/evc/checklist', icon: ClipboardCheck },
-          { name: 'Evidence Upload', path: '/evc/evidence', icon: UploadCloud },
-          { name: 'Inspection Reports', path: '/evc/my-visits', icon: FolderArchive },
-          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+          {
+            title: 'Workspace',
+            items: [
+              { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+              { name: 'My assigned visits', path: '/evc/my-visits', icon: CalendarDays },
+              { name: 'EVC queue', path: '/evc/queue', icon: ClipboardList },
+              { name: 'EVC calendar', path: '/evc-scheduling', icon: Clock3 },
+              { name: 'Institution details', path: '/institutes', icon: Building2 }
+            ]
+          },
+          {
+            title: 'Fieldwork',
+            items: [
+              { name: 'Inspection checklist', path: '/evc/checklist', icon: ClipboardCheck },
+              { name: 'Evidence upload', path: '/evc/evidence', icon: UploadCloud }
+            ]
+          },
+          {
+            title: 'Oversight',
+            items: [
+              { name: 'Alert center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+              { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+            ]
+          }
         ];
 
       case 'INSTITUTION_ADMIN':
         return [
-          { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-          { name: 'Institution Profile', path: '/institution/profile', icon: UserCircle },
-          { name: 'My Applications', path: '/applications', icon: Clock3 },
-          { name: 'Submit New Application', path: '/institution/apply', icon: FilePlus2 },
-          { name: 'Application Tracking', path: '/institution/tracking', icon: Compass },
-          { name: 'Documents', path: '/documents', icon: FolderArchive },
-          { name: 'Undertakings & Compliance', path: '/compliance', icon: ShieldCheck },
-          { name: 'EVC Visits', path: '/evc-scheduling', icon: CalendarDays },
-          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+          {
+            title: 'Workspace',
+            items: [
+              { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+              { name: 'Institution profile', path: '/institution/profile', icon: UserCircle },
+              { name: 'My applications', path: '/applications', icon: Clock3 },
+              { name: 'Submit application', path: '/institution/apply', icon: FilePlus2 },
+              { name: 'Application tracking', path: '/institution/tracking', icon: Compass }
+            ]
+          },
+          {
+            title: 'Compliance',
+            items: [
+              { name: 'Documents', path: '/documents', icon: FolderArchive },
+              { name: 'Undertakings', path: '/compliance', icon: ShieldCheck },
+              { name: 'EVC visits', path: '/evc-scheduling', icon: CalendarDays }
+            ]
+          },
+          {
+            title: 'Oversight',
+            items: [
+              { name: 'Alert center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+              { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+            ]
+          }
         ];
 
       default:
         return [
-          { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-          { name: 'Applications', path: '/applications', icon: Clock3 },
-          { name: 'Institutes', path: '/institutes', icon: Building2 },
-          { name: 'Reports', path: '/reports', icon: FileBarChart },
-          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+          {
+            title: 'Workspace',
+            items: [
+              { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+              { name: 'Applications', path: '/applications', icon: Clock3 },
+              { name: 'Institutions', path: '/institutes', icon: Building2 },
+              { name: 'Reports', path: '/reports', icon: FileBarChart },
+              { name: 'Alert center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+              { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
+            ]
+          }
         ];
     }
   };
 
-  const navItems = getNavItems();
+  const navGroups = getNavGroups();
 
   const handleLogout = () => {
     logout();
     navigate('/login', { replace: true });
   };
 
+  const closeOnMobile = () => {
+    if (window.innerWidth < 1024) onClose();
+  };
+
   return (
     <>
-      {/* Mobile backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+          className="overlay-enter fixed inset-0 z-40 bg-ink/25 backdrop-blur-[2px] lg:hidden"
           onClick={onClose}
+          aria-hidden="true"
         />
       )}
 
-      {/* Sidebar container with deep navy/midnight gradient matching reference */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#0a1426] text-slate-200 flex flex-col transition-transform duration-300 ease-in-out border-r border-[#15233c] ${
+        className={cn(
+          'fixed bottom-0 left-0 top-0 z-50 flex w-64 flex-col border-r border-line bg-paper transition-transform duration-300 ease-swift',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        )}
+        aria-label="Sidebar"
       >
-        {/* Brand Header */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-[#15233c]/80">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 flex items-center justify-center shrink-0">
-              <img
-                src="/apoorvasetu-icon.png"
-                alt="ApoorvaSetu Logo"
-                className="w-full h-full object-contain drop-shadow-md"
-              />
-            </div>
-
-            <div>
-              <div className="text-white font-bold text-base leading-tight tracking-wide">
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-4">
+          <Link to="/" onClick={closeOnMobile} className="flex min-w-0 items-center gap-2.5">
+            <img
+              src="/apoorvasetu-icon.png"
+              alt=""
+              className="h-8 w-8 shrink-0 object-contain"
+            />
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold leading-tight tracking-tight text-ink">
                 ApoorvaSetu
-              </div>
-              <div className="text-[10px] text-slate-400 font-normal leading-tight mt-0.5">
-                AICTE Approvals, Simplified
+              </span>
+              <span className="block truncate text-xs leading-tight text-ink-2">
+                AICTE approvals
+              </span>
+            </span>
+          </Link>
+          <IconButton label="Close navigation" size="sm" className="lg:hidden" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </IconButton>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 pb-4" aria-label="Primary">
+          {navGroups.map((group) => (
+            <div key={group.title}>
+              <p className="px-3 pb-1 pt-4 text-xs font-medium text-ink-3">{group.title}</p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={`${group.title}-${item.name}`}
+                      to={item.path}
+                      end={item.path === '/'}
+                      onClick={closeOnMobile}
+                      className={({ isActive }) =>
+                        cn(
+                          'group flex h-9 items-center justify-between gap-2 rounded-control px-3 text-label transition-colors duration-150',
+                          isActive
+                            ? 'bg-surface font-semibold text-ink shadow-raise'
+                            : 'font-medium text-ink-2 hover:bg-surface/60 hover:text-ink'
+                        )
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            <Icon
+                              className={cn(
+                                'h-[18px] w-[18px] shrink-0',
+                                isActive ? 'text-accent' : 'text-ink-3 group-hover:text-ink-2'
+                              )}
+                              strokeWidth={1.75}
+                            />
+                            <span className="truncate">{item.name}</span>
+                          </span>
+
+                          {item.badge !== undefined && item.badge > 0 && (
+                            <span
+                              className={cn(
+                                'shrink-0 rounded-full px-1.5 text-xs font-medium',
+                                isActive
+                                  ? 'bg-accent-soft text-accent'
+                                  : 'bg-danger-soft text-danger'
+                              )}
+                            >
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
               </div>
             </div>
-          </div>
+          ))}
+        </nav>
 
-          <button
-            onClick={onClose}
-            className="lg:hidden text-slate-400 hover:text-white p-1 rounded-md cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Navigation Links */}
-        <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                onClick={() => {
-                  if (window.innerWidth < 1024) onClose();
-                }}
-                className={({ isActive }) =>
-                  `group relative flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-medium transition-all duration-180 ease-out cursor-pointer ${
-                    isActive
-                      ? 'bg-[#0284c7] text-white shadow-sm font-semibold'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60 active:scale-[0.99]'
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <div className="flex items-center space-x-3">
-                      <Icon
-                        className={`w-4 h-4 transition-transform duration-200 ease-out ${
-                          isActive
-                            ? 'text-white'
-                            : 'text-slate-400 group-hover:scale-110 group-hover:text-sky-300'
-                        }`}
-                      />
-                      <span className="transition-colors duration-150">{item.name}</span>
-                    </div>
-
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-transform duration-200 group-hover:scale-105 ${
-                          isActive
-                            ? 'bg-white text-sky-700'
-                            : 'bg-rose-500 text-white'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
-        </div>
-
-        {/* User Card at bottom of sidebar */}
-        <div className="p-3.5 border-t border-[#15233c]/80 bg-[#070e1b]/80">
-          <div className="flex items-center justify-between p-1.5 rounded-xl">
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white/10 shrink-0 transition-transform duration-200 hover:scale-105">
-                {user?.initials || 'AS'}
-              </div>
+        <div className="border-t border-line p-3">
+          <div className="flex items-center justify-between gap-2 rounded-control px-2 py-2">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Avatar initials={user?.initials || 'AS'} />
               <div className="min-w-0">
-                <div className="text-white font-bold text-xs truncate">
-                  {user?.name || 'Amit Sharma'}
-                </div>
-                <div className="text-[10px] text-slate-400 truncate">
-                  {user?.roleTitle || 'AICTE Official'}
-                </div>
+                <p className="truncate text-label font-semibold text-ink">
+                  {user?.name || 'Signed in'}
+                </p>
+                <p className="text-xs leading-tight text-ink-2">
+                  {user?.roleTitle || 'AICTE official'}
+                </p>
               </div>
             </div>
-
-            <button
-              onClick={handleLogout}
-              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 rounded-lg transition-all duration-150 active:scale-90 cursor-pointer shrink-0"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <IconButton label="Sign out" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+            </IconButton>
           </div>
         </div>
       </aside>

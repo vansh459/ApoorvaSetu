@@ -144,6 +144,28 @@ enforced by Row Level Security; client checks are UX only.
 
 ---
 
+## Design system
+
+The interface is a calm institutional desk: warm paper ground, quiet ink, one cobalt accent, and
+Manrope at a single type scale. The direction is locked in [design.md](design.md); no screen
+introduces a colour, font, radius or shadow outside it.
+
+- **Tokens** live in one `@theme` block in `src/index.css` and generate the Tailwind utilities used
+  everywhere (`bg-paper`, `text-ink-2`, `border-line`, `rounded-card`, `shadow-raise`, …). Raw hex
+  values appear only in the token block and `src/utils/statusTone.ts`.
+- **Primitives** live in `src/components/ui/`: `Button`, `IconButton`, `Card`, `PageHeader`,
+  `StatTile`, `Badge`, `DataTable`, `Field`/`Input`/`Select`/`Textarea`, `Modal`, `Drawer`, `Tabs`,
+  `EmptyState`, `Notice`, `ProgressBar`, `Skeleton`, `Spinner`, `Tooltip`, `Avatar`. Pages compose
+  these instead of re-styling shells.
+- **Status colour** comes from `statusTone()` so the same state reads the same on every screen.
+- **Motion** is CSS only (`transform`/`opacity`, 120–450ms), with `page-enter`, `panel-enter`,
+  `pop-enter` and `toast-enter` classes, and a `prefers-reduced-motion` fallback that removes all of
+  it except spinner rotation.
+- **Accessibility**: one global `:focus-visible` ring, labelled inputs and icon buttons, focus
+  trapped overlays, `role="status"` toasts, captioned tables with `scope="col"` headers.
+
+---
+
 ## Scripts
 
 | Command | Purpose |
@@ -171,9 +193,14 @@ src/
     repositories/      Repository contract + local and Supabase implementations
   context/             App and auth providers (useApp / useAuth facades)
   pages/               Role dashboards and workflow screens
-  components/          UI, dashboards and modals
+  components/
+    ui/                Shared design-system primitives
+    common/            Shell chrome (header, sidebar, route guard)
+    dashboard/         Dashboard panels and charts
+    modals/            Case detail, compliance, EVC, report and tracking dialogs
 supabase/              Schema, migrations and RLS tests (production path)
 docs/                  Implementation plan and phase tracking
+design.md              Locked design system (tokens, type, motion, components)
 ```
 
 ---
