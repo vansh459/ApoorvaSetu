@@ -618,6 +618,33 @@ tests and the production build pass; lint reports 0 errors.
 | Regional Escalations | `/regional/escalations` | L1–L3 escalation ladder (SUPER_ADMIN, REGIONAL_OFFICER) |
 | Scenario guide | `/demo-scenarios` | Demo clock and the 12 seeded scenes |
 
+### P12 — Local Docker runtime: SPA + API in one container (0.5 day) — done
+
+- [x] `Dockerfile` built on `node:24-bookworm-slim` in four stages: `deps` (full `npm ci` inside the
+      image, because host `node_modules` holds Windows-only native binaries), `build`
+      (`VITE_*` build args → `tsc -b && vite build`), `prod-deps` (`npm ci --omit=dev`) and `runner`
+      (non-root `node`, port 3001, healthcheck against `/api/health`).
+- [x] `server/index.ts` now serves the Vite build with `express.static`, returns JSON 404 for unknown
+      `/api/*` paths and falls back to `index.html` for SPA deep links. The block is guarded by
+      `dist/index.html`, so `npm run server` stays API-only when no build exists.
+- [x] `docker-compose.yml` runs one `app` service on `8080:3001` with `init`, a restart policy and an
+      optional `.env` (`required: false`), so demo mode starts with no configuration at all.
+- [x] `.dockerignore` keeps `node_modules`, `dist`, `.env*`, `.git`, `docs`, `supabase`, `api` and
+      tests out of the build context; no secret is ever baked into an image layer or a `VITE_*` value.
+- [x] `tsconfig.node.json` includes `server/index.ts` so the edited runtime file is type-checked by
+      `tsc -b` (it was previously unchecked).
+- [x] `README.md` documents the Docker run, runtime-vs-build env split, rebuild rules, lifecycle
+      commands and the boundaries of the container (no cron sweep, no hot reload).
+
+**Acceptance:** `docker compose up --build -d` reaches `healthy` and serves the app at
+`http://localhost:8080`; `/api/health` returns 200, `/applications` returns `index.html`, unknown
+`/api/*` returns JSON 404, `/api/assistant/status` reports `isConfigured: false` without a key,
+hashed assets carry immutable caching, the process runs as uid 1000 with no `.env` in the image, and
+demo login plus deep-link refresh work. Host `npm run build`, `npm run lint` and `npm run test:run`
+stay green.
+
+**Scope boundary:** local running and testing only. Cloud hosting, TLS, a local database/Supabase
+stack, the hourly deadline sweep (Vercel function) and container hot reload are out of scope.
 
 ---
 
@@ -688,6 +715,8 @@ npm run test:coverage  # coverage report
    - Export region-performance CSV; audit explorer chains alert → escalation → action by
      correlation ID.
 5. Hallmark verification gates on every new or changed screen.
+6. Docker runtime: `docker compose up --build -d`, then `curl /api/health`, a deep-link refresh and
+   the assistant status endpoint at `http://localhost:8080`.
 
 ---
 
@@ -710,6 +739,7 @@ npm run test:coverage  # coverage report
 
 - Working demo with all A–F flows and seeded evaluation scenarios.
 - This implementation document.
-- `README.md` with setup, roles, demo accounts and data modes.
+- `README.md` with setup, roles, demo accounts, data modes and the Docker run.
+- `Dockerfile` and `docker-compose.yml` for a single-container SPA + API run.
 - `supabase/migrations/`, consolidated `schema.sql`, `supabase/tests/rls.sql`.
 - Vitest suite with CI-ready scripts.

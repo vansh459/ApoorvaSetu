@@ -26,6 +26,33 @@ npm run dev            # http://localhost:5173
 The app starts in **demo mode** with seeded institutions, applications, EVC visits, compliance
 records and documents — no backend required.
 
+### Run with Docker
+
+One container serves the built SPA, the Express back end and the assistant APIs on a single
+origin. Demo mode needs no `.env` and no database.
+
+```bash
+docker compose up --build -d   # http://localhost:8080
+docker compose ps              # health status
+docker compose logs -f app
+docker compose down
+```
+
+- **First build** takes a few minutes (dependencies install inside the image); later builds are
+  much faster.
+- **AI assistant**: copy `.env.example` to `.env` and set `GEMINI_API_KEY`, then
+  `docker compose up -d --force-recreate`. Runtime env changes do not need a rebuild.
+- **Supabase mode**: `VITE_DATA_MODE`, `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are
+  inlined at build time — change them in `.env`, then `docker compose up -d --build`.
+- **Rebuild rules**: source or `package-lock.json` changes need `--build`; runtime env changes
+  need `--force-recreate`.
+- **Port**: publish on another port with `APP_PORT=8090 docker compose up -d --build`.
+- **Not included**: the hourly deadline sweep (`api/cron/sweep.ts`, Vercel only) and hot reload
+  (use `npm run dev` on the host for that).
+
+Unknown `/api/*` paths return JSON 404, and deep links such as `/applications` return
+`index.html`, so browser refresh works on every route.
+
 ### Demo accounts
 
 All seeded accounts use the demo password `Apoorva@2026`.
@@ -123,7 +150,8 @@ enforced by Row Level Security; client checks are UX only.
 |---|---|
 | `npm run dev` | Vite dev server on port 5173 (AI middleware included) |
 | `npm run build` | `tsc -b && vite build` |
-| `npm run preview` | Preview the production build |
+| `npm run preview` | Preview the production build (SPA only, no assistant API) |
+| `docker compose up --build` | Build and run the full app at http://localhost:8080 |
 | `npm run lint` | oxlint |
 | `npm test` | Vitest watch mode |
 | `npm run test:run` | Vitest single run (CI) |
@@ -170,6 +198,11 @@ Current suite:
 The Vite build is static and rewrites all routes to `index.html` (see `vercel.json`). The AI
 assistant is exposed through a Vercel function (`api/assistant/chat.ts`) and a Vite dev middleware;
 API keys stay server-side.
+
+For a self-hosted deployment, the same image runs on any container host: publish port 3001, inject
+`PORT` and the runtime secrets, and put TLS and compression in front. The local compose file is a
+production-style single-container run, not a Vercel replacement — the hourly sweep and serverless
+functions stay on Vercel.
 
 Before enabling Supabase mode in a shared environment, apply the migrations and run
 `supabase/tests/rls.sql` to confirm cross-region and cross-institution isolation.

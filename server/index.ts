@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'node:path';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { aiService } from './aiService.ts';
 import {
   MAX_BODY_BYTES,
@@ -112,6 +115,47 @@ app.post('/api/assistant/chat', async (req, res) => {
     });
   }
 });
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const distDir = path.resolve(here, '..', 'dist');
+const indexHtml = path.join(distDir, 'index.html');
+const FILE_REQUEST = /\.(?:js|mjs|css|map|png|jpe?g|gif|svg|ico|webp|avif|woff2?|ttf|otf|json|txt|webmanifest|pdf)$/i;
+
+// Unknown /api/* must be JSON, never the SPA shell.
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'NOT_FOUND', text: 'Unknown API endpoint.' });
+});
+
+if (existsSync(indexHtml)) {
+  app.use(
+    express.static(distDir, {
+      index: false,
+      etag: true,
+      setHeaders(res, filePath) {
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      }
+    })
+  );
+
+  // Express 5 / path-to-regexp v8: app.get('*') is invalid. Pathless middleware is safe.
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    if (req.path === '/api' || req.path.startsWith('/api/')) return next();
+    if (FILE_REQUEST.test(req.path)) {
+      res.status(404).type('text/plain').send('Not found');
+      return;
+    }
+    res.sendFile(indexHtml, (error) => {
+      if (error) next(error);
+    });
+  });
+
+  console.log(`[ApoorvaSetu AI Backend] Serving SPA from ${distDir}`);
+} else {
+  console.log('[ApoorvaSetu AI Backend] dist/ not found - serving API only.');
+}
 
 app.use((error: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (error?.type === 'entity.too.large' || error?.status === 413) {

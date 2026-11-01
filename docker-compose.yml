@@ -1,0 +1,29 @@
+name: apoorvasetu
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time only, inlined into the bundle by Vite.
+        VITE_DATA_MODE: ${VITE_DATA_MODE:-demo}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
+
+    image: apoorvasetu:local
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 5s
+
+    ports:
+      - "${APP_PORT:-8080}:3001"
+
+    # Optional: demo mode starts with no .env at all.
+    env_file:
+      - path: .env
+        required: false
+
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
