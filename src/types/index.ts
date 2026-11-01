@@ -29,7 +29,7 @@ export type RouteId =
 
 export type SlaTier = 'On Track' | 'Approaching' | 'Due Today' | 'Breached' | 'Paused';
 
-export type DataMode = 'demo' | 'supabase';
+export type DataMode = 'demo' | 'supabase' | 'postgres';
 
 export interface WorkflowRoute {
   id: RouteId;

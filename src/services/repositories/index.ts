@@ -7,6 +7,7 @@ import type { Repository } from './types';
 export function getDataMode(): DataMode {
   const configured = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_DATA_MODE;
   if (configured === 'demo') return 'demo';
+  if (configured === 'postgres') return 'postgres';
   if (configured === 'supabase') return isSupabaseConfigured ? 'supabase' : 'demo';
   return isSupabaseConfigured ? 'supabase' : 'demo';
 }

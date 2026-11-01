@@ -264,19 +264,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const snapshot = await repository.loadRemote();
         if (!isMounted || !snapshot) return;
-        if (snapshot.applications?.length) {
+        if (snapshot.applications !== undefined) {
           setApplications(snapshot.applications.map((app) => normalizeApplication(app)));
         }
-        if (snapshot.institutes?.length) setInstitutes(snapshot.institutes);
-        if (snapshot.evcVisits?.length) {
+        if (snapshot.institutes !== undefined) setInstitutes(snapshot.institutes);
+        if (snapshot.evcVisits !== undefined) {
           setEvcVisits(snapshot.evcVisits.map((visit) => normalizeEVCVisit(visit)));
         }
-        if (snapshot.complianceRecords?.length) setComplianceRecords(snapshot.complianceRecords);
-        if (snapshot.documents?.length) setDocuments(snapshot.documents.map(normalizeDocument));
-        if (snapshot.notifications?.length) setNotifications(snapshot.notifications);
-        if (snapshot.undertakings?.length) setUndertakings(snapshot.undertakings);
-        if (snapshot.alerts?.length) setAlerts(snapshot.alerts);
-        if (snapshot.escalations?.length) setEscalations(snapshot.escalations);
+        if (snapshot.complianceRecords !== undefined) {
+          setComplianceRecords(snapshot.complianceRecords);
+        }
+        if (snapshot.documents !== undefined) {
+          setDocuments(snapshot.documents.map(normalizeDocument));
+        }
+        if (snapshot.notifications !== undefined) setNotifications(snapshot.notifications);
+        if (snapshot.undertakings !== undefined) setUndertakings(snapshot.undertakings);
+        if (snapshot.alerts !== undefined) setAlerts(snapshot.alerts);
+        if (snapshot.escalations !== undefined) setEscalations(snapshot.escalations);
       } catch (error) {
         console.warn('Remote data fetch failed, using local demo cache', error);
       }
@@ -306,42 +310,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Demo-mode persistence. Remote mode writes through the repository on each command.
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('user', currentUser);
   }, [currentUser]);
 
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('applications', applications);
   }, [applications]);
 
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('institutes', institutes);
   }, [institutes]);
 
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('evcVisits', evcVisits);
   }, [evcVisits]);
 
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('complianceRecords', complianceRecords);
   }, [complianceRecords]);
 
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('documents', documents);
   }, [documents]);
 
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('notifications', notifications);
   }, [notifications]);
 
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('undertakings', undertakings);
   }, [undertakings]);
 
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('alerts', alerts);
   }, [alerts]);
 
   useEffect(() => {
+    if (repository.isRemote) return;
     writeLocal('escalations', escalations);
   }, [escalations]);
 
@@ -380,6 +394,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const randomizeAllNames = () => {
+    if (repository.isRemote) {
+      showToast('Name randomisation is only available in demo mode.', 'warning');
+      return;
+    }
     // 1. Randomize current user
     const newName = getRandomFullName();
     const initials = getInitials(newName);
@@ -2040,6 +2058,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetToInitialData = () => {
+    if (repository.isRemote) {
+      showToast('Reset is only available in demo mode.', 'warning');
+      return;
+    }
     clearLocal();
     setDemoClockOffsetDays(0);
     resetNow();
