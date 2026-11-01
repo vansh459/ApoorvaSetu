@@ -4,6 +4,8 @@ import {
   exceedsByteLimit,
   originAllowed
 } from '../src/services/aiGuard.ts';
+import { isDatabaseConfigured } from './db.ts';
+import { resolveSession } from './session.ts';
 
 export { MAX_BODY_BYTES, resolveDemoRole, validateChatBody } from '../src/services/aiGuard.ts';
 export type { ChatBody, ChatHistoryMessage } from '../src/services/aiGuard.ts';
@@ -11,7 +13,7 @@ export type { ChatBody, ChatHistoryMessage } from '../src/services/aiGuard.ts';
 export interface VerifiedCaller {
   userId: string;
   role: string;
-  mode: 'supabase' | 'demo';
+  mode: 'supabase' | 'postgres' | 'demo';
   region?: string;
   instituteId?: string;
 }
@@ -78,6 +80,23 @@ export function isProductionAuthEnabled(): boolean {
  * the database profile. The request body is never trusted for identity here.
  */
 export async function verifyCaller(req: any): Promise<CallerResult> {
+  if (!isProductionAuthEnabled() && isDatabaseConfigured()) {
+    const resolved = await resolveSession(req);
+    if (!resolved) {
+      return { ok: false, status: 401, error: 'Sign in to use the assistant.' };
+    }
+    return {
+      ok: true,
+      caller: {
+        userId: resolved.user.id,
+        role: resolved.user.role,
+        mode: 'postgres',
+        region: resolved.user.region ?? undefined,
+        instituteId: resolved.user.instituteId ?? undefined
+      }
+    };
+  }
+
   if (!isProductionAuthEnabled()) {
     return { ok: true, caller: { userId: 'demo-guest', role: 'GUEST', mode: 'demo' } };
   }
@@ -121,7 +140,7 @@ export async function verifyCaller(req: any): Promise<CallerResult> {
 const rateLimiter = createRateLimiter();
 
 function callerKey(req: any, caller: VerifiedCaller): string {
-  if (caller.mode === 'supabase') return `user:${caller.userId}`;
+  if (caller.mode !== 'demo') return `user:${caller.userId}`;
   const forwarded = req.headers?.['x-forwarded-for'];
   const ip =
     (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '') ||
@@ -142,7 +161,9 @@ export function bodyTooLarge(req: any): boolean {
 }
 
 function allowedOrigins(): string[] {
-  return (process.env.AI_ALLOWED_ORIGINS || '')
+  return [process.env.APP_ORIGIN, process.env.AI_ALLOWED_ORIGINS]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .join(',')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);

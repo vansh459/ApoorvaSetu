@@ -7,7 +7,7 @@ import { Permission, UserRole } from '../../types';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 import { Button } from '../ui';
 
-const remoteAuthEnabled = getDataMode() === 'supabase';
+const remoteAuthEnabled = getDataMode() !== 'demo';
 
 function sessionValid(user: unknown): boolean {
   return remoteAuthEnabled ? Boolean(user) : authService.isSessionValid();

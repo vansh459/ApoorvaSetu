@@ -14,6 +14,9 @@ import {
   validateChatBody,
   verifyCaller
 } from './authGuard.ts';
+import { errorHandler } from './http.ts';
+import { getPrisma, isDatabaseConfigured } from './db.ts';
+import { authRouter } from './routes/auth.ts';
 
 dotenv.config();
 
@@ -26,9 +29,9 @@ app.use(
     origin(origin, callback) {
       callback(null, !origin || isOriginAllowed(origin));
     },
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Authorization', 'Content-Type'],
-    credentials: false
+    credentials: true
   })
 );
 app.use(express.json({ limit: `${Math.floor(MAX_BODY_BYTES / 1024)}kb` }));
@@ -37,14 +40,43 @@ function rejectedOrigin(origin: unknown): boolean {
   return typeof origin === 'string' && origin.length > 0 && !isOriginAllowed(origin);
 }
 
+// State-changing requests must come from an allowed origin; reads and same-origin requests pass.
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+    next();
+    return;
+  }
+  if (rejectedOrigin(req.headers.origin)) {
+    res.status(403).json({
+      error: 'ORIGIN_NOT_ALLOWED',
+      text: 'This origin is not allowed to change data.'
+    });
+    return;
+  }
+  next();
+});
+
 // Health Check
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', async (_req, res) => {
+  let database: 'unconfigured' | 'connected' | 'error' = 'unconfigured';
+  if (isDatabaseConfigured()) {
+    try {
+      await getPrisma().$queryRaw`SELECT 1`;
+      database = 'connected';
+    } catch {
+      database = 'error';
+    }
+  }
+
   res.json({
     status: 'ok',
     service: 'ApoorvaSetu AI Assistant Backend',
+    database,
     timestamp: new Date().toISOString()
   });
 });
+
+app.use('/api/auth', authRouter);
 
 // Assistant Status Check (Config verification)
 app.get('/api/assistant/status', (_req, res) => {
@@ -95,7 +127,7 @@ app.post('/api/assistant/chat', async (req, res) => {
     }
 
     const userRole =
-      callerResult.caller.mode === 'supabase'
+      callerResult.caller.mode !== 'demo'
         ? callerResult.caller.role
         : resolveDemoRole((req.body as { userRole?: unknown } | undefined)?.userRole);
 
@@ -157,7 +189,7 @@ if (existsSync(indexHtml)) {
   console.log('[ApoorvaSetu AI Backend] dist/ not found - serving API only.');
 }
 
-app.use((error: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (error?.type === 'entity.too.large' || error?.status === 413) {
     res.status(413).json({ error: 'PAYLOAD_TOO_LARGE', text: 'Request body is too large.' });
     return;
@@ -166,8 +198,7 @@ app.use((error: any, _req: express.Request, res: express.Response, _next: expres
     res.status(400).json({ error: 'INVALID_JSON', text: 'Request body must be valid JSON.' });
     return;
   }
-  console.error('Unhandled server error:', error);
-  res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', text: 'An internal server error occurred.' });
+  errorHandler(error, req, res, next);
 });
 
 app.listen(PORT, () => {

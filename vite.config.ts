@@ -111,7 +111,7 @@ async function handleChat(req: any, res: any, headers: Record<string, string>): 
     }
 
     const userRole =
-      callerResult.caller.mode === 'supabase'
+      callerResult.caller.mode !== 'demo'
         ? callerResult.caller.role
         : resolveDemoRole((parsed.value as { userRole?: unknown }).userRole);
 
@@ -193,6 +193,10 @@ function aiAssistantBackendPlugin(): Plugin {
 export default defineConfig({
   plugins: [react(), tailwindcss(), aiAssistantBackendPlugin()],
   server: {
-    port: 5173
+    port: 5173,
+    proxy: {
+      // The Express server owns auth and data routes in Postgres mode; the plugin keeps chat local.
+      '/api': 'http://localhost:3001'
+    }
   }
 });

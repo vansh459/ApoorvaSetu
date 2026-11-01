@@ -86,6 +86,8 @@ class AuthService {
   private systemConfig: SystemConfig = INITIAL_CONFIG;
   private rolePermissions: Record<UserRole, Permission[]> = { ...ROLE_DEFAULT_PERMISSIONS };
   private serverSessions: Map<string, ServerSessionRecord> = new Map();
+  private remoteMode = false;
+  private remoteUser: User | null = null;
 
   constructor() {
     this.initStorage();
@@ -347,11 +349,30 @@ class AuthService {
   }
 
   /**
+   * Accepts the identity resolved by the Postgres API. The server owns the
+   * session cookie and role permissions; the browser only mirrors them.
+   */
+  setRemoteUser(user: User | null): void {
+    this.remoteMode = true;
+    this.remoteUser = user;
+  }
+
+  isRemoteMode(): boolean {
+    return this.remoteMode;
+  }
+
+  /**
    * Authoritative server-side session validator.
    * Re-evaluates cryptographic token and re-fetches user directly from backend DB.
    * Never trusts client-supplied role or claims.
    */
   validateSession(): User | null {
+    if (this.remoteMode) {
+      const user = this.remoteUser;
+      if (!user || !user.isActive) return null;
+      return { ...user, permissions: [...user.permissions] };
+    }
+
     const token = getCookie(SESSION_COOKIE_NAME) || this.getStoredToken();
     if (!token) return null;
 
@@ -481,7 +502,9 @@ class AuthService {
     }
 
     // 1. Permission check
-    const userPermissions = this.rolePermissions[user.role] || [];
+    const userPermissions = this.remoteMode
+      ? user.permissions
+      : this.rolePermissions[user.role] || [];
     if (!userPermissions.includes(requiredPermission)) {
       this.addAuditLog({
         userId: user.id,
@@ -665,20 +688,22 @@ class AuthService {
   }
 
   addAuditLog(log: Omit<AuditLog, 'id' | 'timestamp' | 'ipAddress'>): AuditLog {
-    appendAudit(
-      {
-        action: log.action,
-        entityType: log.entityType,
-        entityId: log.entityId,
-        details: log.details,
-        previousState: log.previousState,
-        newState: log.newState,
-        eventType: log.eventType,
-        correlationId: log.correlationId,
-        source: log.source
-      },
-      { id: log.userId, name: log.userName, role: log.userRole }
-    );
+    if (!this.remoteMode) {
+      appendAudit(
+        {
+          action: log.action,
+          entityType: log.entityType,
+          entityId: log.entityId,
+          details: log.details,
+          previousState: log.previousState,
+          newState: log.newState,
+          eventType: log.eventType,
+          correlationId: log.correlationId,
+          source: log.source
+        },
+        { id: log.userId, name: log.userName, role: log.userRole }
+      );
+    }
 
     return {
       ...log,

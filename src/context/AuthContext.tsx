@@ -2,10 +2,13 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { User, UserRole, Permission } from '../types';
 import { authService } from '../services/authService';
 import { supabaseAuthService } from '../services/supabaseAuthService';
+import { postgresAuthService } from '../services/postgresAuthService';
 import { getDataMode } from '../services/repositories';
 import { hasPermission as checkPermission, hasAnyRole } from '../services/rbacService';
 
-const remoteAuthEnabled = getDataMode() === 'supabase';
+const supabaseAuthEnabled = getDataMode() === 'supabase';
+const postgresAuthEnabled = getDataMode() === 'postgres';
+const remoteAuthEnabled = supabaseAuthEnabled || postgresAuthEnabled;
 
 interface AuthContextType {
   user: User | null;
@@ -35,7 +38,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Authoritative session verification directly from server session registry & backend user store
   const verifySession = useCallback(() => {
-    if (remoteAuthEnabled) {
+    if (postgresAuthEnabled) {
+      void postgresAuthService
+        .getSessionUser()
+        .then(setUser)
+        .catch(() => setUser(null));
+      return null;
+    }
+    if (supabaseAuthEnabled) {
       void supabaseAuthService
         .getSessionUser()
         .then(setUser)
@@ -52,10 +62,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Supabase mode restores the Auth session asynchronously and tracks refreshes.
+  // Remote modes restore the session asynchronously; Supabase also tracks token refreshes.
   useEffect(() => {
     if (!remoteAuthEnabled) return;
     let active = true;
+
+    if (postgresAuthEnabled) {
+      postgresAuthService
+        .getSessionUser()
+        .then((remoteUser) => {
+          if (active) setUser(remoteUser);
+        })
+        .catch(() => {
+          if (active) setUser(null);
+        })
+        .finally(() => {
+          if (active) setIsLoading(false);
+        });
+
+      return () => {
+        active = false;
+      };
+    }
 
     supabaseAuthService
       .getSessionUser()
@@ -116,7 +144,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, rememberMe = false): Promise<User> => {
     setIsLoading(true);
     try {
-      if (remoteAuthEnabled) {
+      if (postgresAuthEnabled) {
+        const remoteUser = await postgresAuthService.signIn(email, password, rememberMe);
+        setUser(remoteUser);
+        return remoteUser;
+      }
+      if (supabaseAuthEnabled) {
         const remoteUser = await supabaseAuthService.signIn(email, password);
         setUser(remoteUser);
         return remoteUser;
@@ -130,7 +163,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    if (remoteAuthEnabled) {
+    if (postgresAuthEnabled) {
+      void postgresAuthService.signOut();
+    } else if (supabaseAuthEnabled) {
       void supabaseAuthService.signOut();
     } else {
       authService.logout();

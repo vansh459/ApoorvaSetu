@@ -6,7 +6,7 @@ import type {
   SlaTier,
   StageSla,
   UserRole
-} from '../types';
+} from '../types/index.ts';
 
 export type TransitionAction =
   | 'FORWARD'
