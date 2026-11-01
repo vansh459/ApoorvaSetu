@@ -4,9 +4,9 @@ import type {
   NotificationRule,
   StageSla,
   SystemConfig
-} from '../types';
-import { OPERATIONAL_STAGES, STAGE_META } from './stages';
-import type { WorkflowConfig } from './types';
+} from '../types/index.ts';
+import { OPERATIONAL_STAGES, STAGE_META } from './stages.ts';
+import type { WorkflowConfig } from './types.ts';
 
 export const DEFAULT_STAGE_SLAS: Record<ApplicationStage, StageSla> = Object.fromEntries(
   (Object.keys(STAGE_META) as ApplicationStage[]).map((stage) => [

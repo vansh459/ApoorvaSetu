@@ -201,8 +201,8 @@ function undertakingReport(
 
   const rows = [...undertakings]
     .sort((a, b) => {
-      const left = order[undertakingBucket(a, config, now)];
-      const right = order[undertakingBucket(b, config, now)];
+      const left = order[undertakingBucket(a, now)];
+      const right = order[undertakingBucket(b, now)];
       return left - right || (parseDate(a.dueDate)?.getTime() ?? 0) - (parseDate(b.dueDate)?.getTime() ?? 0);
     })
     .map((undertaking) => ({
@@ -213,7 +213,7 @@ function undertakingReport(
       conditionCode: undertaking.conditionCode,
       condition: undertaking.title,
       dueDate: undertaking.dueDate,
-      state: undertakingBucket(undertaking, config, now),
+      state: undertakingBucket(undertaking, now),
       escalationLevel: undertaking.escalationLevel,
       evidenceCount: undertaking.evidenceDocumentIds.length,
       verifiedBy: undertaking.verifiedBy ?? ''

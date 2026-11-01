@@ -340,7 +340,7 @@ export const InstitutionAdminDashboard: React.FC = () => {
               </p>
             ) : (
               myUndertakings.slice(0, 3).map((item) => {
-                const bucket = undertakingBucket(item, config, now);
+                const bucket = undertakingBucket(item, now);
                 return (
                   <div key={item.id} className="flex items-center justify-between gap-3 text-sm">
                     <div className="min-w-0">

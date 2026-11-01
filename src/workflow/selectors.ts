@@ -375,7 +375,7 @@ export function complianceSnapshot(
   now: Date = getNow()
 ): ComplianceSnapshot {
   return {
-    undertakings: summariseUndertakings(undertakings, config, now),
+    undertakings: summariseUndertakings(undertakings, now),
     documents: summariseDocuments(documents, config.documentWarningDays, now)
   };
 }

@@ -1,5 +1,5 @@
-import type { Application, ApplicationStage, RouteId, WorkflowRoute } from '../types';
-import { canonicalStage, isOperationalStage, STAGE_META } from './stages';
+import type { Application, ApplicationStage, RouteId, WorkflowRoute } from '../types/index.ts';
+import { canonicalStage, isOperationalStage, STAGE_META } from './stages.ts';
 
 export const WORKFLOW_ROUTES: WorkflowRoute[] = [
   {

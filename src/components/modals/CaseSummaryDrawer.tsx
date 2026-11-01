@@ -275,8 +275,8 @@ export const CaseSummaryDrawer: React.FC = () => {
                       {item.verifiedBy ? `, verified by ${item.verifiedBy}` : ''}
                     </p>
                   </div>
-                  <Badge tone={statusTone(undertakingBucket(item, config, now))}>
-                    {undertakingBucket(item, config, now)}
+                  <Badge tone={statusTone(undertakingBucket(item, now))}>
+                    {undertakingBucket(item, now)}
                   </Badge>
                 </li>
               ))}

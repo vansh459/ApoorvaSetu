@@ -14,13 +14,14 @@ import {
   validateChatBody,
   verifyCaller
 } from './authGuard.ts';
-import { errorHandler } from './http.ts';
+import { errorHandler, HttpError } from './http.ts';
 import { getPrisma, isDatabaseConfigured } from './db.ts';
 import { handleEvents } from './events.ts';
 import { requireSession } from './session.ts';
 import { authRouter } from './routes/auth.ts';
 import { adminRouter } from './routes/admin.ts';
 import { dataRouter } from './routes/data.ts';
+import { workflowRouter } from './routes/workflow.ts';
 
 dotenv.config();
 
@@ -160,6 +161,7 @@ app.get('/api/events', requireSession, (req, res) => {
 // Authenticated data and administration APIs. Mounted after the assistant routes so
 // the session guard only applies to these endpoints.
 app.use('/api', adminRouter);
+app.use('/api', workflowRouter);
 app.use('/api', dataRouter);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -208,7 +210,7 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
     res.status(413).json({ error: 'PAYLOAD_TOO_LARGE', text: 'Request body is too large.' });
     return;
   }
-  if (error?.type === 'entity.parse.failed' || error?.status === 400) {
+  if (!(error instanceof HttpError) && (error?.type === 'entity.parse.failed' || error?.status === 400)) {
     res.status(400).json({ error: 'INVALID_JSON', text: 'Request body must be valid JSON.' });
     return;
   }

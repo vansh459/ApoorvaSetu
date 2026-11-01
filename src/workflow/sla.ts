@@ -1,7 +1,7 @@
-import type { Application, DocumentItem, EVCVisit, SlaTier, Undertaking } from '../types';
-import type { WorkflowConfig } from './types';
-import { DEFAULT_WORKFLOW_CONFIG } from './config';
-import { canonicalStage, getStageMeta } from './stages';
+import type { Application, DocumentItem, EVCVisit, SlaTier, Undertaking } from '../types/index.ts';
+import type { WorkflowConfig } from './types.ts';
+import { DEFAULT_WORKFLOW_CONFIG } from './config.ts';
+import { canonicalStage, getStageMeta } from './stages.ts';
 import {
   computeDueDate,
   differenceInCalendarDays,
@@ -9,8 +9,8 @@ import {
   getNow,
   parseDate,
   toIsoDate
-} from '../utils/dates';
-import type { SlaInfo } from '../utils/dates';
+} from '../utils/dates.ts';
+import type { SlaInfo } from '../utils/dates.ts';
 
 export function stageWindow(
   stage: Application['stage'],
@@ -123,7 +123,6 @@ export function evcReportWindow(
 
 export function undertakingDueWindow(
   undertaking: Undertaking,
-  config: WorkflowConfig,
   now: Date = getNow()
 ): OverdueWindow {
   if (undertaking.status === 'Verified' || undertaking.status === 'Rejected') {

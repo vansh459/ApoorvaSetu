@@ -53,6 +53,7 @@ export interface VerifyResponse {
   ok: boolean;
   message?: string;
   entity?: Undertaking | DocumentItem | ComplianceRecord;
+  predecessor?: DocumentItem;
   audit?: AuditLog;
 }
 

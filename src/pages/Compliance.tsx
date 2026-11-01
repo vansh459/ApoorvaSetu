@@ -132,13 +132,13 @@ export const Compliance: React.FC = () => {
     [applications, user]
   );
 
-  const summary = summariseUndertakings(scopedUndertakings, config, now);
+  const summary = summariseUndertakings(scopedUndertakings, now);
 
   const rows: UndertakingRow[] = scopedUndertakings
     .map((item) => ({
       item,
-      bucket: undertakingBucket(item, config, now),
-      window: undertakingDueWindow(item, config, now)
+      bucket: undertakingBucket(item, now),
+      window: undertakingDueWindow(item, now)
     }))
     .sort(
       (a, b) =>
@@ -268,14 +268,14 @@ export const Compliance: React.FC = () => {
     if (submitUndertakingEvidence(dialog.undertaking.id, evidenceTitle)) closeDialog();
   };
 
-  const handleReject = (event: React.FormEvent) => {
+  const handleReject = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!dialog || dialog.mode !== 'reject') return;
     if (!rejectionReason.trim()) {
       setFormError('Record the reason for rejecting this evidence.');
       return;
     }
-    if (rejectUndertaking(dialog.undertaking.id, rejectionReason)) closeDialog();
+    if (await rejectUndertaking(dialog.undertaking.id, rejectionReason)) closeDialog();
   };
 
   const undertakingColumns: DataTableColumn<UndertakingRow>[] = [

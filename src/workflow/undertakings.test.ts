@@ -109,36 +109,32 @@ describe('undertaking planning', () => {
 describe('undertaking status buckets', () => {
   it('classifies overdue, submitted, pending, verified and rejected records', () => {
     expect(
-      undertakingBucket(makeUndertaking({ dueDate: dueIn(-5) }), DEFAULT_WORKFLOW_CONFIG, now)
+      undertakingBucket(makeUndertaking({ dueDate: dueIn(-5) }), now)
     ).toBe('Overdue');
     expect(
       undertakingBucket(
         makeUndertaking({ dueDate: dueIn(5), status: 'Submitted' }),
-        DEFAULT_WORKFLOW_CONFIG,
         now
       )
     ).toBe('Submitted');
     expect(
       undertakingBucket(
         makeUndertaking({ dueDate: dueIn(-5), status: 'Submitted' }),
-        DEFAULT_WORKFLOW_CONFIG,
         now
       )
     ).toBe('Submitted');
     expect(
-      undertakingBucket(makeUndertaking({ dueDate: dueIn(5) }), DEFAULT_WORKFLOW_CONFIG, now)
+      undertakingBucket(makeUndertaking({ dueDate: dueIn(5) }), now)
     ).toBe('Pending');
     expect(
       undertakingBucket(
         makeUndertaking({ dueDate: dueIn(-5), status: 'Verified' }),
-        DEFAULT_WORKFLOW_CONFIG,
         now
       )
     ).toBe('Verified');
     expect(
       undertakingBucket(
         makeUndertaking({ dueDate: dueIn(5), status: 'Rejected' }),
-        DEFAULT_WORKFLOW_CONFIG,
         now
       )
     ).toBe('Rejected');
@@ -148,7 +144,6 @@ describe('undertaking status buckets', () => {
     expect(
       undertakingBucket(
         makeUndertaking({ dueDate: dueIn(30), status: 'Overdue' }),
-        DEFAULT_WORKFLOW_CONFIG,
         now
       )
     ).toBe('Overdue');
@@ -164,7 +159,6 @@ describe('undertaking status buckets', () => {
         makeUndertaking({ id: 'UND-5', dueDate: dueIn(8), status: 'Rejected' }),
         makeUndertaking({ id: 'UND-6', dueDate: dueIn(20) })
       ],
-      DEFAULT_WORKFLOW_CONFIG,
       now
     );
 

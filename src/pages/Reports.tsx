@@ -108,7 +108,7 @@ export const Reports: React.FC = () => {
 
   const metrics = pipelineMetrics(apps, config, now);
   const visitSummary = evcQueueSummary(visits, config, now);
-  const undertakingSummary = summariseUndertakings(appUndertakings, config, now);
+  const undertakingSummary = summariseUndertakings(appUndertakings, now);
   const documentSummary = summariseDocuments(appDocuments, config.documentWarningDays, now);
 
   const selectedDefinition =

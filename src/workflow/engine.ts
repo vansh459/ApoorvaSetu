@@ -6,11 +6,11 @@ import type {
   Deficiency,
   ReturnRecord,
   UserRole
-} from '../types';
-import { getReasonCode } from './codes';
-import { getApplicationStagePath, isEarlierStage, routeForApplication, routeRequiresStage } from './routes';
-import { canonicalStage, getStageMeta, OPERATIONAL_STAGES } from './stages';
-import { PENDING_UNDERTAKING_STATUSES } from './undertakings';
+} from '../types/index.ts';
+import { getReasonCode } from './codes.ts';
+import { getApplicationStagePath, isEarlierStage, routeForApplication, routeRequiresStage } from './routes.ts';
+import { canonicalStage, getStageMeta, OPERATIONAL_STAGES } from './stages.ts';
+import { PENDING_UNDERTAKING_STATUSES } from './undertakings.ts';
 import type {
   ActorRef,
   AuditDraft,
@@ -19,8 +19,8 @@ import type {
   TransitionRequest,
   TransitionResult,
   WorkflowContext
-} from './types';
-import { computeDueDate, formatDisplayDate, getNow, parseDate, toIsoDate } from '../utils/dates';
+} from './types.ts';
+import { computeDueDate, formatDisplayDate, getNow, parseDate, toIsoDate } from '../utils/dates.ts';
 
 const FORWARD_ROLES: UserRole[] = ['SUPER_ADMIN', 'AICTE_ADMIN', 'REGIONAL_OFFICER'];
 const AUTHORITY_ROLES: UserRole[] = ['SUPER_ADMIN', 'AICTE_ADMIN'];
@@ -46,7 +46,7 @@ function isTerminal(app: Application): boolean {
   return app.status === 'Approved' || app.status === 'Rejected';
 }
 
-function dueFor(app: Application, stage: ApplicationStage, ctx: WorkflowContext, startIso: string): string {
+function dueFor(stage: ApplicationStage, ctx: WorkflowContext, startIso: string): string {
   const sla = ctx.config.stageSlas[stage]?.days ?? getStageMeta(stage).slaDays;
   return computeDueDate(startIso, sla, ctx.config.businessDaysOnly);
 }
@@ -303,7 +303,6 @@ export function applyTransition(
   const corr = correlationId();
   const currentStage = canonicalStage(app.stage);
   const path = getApplicationStagePath(app);
-  const stageSla = ctx.config.stageSlas[currentStage];
 
   let updated: Application = { ...app };
   let eventType: DomainEventType = 'application.forwarded';
@@ -313,7 +312,7 @@ export function applyTransition(
     const currentIndex = path.indexOf(currentStage);
     const nextStage = request.toStage ? canonicalStage(request.toStage) : path[currentIndex + 1];
     const stageStart = isoNow;
-    const dueAt = dueFor(app, nextStage, ctx, stageStart);
+    const dueAt = dueFor(nextStage, ctx, stageStart);
 
     updated = {
       ...app,
@@ -377,7 +376,7 @@ export function applyTransition(
       returns[lastReturnIndex] = { ...returns[lastReturnIndex], resubmittedAt: resolvedAt };
     }
     const stageStart = isoNow;
-    const dueAt = dueFor(app, currentStage, ctx, stageStart);
+    const dueAt = dueFor(currentStage, ctx, stageStart);
 
     updated = {
       ...app,
@@ -412,7 +411,7 @@ export function applyTransition(
   if (request.action === 'REVERT') {
     const target = canonicalStage(request.toStage!);
     const stageStart = isoNow;
-    const dueAt = dueFor(app, target, ctx, stageStart);
+    const dueAt = dueFor(target, ctx, stageStart);
     const returnRecord: ReturnRecord = {
       fromStage: currentStage,
       toStage: target,
@@ -536,7 +535,7 @@ export function normalizeApplication(app: Application, now: Date = getNow()): Ap
       return {
         ...existing,
         stage: pathStage,
-        enteredAt: existing.enteredAt ?? parseEventDate(existing, now),
+        enteredAt: existing.enteredAt ?? parseEventDate(existing),
         dueAt: existing.dueAt ?? (pathStage === stage ? stageDueAt : undefined)
       };
     }
@@ -561,7 +560,7 @@ export function normalizeApplication(app: Application, now: Date = getNow()): Ap
   };
 }
 
-function parseEventDate(event: ApplicationTimelineEvent, now: Date): string | undefined {
+function parseEventDate(event: ApplicationTimelineEvent): string | undefined {
   const date = parseDate(event.date);
   return date ? toIsoDate(date) : undefined;
 }

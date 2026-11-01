@@ -5,6 +5,7 @@ import {
   parseComplianceRecord,
   parseDocumentItem,
   parseNotification,
+  parseTransition,
   parseUndertaking
 } from './payload.ts';
 
@@ -120,5 +121,34 @@ describe('request payload parsers', () => {
     });
     expect(notification.read).toBe(false);
     expect(notification.targetRole).toBeUndefined();
+  });
+
+  it('parses transitions without trusting client actor fields', () => {
+    const draft = parseTransition({
+      action: 'APPROVE',
+      reasonCode: 'APPROVED_FINAL',
+      note: 'Approved after scrutiny.',
+      expectedVersion: 4,
+      actor: { id: 'USR-FORGED', name: 'Forged Authority', role: 'SUPER_ADMIN' },
+      competentAuthority: 'Forged Authority'
+    });
+    expect(draft).toEqual({
+      action: 'APPROVE',
+      toStage: undefined,
+      reasonCode: 'APPROVED_FINAL',
+      note: 'Approved after scrutiny.',
+      expectedVersion: 4,
+      overrideUndertaking: undefined
+    });
+    expect('actor' in draft).toBe(false);
+    expect('competentAuthority' in draft).toBe(false);
+  });
+
+  it('rejects unknown transition actions and stages', () => {
+    expectRejected(() => parseTransition({ action: 'DELETE' }), 'INVALID_BODY');
+    expectRejected(
+      () => parseTransition({ action: 'FORWARD', toStage: 'Imaginary Stage' }),
+      'INVALID_BODY'
+    );
   });
 });

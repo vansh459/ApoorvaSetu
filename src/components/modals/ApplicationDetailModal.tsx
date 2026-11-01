@@ -31,6 +31,7 @@ export const ApplicationDetailModal: React.FC = () => {
   const [pendingAction, setPendingAction] = useState<'RETURN' | 'REJECT' | null>(null);
   const [reasonCode, setReasonCode] = useState('');
   const [note, setNote] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const app = selectedApplication;
   const stages = useMemo(() => (app ? getApplicationStagePath(app) : []), [app]);
@@ -77,16 +78,25 @@ export const ApplicationDetailModal: React.FC = () => {
     setNote('');
   };
 
-  const submitAction = () => {
+  const runTransition = async (request: Parameters<typeof transitionApplication>[1]) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const result = await transitionApplication(app.id, request);
+    setIsSubmitting(false);
+    if (result.ok) {
+      resetActionForm();
+      setActiveModal(null);
+    }
+  };
+
+  const submitAction = async () => {
     if (!pendingAction || !reasonCode || !note.trim()) return;
-    transitionApplication(app.id, {
+    await runTransition({
       action: pendingAction,
       reasonCode,
       note: note.trim(),
       expectedVersion: app.version
     });
-    resetActionForm();
-    setActiveModal(null);
   };
 
   const closeModal = () => {
@@ -141,15 +151,14 @@ export const ApplicationDetailModal: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2">
                 {resubmitCheck.code !== 'FORBIDDEN' ? (
                   <Button
-                    disabled={!resubmitCheck.ok}
+                    disabled={isSubmitting || !resubmitCheck.ok}
                     title={resubmitCheck.ok ? undefined : resubmitCheck.message}
                     onClick={() => {
-                      transitionApplication(app.id, {
+                      void runTransition({
                         action: 'RESUBMIT',
                         note: 'Corrections resubmitted by the institution.',
                         expectedVersion: app.version
                       });
-                      setActiveModal(null);
                     }}
                     icon={<Undo2 className="h-4 w-4" strokeWidth={1.75} />}
                   >
@@ -203,10 +212,10 @@ export const ApplicationDetailModal: React.FC = () => {
                 </Button>
                 <Button
                   variant={pendingAction === 'RETURN' ? 'primary' : 'danger'}
-                  disabled={!reasonCode || !note.trim()}
+                  disabled={isSubmitting || !reasonCode || !note.trim()}
                   onClick={submitAction}
                 >
-                  {pendingAction === 'RETURN' ? 'Confirm return' : 'Confirm rejection'}
+                  {isSubmitting ? 'Recording…' : pendingAction === 'RETURN' ? 'Confirm return' : 'Confirm rejection'}
                 </Button>
               </div>
             </div>
@@ -214,11 +223,10 @@ export const ApplicationDetailModal: React.FC = () => {
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {showForward && (
                 <Button
-                  disabled={!forwardCheck.ok}
+                  disabled={isSubmitting || !forwardCheck.ok}
                   title={forwardCheck.ok ? undefined : forwardCheck.message}
                   onClick={() => {
-                    transitionApplication(app.id, { action: 'FORWARD', expectedVersion: app.version });
-                    setActiveModal(null);
+                    void runTransition({ action: 'FORWARD', expectedVersion: app.version });
                   }}
                 >
                   Advance stage
@@ -237,16 +245,15 @@ export const ApplicationDetailModal: React.FC = () => {
 
               {showApprove && (
                 <Button
-                  disabled={!approveCheck.ok}
+                  disabled={isSubmitting || !approveCheck.ok}
                   title={approveCheck.ok ? undefined : approveCheck.message}
                   onClick={() => {
-                    transitionApplication(app.id, {
+                    void runTransition({
                       action: 'APPROVE',
                       reasonCode: 'APPROVED_FINAL',
                       note: 'Final approval granted by the AICTE Competent Authority.',
                       expectedVersion: app.version
                     });
-                    setActiveModal(null);
                   }}
                   icon={<Check className="h-4 w-4" strokeWidth={1.75} />}
                 >

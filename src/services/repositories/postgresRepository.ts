@@ -10,7 +10,7 @@ import type {
   SystemConfig,
   Undertaking
 } from '../../types';
-import type { TransitionRequest } from '../../workflow/types';
+import type { TransitionDenialCode, TransitionRequest } from '../../workflow/types';
 import type {
   Repository,
   RepositorySnapshot,
@@ -285,7 +285,11 @@ class PostgresRepository implements Repository {
       );
     } catch (error) {
       if (error instanceof ApiError) {
-        return { ok: false, message: error.message };
+        return {
+          ok: false,
+          code: error.code as TransitionDenialCode,
+          message: error.message
+        };
       }
       return { ok: false, message: 'Could not reach the server.' };
     }

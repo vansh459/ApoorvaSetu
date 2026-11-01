@@ -1,8 +1,8 @@
-import type { Application, RouteId, Undertaking } from '../types';
-import type { WorkflowConfig } from './types';
-import { routeForApplication } from './routes';
-import { undertakingDueWindow } from './sla';
-import { computeDueDate, getNow, toIsoDate } from '../utils/dates';
+import type { Application, RouteId, Undertaking } from '../types/index.ts';
+import type { WorkflowConfig } from './types.ts';
+import { routeForApplication } from './routes.ts';
+import { undertakingDueWindow } from './sla.ts';
+import { computeDueDate, getNow, toIsoDate } from '../utils/dates.ts';
 
 export type UndertakingBucket = 'Pending' | 'Submitted' | 'Overdue' | 'Verified' | 'Rejected';
 
@@ -122,14 +122,13 @@ export function planUndertakingsForApproval(
 
 export function undertakingBucket(
   undertaking: Undertaking,
-  config: WorkflowConfig,
   now: Date = getNow()
 ): UndertakingBucket {
   if (undertaking.status === 'Verified') return 'Verified';
   if (undertaking.status === 'Rejected') return 'Rejected';
   if (undertaking.status === 'Overdue' || undertaking.status === 'Escalated') return 'Overdue';
   if (undertaking.status === 'Submitted') return 'Submitted';
-  const window = undertakingDueWindow(undertaking, config, now);
+  const window = undertakingDueWindow(undertaking, now);
   if (window.daysOverdue > 0) return 'Overdue';
   return 'Pending';
 }
@@ -150,7 +149,6 @@ export interface UndertakingSummary {
 
 export function summariseUndertakings(
   undertakings: Undertaking[],
-  config: WorkflowConfig,
   now: Date = getNow()
 ): UndertakingSummary {
   const summary: UndertakingSummary = {
@@ -164,7 +162,7 @@ export function summariseUndertakings(
   };
 
   undertakings.forEach((undertaking) => {
-    const bucket = undertakingBucket(undertaking, config, now);
+    const bucket = undertakingBucket(undertaking, now);
     if (bucket === 'Verified') summary.verified += 1;
     else if (bucket === 'Rejected') summary.rejected += 1;
     else {

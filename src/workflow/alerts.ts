@@ -197,7 +197,7 @@ function undertakingCandidates(
   const warningWindow = Math.max(0, ...config.undertakingWarningDays);
   return undertakings.flatMap((item) => {
     if (item.status === 'Verified' || item.status === 'Rejected') return [];
-    const window = undertakingDueWindow(item, config, now);
+    const window = undertakingDueWindow(item, now);
     if (window.daysOverdue === 0 && window.daysRemaining > warningWindow) return [];
     const tier = window.daysOverdue > 0 ? 'Overdue' : window.daysRemaining === 0 ? 'Due Today' : 'Approaching';
     return [

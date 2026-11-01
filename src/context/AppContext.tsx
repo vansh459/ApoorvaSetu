@@ -113,7 +113,10 @@ interface AppContextType {
   setActiveModal: (modal: 'schedule-evc' | 'track-app' | 'upload-compliance' | 'app-detail' | 'inst-detail' | 'generate-report' | 'case-summary' | null) => void;
   
   // Actions
-  transitionApplication: (appId: string, request: Omit<TransitionRequest, 'actor'>) => TransitionResult;
+  transitionApplication: (
+    appId: string,
+    request: Omit<TransitionRequest, 'actor'>
+  ) => Promise<TransitionResult>;
   checkTransition: (appId: string, request: Omit<TransitionRequest, 'actor'>) => TransitionResult;
   updateApplicationStage: (appId: string, newStage: ApplicationStage, status?: ApplicationStatus, note?: string) => void;
   advanceApplication: (appId: string) => void;
@@ -141,7 +144,7 @@ interface AppContextType {
   removeVisitEvidence: (visitId: string, title: string) => void;
   
   uploadCompliance: (record: Omit<ComplianceRecord, 'id'>) => void;
-  verifyCompliance: (id: string) => void;
+  verifyCompliance: (id: string) => Promise<void>;
   createUndertaking: (input: {
     applicationId: string;
     conditionCode: string;
@@ -149,8 +152,8 @@ interface AppContextType {
     note?: string;
   }) => boolean;
   submitUndertakingEvidence: (id: string, evidenceTitle: string) => boolean;
-  verifyUndertaking: (id: string) => boolean;
-  rejectUndertaking: (id: string, reason: string) => boolean;
+  verifyUndertaking: (id: string) => Promise<boolean>;
+  rejectUndertaking: (id: string, reason: string) => Promise<boolean>;
   
   uploadDocument: (doc: Omit<DocumentItem, 'id'>) => boolean;
   requestDocumentRenewal: (id: string) => boolean;
@@ -164,7 +167,7 @@ interface AppContextType {
       note?: string;
     }
   ) => boolean;
-  verifyDocument: (id: string) => boolean;
+  verifyDocument: (id: string) => Promise<boolean>;
   rejectDocument: (id: string, reason: string) => boolean;
   
   markNotificationAsRead: (id: string) => void;
@@ -551,43 +554,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const transitionApplication = (
+  const finalizeTransition = (
     appId: string,
-    request: Omit<TransitionRequest, 'actor'>
-  ): TransitionResult => {
-    const app = applications.find((item) => item.id === appId);
-    if (!app) {
-      showToast('Application not found.', 'error');
-      return { ok: false, code: 'NOT_FOUND', message: 'Application not found.', events: [], audit: [] };
-    }
-
-    const result = applyTransition(
-      app,
-      { ...request, actor: getActor() },
-      buildWorkflowContext(app)
-    );
-
-    if (!result.ok || !result.app) {
-      if (result.code === 'VERSION_CONFLICT') {
-        if (repository.isRemote) {
-          setRemoteRevision((value) => value + 1);
-        } else {
-          setApplications(
-            readLocal<Application[]>('applications', []).map((item) => normalizeApplication(item))
-          );
-        }
-      }
-      showToast(result.message || 'This action is not permitted.', 'error');
-      return result;
-    }
-
-    const updated = result.app;
-    setApplications((prev) => prev.map((item) => (item.id === appId ? updated : item)));
-    setSelectedApplication((prev) => (prev?.id === appId ? updated : prev));
-    repository.upsertApplication(updated);
-    result.audit.forEach(recordAudit);
-    dispatchNotifications(result.events, updated);
-
+    request: Omit<TransitionRequest, 'actor'>,
+    updated: Application
+  ) => {
     if (
       request.action === 'FORWARD' &&
       canonicalStage(updated.stage) === 'Approval (Subject to Undertaking)' &&
@@ -635,7 +606,74 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       APPROVE: `Application ${appId} granted final approval.`,
       REJECT: `Application ${appId} rejected with recorded reasons.`
     };
-    showToast(messages[request.action] ?? 'Application updated.', request.action === 'RETURN' ? 'warning' : 'success');
+    showToast(
+      messages[request.action] ?? 'Application updated.',
+      request.action === 'RETURN' ? 'warning' : 'success'
+    );
+  };
+
+  const transitionApplication = async (
+    appId: string,
+    request: Omit<TransitionRequest, 'actor'>
+  ): Promise<TransitionResult> => {
+    const app = applications.find((item) => item.id === appId);
+    if (!app) {
+      showToast('Application not found.', 'error');
+      return { ok: false, code: 'NOT_FOUND', message: 'Application not found.', events: [], audit: [] };
+    }
+
+    if (repository.isRemote && repository.transitionApplication) {
+      const response = await repository.transitionApplication(appId, request);
+      if (!response.ok || !response.application) {
+        if (response.code === 'VERSION_CONFLICT') {
+          setRemoteRevision((value) => value + 1);
+        }
+        showToast(response.message || 'This action is not permitted.', 'error');
+        return {
+          ok: false,
+          code: response.code,
+          message: response.message,
+          events: [],
+          audit: []
+        };
+      }
+
+      const updated = response.application;
+      const events = response.events ?? [];
+      setApplications((prev) => prev.map((item) => (item.id === appId ? updated : item)));
+      setSelectedApplication((prev) => (prev?.id === appId ? updated : prev));
+      dispatchNotifications(events, updated);
+      finalizeTransition(appId, request, updated);
+      return { ok: true, app: updated, events, audit: [] };
+    }
+
+    const result = applyTransition(
+      app,
+      { ...request, actor: getActor() },
+      buildWorkflowContext(app)
+    );
+
+    if (!result.ok || !result.app) {
+      if (result.code === 'VERSION_CONFLICT') {
+        if (repository.isRemote) {
+          setRemoteRevision((value) => value + 1);
+        } else {
+          setApplications(
+            readLocal<Application[]>('applications', []).map((item) => normalizeApplication(item))
+          );
+        }
+      }
+      showToast(result.message || 'This action is not permitted.', 'error');
+      return result;
+    }
+
+    const updated = result.app;
+    setApplications((prev) => prev.map((item) => (item.id === appId ? updated : item)));
+    setSelectedApplication((prev) => (prev?.id === appId ? updated : prev));
+    repository.upsertApplication(updated);
+    result.audit.forEach(recordAudit);
+    dispatchNotifications(result.events, updated);
+    finalizeTransition(appId, request, updated);
     return result;
   };
 
@@ -645,16 +683,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     _newStatus: ApplicationStatus = 'In Progress',
     note?: string
   ) => {
-    transitionApplication(appId, { action: 'FORWARD', toStage: newStage, note });
+    void transitionApplication(appId, { action: 'FORWARD', toStage: newStage, note });
   };
 
   const advanceApplication = (appId: string) => {
     const app = applications.find((item) => item.id === appId);
-    transitionApplication(appId, { action: 'FORWARD', expectedVersion: app?.version });
+    void transitionApplication(appId, { action: 'FORWARD', expectedVersion: app?.version });
   };
 
   const returnApplication = (appId: string, reason: string, reasonCode = 'OTHER') => {
-    transitionApplication(appId, { action: 'RETURN', reasonCode, note: reason });
+    void transitionApplication(appId, { action: 'RETURN', reasonCode, note: reason });
   };
 
   const approveApplication = (appId: string) => {
@@ -668,7 +706,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const rejectApplication = (appId: string, reason: string, reasonCode = 'OTHER') => {
-    transitionApplication(appId, { action: 'REJECT', reasonCode, note: reason });
+    void transitionApplication(appId, { action: 'REJECT', reasonCode, note: reason });
   };
 
   const addNewApplication = (appData: Partial<Application>) => {
@@ -1190,7 +1228,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Compliance submission uploaded for ${recordData.instituteName}`, 'success');
   };
 
-  const verifyCompliance = (id: string) => {
+  const verifyCompliance = async (id: string) => {
     const record = complianceRecords.find((item) => item.id === id);
     if (!record) return;
     const authCheck = authService.authorizeAction('compliance.verify', {
@@ -1202,6 +1240,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
     const actor = getActor();
+
+    if (repository.isRemote && repository.verifyEntity) {
+      const response = await repository.verifyEntity('compliance', id);
+      if (!response.ok || !response.entity) {
+        showToast(response.message || 'Could not verify this compliance record.', 'error');
+        return;
+      }
+      const updated = response.entity as ComplianceRecord;
+      setComplianceRecords((prev) => prev.map((item) => (item.id === id ? updated : item)));
+      const verifiedEvent = buildDomainEvent('compliance.verified', 'Undertaking', id, {
+        detail: `${record.title} verified by ${actor.name}.`
+      });
+      dispatchNotifications(
+        [verifiedEvent],
+        applications.find((app) => app.instituteId === record.instituteId) ?? null
+      );
+      showToast(`Compliance record ${id} marked as Verified!`, 'success');
+      return;
+    }
+
     const updated: ComplianceRecord = {
       ...record,
       status: 'Verified',
@@ -1366,7 +1424,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const verifyUndertaking: AppContextType['verifyUndertaking'] = (id) => {
+  const verifyUndertaking: AppContextType['verifyUndertaking'] = async (id) => {
     const item = undertakings.find((entry) => entry.id === id);
     if (!item) {
       showToast('Undertaking not found.', 'error');
@@ -1386,6 +1444,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const actor = getActor();
+
+    if (repository.isRemote && repository.verifyEntity) {
+      const response = await repository.verifyEntity('undertaking', id);
+      if (!response.ok || !response.entity) {
+        showToast(response.message || 'Could not verify this undertaking.', 'error');
+        return false;
+      }
+      const verified = response.entity as Undertaking;
+      setUndertakings((prev) => prev.map((entry) => (entry.id === id ? verified : entry)));
+      const verifiedEvent = buildDomainEvent('undertaking.verified', 'Undertaking', id, {
+        detail: `${item.title} verified by ${actor.name} for ${item.applicationId}.`,
+        applicationId: item.applicationId,
+        instituteId: item.instituteId,
+        region: item.region
+      });
+      dispatchNotifications(
+        [verifiedEvent],
+        applications.find((entry) => entry.id === item.applicationId) ?? null
+      );
+      showToast(`${item.title} verified. Pending conditions updated.`, 'success');
+      return true;
+    }
+
     const updated: Undertaking = {
       ...item,
       status: 'Verified',
@@ -1421,7 +1502,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const rejectUndertaking: AppContextType['rejectUndertaking'] = (id, reason) => {
+  const rejectUndertaking: AppContextType['rejectUndertaking'] = async (id, reason) => {
     const item = undertakings.find((entry) => entry.id === id);
     if (!item) {
       showToast('Undertaking not found.', 'error');
@@ -1445,6 +1526,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const actor = getActor();
+
+    if (repository.isRemote && repository.verifyEntity) {
+      const response = await repository.verifyEntity('undertaking', id, {
+        outcome: 'reject',
+        reason: reason.trim()
+      });
+      if (!response.ok || !response.entity) {
+        showToast(response.message || 'Could not reject this undertaking.', 'error');
+        return false;
+      }
+      const rejected = response.entity as Undertaking;
+      setUndertakings((prev) => prev.map((entry) => (entry.id === id ? rejected : entry)));
+      const rejectedEvent = buildDomainEvent('undertaking.rejected', 'Undertaking', id, {
+        detail: `${item.title} evidence rejected by ${actor.name}: ${reason.trim()}`,
+        applicationId: item.applicationId,
+        instituteId: item.instituteId,
+        region: item.region
+      });
+      dispatchNotifications(
+        [rejectedEvent],
+        applications.find((entry) => entry.id === item.applicationId) ?? null
+      );
+      showToast(`${item.title} evidence rejected; the institution has been notified.`, 'warning');
+      return true;
+    }
+
     const updated: Undertaking = {
       ...item,
       status: 'Rejected',
@@ -1678,7 +1785,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const verifyDocument: AppContextType['verifyDocument'] = (id) => {
+  const verifyDocument: AppContextType['verifyDocument'] = async (id) => {
     const item = documents.find((document) => document.id === id);
     if (!item) {
       showToast('Document not found.', 'error');
@@ -1699,6 +1806,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const actor = getActor();
+
+    if (repository.isRemote && repository.verifyEntity) {
+      const response = await repository.verifyEntity('document', id);
+      if (!response.ok || !response.entity) {
+        showToast(response.message || 'Could not verify this document.', 'error');
+        return false;
+      }
+      const verified = response.entity as DocumentItem;
+      const predecessor = response.predecessor;
+      setDocuments((prev) =>
+        prev.map((document) => {
+          if (document.id === verified.id) return verified;
+          if (predecessor && document.id === predecessor.id) return predecessor;
+          return document;
+        })
+      );
+      const isRenewal = Boolean(predecessor);
+      const verifiedEvent = buildDomainEvent(
+        isRenewal ? 'document.renewal_verified' : 'document.verified',
+        'Document',
+        id,
+        {
+          detail: isRenewal
+            ? `${verified.title} verified by ${actor.name}; ${predecessor?.title} superseded.`
+            : `${verified.title} verified by ${actor.name} for ${verified.instituteName}.`,
+          instituteId: verified.instituteId,
+          region: verified.region,
+          supersededId: predecessor?.id
+        }
+      );
+      dispatchNotifications(
+        [verifiedEvent],
+        applications.find((app) => app.instituteId === item.instituteId) ?? null
+      );
+      showToast(
+        isRenewal
+          ? 'Renewal verified; the previous document is superseded and its alert cleared.'
+          : 'Document verified.',
+        'success'
+      );
+      return true;
+    }
+
     const result = verifyDocumentInList(documents, id, actor.name);
     if (!result.verified) {
       showToast('Document not found.', 'error');

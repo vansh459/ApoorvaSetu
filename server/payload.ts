@@ -15,6 +15,7 @@ import type {
 } from '../src/types/index.ts';
 import { HttpError } from './http.ts';
 import { optionalString, requireString } from './validate.ts';
+import type { TransitionAction } from '../src/workflow/types.ts';
 
 type Body = Record<string, unknown>;
 
@@ -395,5 +396,34 @@ export function parseSystemConfig(body: Body): SystemConfig {
     documentWarningDays: optionalNumberList(body, 'documentWarningDays'),
     undertakingWarningDays: optionalNumberList(body, 'undertakingWarningDays'),
     businessDaysOnly: optionalBoolean(body, 'businessDaysOnly')
+  };
+}
+
+const TRANSITION_ACTIONS: TransitionAction[] = [
+  'FORWARD',
+  'RETURN',
+  'REVERT',
+  'APPROVE',
+  'REJECT',
+  'RESUBMIT'
+];
+
+export interface TransitionDraft {
+  action: TransitionAction;
+  toStage?: ApplicationStage;
+  reasonCode?: string;
+  note?: string;
+  expectedVersion?: number;
+  overrideUndertaking?: boolean;
+}
+
+export function parseTransition(body: Body): TransitionDraft {
+  return {
+    action: oneOf(body, 'action', TRANSITION_ACTIONS, false),
+    toStage: oneOf(body, 'toStage', STAGES, true),
+    reasonCode: optionalString(body.reasonCode, 'reasonCode', 60),
+    note: optionalString(body.note, 'note', 2000),
+    expectedVersion: optionalNumber(body, 'expectedVersion', 1, 1_000_000),
+    overrideUndertaking: optionalBoolean(body, 'overrideUndertaking')
   };
 }

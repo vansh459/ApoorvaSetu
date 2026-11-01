@@ -92,9 +92,9 @@ describe('SLA windows', () => {
       status: 'Pending',
       escalationLevel: 0
     };
-    expect(undertakingDueWindow(undertaking, DEFAULT_WORKFLOW_CONFIG, new Date(2026, 0, 15)).daysOverdue).toBe(5);
+    expect(undertakingDueWindow(undertaking, new Date(2026, 0, 15)).daysOverdue).toBe(5);
     expect(
-      undertakingDueWindow({ ...undertaking, status: 'Verified' }, DEFAULT_WORKFLOW_CONFIG, new Date(2026, 0, 15))
+      undertakingDueWindow({ ...undertaking, status: 'Verified' }, new Date(2026, 0, 15))
         .tier
     ).toBe('On Track');
   });

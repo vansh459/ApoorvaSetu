@@ -1,4 +1,4 @@
-import type { ApplicationStage, UserRole } from '../types';
+import type { ApplicationStage, UserRole } from '../types/index.ts';
 
 export interface StageMeta {
   id: ApplicationStage;
