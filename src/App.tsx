@@ -19,6 +19,9 @@ import { Documents } from './pages/Documents';
 import { RegionsOfficials } from './pages/RegionsOfficials';
 import { Reports } from './pages/Reports';
 import { Notifications } from './pages/Notifications';
+import { Pendency } from './pages/Pendency';
+import { AlertCenter } from './pages/AlertCenter';
+import { DemoScenarios } from './pages/DemoScenarios';
 
 // Super Admin exclusive pages
 import { UserManagement } from './pages/admin/UserManagement';
@@ -33,6 +36,7 @@ import { RegionalEscalations } from './pages/regional/RegionalEscalations';
 import { MyAssignedVisits } from './pages/evc/MyAssignedVisits';
 import { InspectionChecklist } from './pages/evc/InspectionChecklist';
 import { EvidenceUpload } from './pages/evc/EvidenceUpload';
+import { EVCQueue } from './pages/evc/EVCQueue';
 
 // Institution Admin exclusive pages
 import { InstitutionProfile } from './pages/institution/InstitutionProfile';
@@ -111,6 +115,16 @@ export function App() {
               />
 
               {/* EVC Committee Member Routes */}
+              <Route
+                path="/evc/queue"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={['SUPER_ADMIN', 'AICTE_ADMIN', 'REGIONAL_OFFICER', 'EVC_MEMBER']}
+                  >
+                    <EVCQueue />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/evc/my-visits"
                 element={
@@ -220,6 +234,16 @@ export function App() {
                 }
               />
               <Route
+                path="/pendency"
+                element={
+                  <ProtectedRoute
+                    allowedRoles={['SUPER_ADMIN', 'AICTE_ADMIN', 'REGIONAL_OFFICER']}
+                  >
+                    <Pendency />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/reports"
                 element={
                   <ProtectedRoute requiredPermission="reports.read">
@@ -227,7 +251,16 @@ export function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="/alerts" element={<AlertCenter />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route
+                path="/demo-scenarios"
+                element={
+                  <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'AICTE_ADMIN']}>
+                    <DemoScenarios />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Fallback redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -7,7 +7,9 @@ import {
   EVCVisit,
   ComplianceRecord,
   DocumentItem,
-  NotificationItem
+  NotificationItem,
+  SystemAlert,
+  Undertaking
 } from '../types';
 
 export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
@@ -204,13 +206,44 @@ export function filterEVCVisitsForUser(
   }
   if (user.role === 'EVC_MEMBER') {
     // EVC member sees visits where they are assigned or committee matches
-    return visits.filter((v) =>
-      (user.committeeName && v.assignedCommittee.toLowerCase().includes(user.committeeName.toLowerCase())) ||
-      v.committeeMembers.some((m) => m.toLowerCase().includes(user.name.toLowerCase())) ||
-      v.id === 'EVC-1' || v.id === 'EVC-2' // Default assigned sample
+    return visits.filter(
+      (v) =>
+        (user.committeeName &&
+          v.assignedCommittee.toLowerCase().includes(user.committeeName.toLowerCase())) ||
+        v.committeeMembers.some((m) => m.toLowerCase().includes(user.name.toLowerCase()))
     );
   }
   return [];
+}
+
+/**
+ * Strict data scoping: Filter system alerts.
+ * Alerts carry target roles plus the jurisdiction they were raised for.
+ */
+export function filterAlertsForUser(
+  alerts: SystemAlert[],
+  user: User | null | undefined
+): SystemAlert[] {
+  if (!user || !user.isActive) return [];
+  if (user.role === 'SUPER_ADMIN') return alerts;
+  return alerts.filter((alert) => {
+    if (alert.targetRoles && !alert.targetRoles.includes(user.role)) return false;
+    if (
+      (user.role === 'REGIONAL_OFFICER' || user.role === 'EVC_MEMBER') &&
+      alert.region &&
+      alert.region.toLowerCase() !== user.region?.toLowerCase()
+    ) {
+      return false;
+    }
+    if (
+      user.role === 'INSTITUTION_ADMIN' &&
+      alert.instituteId &&
+      alert.instituteId !== user.instituteId
+    ) {
+      return false;
+    }
+    return true;
+  });
 }
 
 /**
@@ -231,6 +264,28 @@ export function filterComplianceForUser(
   if (user.role === 'INSTITUTION_ADMIN') {
     if (!user.instituteId) return [];
     return records.filter((r) => r.instituteId === user.instituteId);
+  }
+  return [];
+}
+
+/**
+ * Strict data scoping: Filter time-bound undertakings.
+ */
+export function filterUndertakingsForUser(
+  undertakings: Undertaking[],
+  user: User | null | undefined
+): Undertaking[] {
+  if (!user) return [];
+  if (user.role === 'SUPER_ADMIN' || user.role === 'AICTE_ADMIN') {
+    return undertakings;
+  }
+  if (user.role === 'REGIONAL_OFFICER') {
+    if (!user.region) return [];
+    return undertakings.filter((u) => u.region.toLowerCase() === user.region!.toLowerCase());
+  }
+  if (user.role === 'INSTITUTION_ADMIN') {
+    if (!user.instituteId) return [];
+    return undertakings.filter((u) => u.instituteId === user.instituteId);
   }
   return [];
 }

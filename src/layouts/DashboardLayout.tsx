@@ -8,6 +8,7 @@ import { TrackApplicationModal } from '../components/modals/TrackApplicationModa
 import { UploadComplianceModal } from '../components/modals/UploadComplianceModal';
 import { ApplicationDetailModal } from '../components/modals/ApplicationDetailModal';
 import { GenerateReportModal } from '../components/modals/GenerateReportModal';
+import { CaseSummaryDrawer } from '../components/modals/CaseSummaryDrawer';
 import { AIHelpdeskAssistant } from '../components/assistant/AIHelpdeskAssistant';
 
 export const DashboardLayout: React.FC = () => {
@@ -46,6 +47,7 @@ export const DashboardLayout: React.FC = () => {
       <UploadComplianceModal />
       <ApplicationDetailModal />
       <GenerateReportModal />
+      <CaseSummaryDrawer />
 
       {/* Toast notifications */}
       <ToastContainer />

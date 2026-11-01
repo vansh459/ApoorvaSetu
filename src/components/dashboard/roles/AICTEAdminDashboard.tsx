@@ -14,51 +14,62 @@ import { UpcomingEVCList } from '../UpcomingEVCList';
 import { RecentApplicationsTable } from '../RecentApplicationsTable';
 import { ComplianceValidityWidget } from '../ComplianceValidityWidget';
 import { QuickActionsPanel } from '../QuickActionsPanel';
+import { useApp } from '../../../context/AppContext';
+import { useAuth } from '../../../context/AuthContext';
+import { filterApplicationsForUser } from '../../../services/rbacService';
+import { authService } from '../../../services/authService';
+import { resolveWorkflowConfig } from '../../../workflow/config';
+import { latestUpdated, pipelineMetrics } from '../../../workflow/selectors';
+import { formatDisplayDate, getNow } from '../../../utils/dates';
 
 export const AICTEAdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { applications } = useApp();
+  const { user } = useAuth();
+
+  const scoped = filterApplicationsForUser(applications, user);
+  const config = resolveWorkflowConfig(authService.getSystemConfig());
+  const metrics = pipelineMetrics(scoped, config, getNow());
+  const updated = latestUpdated(scoped);
 
   return (
     <div className="space-y-5">
-      {/* Clean Minimal Page Header */}
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight">
           Dashboard
         </h1>
 
-        {/* Subtle Last Updated Timestamp */}
         <div className="flex items-center space-x-1.5 text-xs text-slate-400">
           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          <span>Updated 30 Oct 2026, 11:24 AM</span>
+          <span>{updated ? `Updated ${formatDisplayDate(updated)}` : 'No activity recorded yet'}</span>
         </div>
       </div>
 
-      {/* Row 1: Top 4 Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Applications"
-          value="5,482"
-          trendText="↑ 12% vs last month"
-          trendColor="blue"
+          title="Total applications"
+          value={metrics.total.toLocaleString()}
+          trendText={`${metrics.breached} breached`}
+          trendColor="rose"
           icon={FileText}
           variant="blue"
           onClick={() => navigate('/applications')}
         />
 
         <StatCard
-          title="Pending at Current Stage"
-          value="2,134"
-          trendText="↓ 5% vs last month"
+          title="Pending at current stage"
+          value={metrics.pending.toLocaleString()}
+          trendText={`${metrics.approaching} approaching`}
           trendColor="amber"
           icon={Clock}
           variant="amber"
-          onClick={() => navigate('/applications?status=Pending')}
+          onClick={() => navigate('/applications')}
         />
 
         <StatCard
           title="Approved"
-          value="2,961"
-          trendText="↑ 18% vs last month"
+          value={metrics.approved.toLocaleString()}
+          trendText={`${metrics.rejected} rejected`}
           trendColor="green"
           icon={CheckCircle2}
           variant="green"
@@ -66,9 +77,9 @@ export const AICTEAdminDashboard: React.FC = () => {
         />
 
         <StatCard
-          title="Requiring Action"
-          value="387"
-          trendText="↑ 3% vs last month"
+          title="Requiring action"
+          value={metrics.actionRequired.toLocaleString()}
+          trendText={`${metrics.dueToday} due today`}
           trendColor="rose"
           icon={AlertTriangle}
           variant="rose"
@@ -76,7 +87,6 @@ export const AICTEAdminDashboard: React.FC = () => {
         />
       </div>
 
-      {/* Row 2: Stage Movement, Regional Donut, and Upcoming EVC Visits (all side-by-side) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5 items-stretch">
         <div className="flex flex-col min-w-0">
           <StageMovementChart />
@@ -91,7 +101,6 @@ export const AICTEAdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 3: Recent Applications Table, Compliance Validity, and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-stretch">
         <div className="lg:col-span-6 flex flex-col min-w-0">
           <RecentApplicationsTable />
@@ -108,4 +117,3 @@ export const AICTEAdminDashboard: React.FC = () => {
     </div>
   );
 };
-

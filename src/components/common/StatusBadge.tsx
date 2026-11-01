@@ -16,13 +16,15 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   if (
     normalized === 'in progress' ||
     normalized === 'scrutiny' ||
-    normalized === 'evc scheduled'
+    normalized === 'evc scheduled' ||
+    normalized === 'submitted'
   ) {
     colorClasses = 'bg-[#e0edff] text-[#1d4ed8]';
   } else if (
     normalized === 'pending' ||
     normalized === 'pending review' ||
-    normalized === 'undertaking pending'
+    normalized === 'undertaking pending' ||
+    normalized === 'due today'
   ) {
     colorClasses = 'bg-[#fef3c7] text-[#b45309]';
   } else if (
@@ -30,7 +32,9 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     normalized === 'critical' ||
     normalized === 'expired' ||
     normalized === 'notice issued' ||
-    normalized === 'rejected'
+    normalized === 'rejected' ||
+    normalized === 'overdue' ||
+    normalized === 'escalated'
   ) {
     colorClasses = 'bg-[#fee2e2] text-[#b91c1c]';
   } else if (

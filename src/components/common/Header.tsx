@@ -18,6 +18,8 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { filterNotificationsForUser } from '../../services/rbacService';
+import { getDataMode } from '../../services/repositories';
+import { DEMO_CLOCK_PRESETS } from '../../data/seedScenarios';
 import { UserRole } from '../../types';
 
 interface HeaderProps {
@@ -36,8 +38,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
     setSelectedApplication,
     setActiveModal,
     resetToInitialData,
-    markAllNotificationsAsRead
+    markAllNotificationsAsRead,
+    demoClockOffsetDays,
+    setDemoClockOffset
   } = useApp();
+
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'AICTE_ADMIN';
+  const isDemo = getDataMode() === 'demo';
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -300,9 +307,17 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
 
         {/* User Profile Popover */}
         <div ref={profileRef} className="relative">
-          <div
+          <button
+            type="button"
+            aria-expanded={isProfileOpen}
+            aria-label="Account menu"
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center space-x-2.5 cursor-pointer p-1 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all duration-150"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && isProfileOpen) {
+                setIsProfileOpen(false);
+              }
+            }}
+            className="flex items-center space-x-2.5 cursor-pointer p-1 rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {/* Avatar Pill circle */}
             <div className="w-9 h-9 rounded-full bg-[#1e40af] text-white flex items-center justify-center font-bold text-xs shadow-xs tracking-wider transition-transform duration-150 hover:scale-105">
@@ -318,7 +333,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
                 {user?.roleTitle || 'AICTE Official'}
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Profile Dropdown Menu */}
           {isProfileOpen && (
@@ -373,16 +388,62 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
               </div>
 
               <div className="py-1">
-                <button
-                  onClick={() => {
-                    resetToInitialData();
-                    setIsProfileOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-xs text-amber-700 hover:bg-amber-50 flex items-center space-x-2 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Reset Demo Data</span>
-                </button>
+                {isAdmin && isDemo && (
+                  <div className="px-4 py-2.5 border-b border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold text-slate-500">Demo clock</span>
+                      <span className="text-[10px] font-mono text-slate-500">
+                        {demoClockOffsetDays === 0 ? 'today' : `+${demoClockOffsetDays}d`}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 grid grid-cols-4 gap-1 rounded-lg bg-slate-100 p-1">
+                      {DEMO_CLOCK_PRESETS.map((preset) => {
+                        const active = preset.days === demoClockOffsetDays;
+                        return (
+                          <button
+                            key={preset.days}
+                            type="button"
+                            aria-pressed={active}
+                            title={preset.hint}
+                            onClick={() => setDemoClockOffset(preset.days)}
+                            className={`px-1 py-1 rounded-md text-[10px] font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+                              active
+                                ? 'bg-white text-slate-900 shadow-2xs'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate('/demo-scenarios');
+                        setIsProfileOpen(false);
+                      }}
+                      className="mt-2 w-full text-left text-[11px] font-semibold text-blue-600 hover:text-blue-800 inline-flex items-center gap-1 cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    >
+                      <Compass className="w-3.5 h-3.5" />
+                      Scenario guide
+                    </button>
+                  </div>
+                )}
+
+                {isAdmin && isDemo && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetToInitialData();
+                      setIsProfileOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs text-amber-700 hover:bg-amber-50 flex items-center space-x-2 cursor-pointer focus-visible:outline-none focus-visible:bg-amber-50"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Reset Demo Data</span>
+                  </button>
+                )}
 
                 <button
                   onClick={handleLogout}

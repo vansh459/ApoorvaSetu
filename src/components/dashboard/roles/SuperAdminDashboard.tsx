@@ -8,29 +8,43 @@ import {
   CheckCircle2,
   ShieldCheck,
   Activity,
-  AlertTriangle,
   Server,
-  ArrowRight,
   UserPlus,
-  KeyRound,
   Sliders,
   History
 } from 'lucide-react';
 import { authService } from '../../../services/authService';
+import { listAuditLogs } from '../../../services/auditService';
 import { regionalOffices } from '../../../data/initialData';
 import { useApp } from '../../../context/AppContext';
+import { alertSummary } from '../../../workflow/selectors';
+import { daysUntil, getNow } from '../../../utils/dates';
 import { User, Application, AuditLog } from '../../../types';
 
 export const SuperAdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { applications, institutes } = useApp();
+  const { applications, institutes, alerts } = useApp();
   const users = authService.getUsers();
-  const auditLogs = authService.getAuditLogs().slice(0, 5);
+  const allAuditLogs = listAuditLogs();
+  const auditLogs = allAuditLogs.slice(0, 5);
   const config = authService.getSystemConfig();
+  const cycleDaysLeft = daysUntil(config.approvalCycleEndDate, getNow());
+  const alertsInForce = alertSummary(alerts);
 
   const activeUsersCount = users.filter((u: User) => u.isActive).length;
   const approvedApps = applications.filter((a: Application) => a.status === 'Approved').length;
-  const pendingApps = applications.filter((a: Application) => a.status === 'Pending' || a.status === 'In Progress').length;
+  const pendingApps = applications.filter(
+    (a: Application) => a.status !== 'Approved' && a.status !== 'Rejected'
+  ).length;
+
+  const regionalRows = regionalOffices.slice(0, 5).map((office) => ({
+    ...office,
+    instituteCount: institutes.filter((institute) => institute.region === office.region).length,
+    activeCount: applications.filter(
+      (app) =>
+        app.region === office.region && app.status !== 'Approved' && app.status !== 'Rejected'
+    ).length
+  }));
 
   return (
     <div className="space-y-6">
@@ -138,7 +152,7 @@ export const SuperAdminDashboard: React.FC = () => {
 
         {/* Pending Applications */}
         <div
-          onClick={() => navigate('/applications?status=Pending')}
+          onClick={() => navigate('/applications')}
           className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs card-interactive cursor-pointer group active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
@@ -153,7 +167,7 @@ export const SuperAdminDashboard: React.FC = () => {
             {pendingApps}
           </div>
           <div className="text-xs font-medium text-slate-500 mt-0.5">
-            Pending Applications
+            Active applications
           </div>
         </div>
 
@@ -208,17 +222,17 @@ export const SuperAdminDashboard: React.FC = () => {
                   <th className="pb-2">HQ</th>
                   <th className="pb-2">Regional Officer</th>
                   <th className="pb-2 text-right">Institutes</th>
-                  <th className="pb-2 text-right">Pending Apps</th>
+                  <th className="pb-2 text-right">Active apps</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {regionalOffices.slice(0, 5).map((ro: any) => (
+                {regionalRows.map((ro) => (
                   <tr key={ro.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-2.5 font-bold text-slate-900">{ro.region}</td>
                     <td className="py-2.5 text-slate-600">{ro.headquarters}</td>
                     <td className="py-2.5 text-slate-700 font-medium">{ro.officerName}</td>
-                    <td className="py-2.5 text-right text-slate-800 font-bold">{ro.totalInstitutes}</td>
-                    <td className="py-2.5 text-right font-bold text-amber-600">{ro.pendingApplications}</td>
+                    <td className="py-2.5 text-right text-slate-800 font-bold">{ro.instituteCount}</td>
+                    <td className="py-2.5 text-right font-bold text-amber-600">{ro.activeCount}</td>
                   </tr>
                 ))}
               </tbody>
@@ -266,9 +280,9 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Security Model: RBAC v4.2</span>
+            <span>Role-based access control</span>
             <span className="text-emerald-600 font-semibold flex items-center">
-              <CheckCircle2 className="w-3 h-3 mr-1" /> Active
+              <CheckCircle2 className="w-3 h-3 mr-1" /> Enforced
             </span>
           </div>
         </div>
@@ -291,7 +305,7 @@ export const SuperAdminDashboard: React.FC = () => {
               onClick={() => navigate('/admin/audit-logs')}
               className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
             >
-              View Full Logs ({authService.getAuditLogs().length})
+              View Full Logs ({allAuditLogs.length})
             </button>
           </div>
 
@@ -328,41 +342,52 @@ export const SuperAdminDashboard: React.FC = () => {
                 <Server className="w-4 h-4" />
               </div>
               <h2 className="text-sm font-bold text-slate-800">
-                System Health & Alerts
+                Automation and alerts
               </h2>
             </div>
             <button
               onClick={() => navigate('/admin/system-config')}
               className="text-xs text-slate-500 hover:text-slate-800"
             >
-              Config →
+              Config
             </button>
           </div>
 
           <div className="space-y-3 my-auto">
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+            <button
+              onClick={() => navigate('/alerts')}
+              className="w-full text-left p-3 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-between gap-3 cursor-pointer hover:bg-rose-100/70 transition-colors"
+            >
               <div>
-                <div className="text-xs font-bold text-emerald-900">National AICTE Gateway</div>
-                <div className="text-[10px] text-emerald-700">All services 100% operational</div>
+                <div className="text-xs font-bold text-rose-900">Deadline alerts</div>
+                <div className="text-[10px] text-rose-700">
+                  {alertsInForce.critical} critical, {alertsInForce.high} high severity
+                </div>
               </div>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            </div>
+              <span className="text-lg font-black text-rose-700">
+                {alertsInForce.open + alertsInForce.acknowledged}
+              </span>
+            </button>
 
             <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-between">
               <div>
-                <div className="text-xs font-bold text-blue-900">Academic Year Cycle</div>
-                <div className="text-[10px] text-blue-700">AY {config.academicYear} (Cycle Open)</div>
+                <div className="text-xs font-bold text-blue-900">Academic year cycle</div>
+                <div className="text-[10px] text-blue-700">AY {config.academicYear}</div>
               </div>
-              <span className="text-xs font-bold text-blue-700">Active</span>
+              <span className="text-xs font-bold text-blue-700">
+                {cycleDaysLeft >= 0 ? 'Open' : 'Closed'}
+              </span>
             </div>
 
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-between">
               <div>
-                <div className="text-xs font-bold text-amber-900">Cycle Deadline</div>
+                <div className="text-xs font-bold text-amber-900">Cycle deadline</div>
                 <div className="text-[10px] text-amber-700">{config.approvalCycleEndDate}</div>
               </div>
-              <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full">
-                62 Days Left
+              <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full whitespace-nowrap">
+                {cycleDaysLeft >= 0
+                  ? `${cycleDaysLeft} days left`
+                  : `Ended ${Math.abs(cycleDaysLeft)} days ago`}
               </span>
             </div>
           </div>

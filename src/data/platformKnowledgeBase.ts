@@ -82,7 +82,7 @@ Key capabilities:
 4. Upload mandatory primary documents (Society Registration, Land Title, Building Plan Approval).
 5. Verify your contact details and click **Submit Application**.
 
-Once filed, your application receives a unique tracking ID (e.g. \`AICTE/2025/12876\`) and immediately moves to the **Scrutiny** stage.`,
+Once filed, your application receives a unique tracking ID (e.g. \`AICTE/2026/12876\`) and immediately moves to the **Scrutiny** stage.`,
     actionLinks: [
       { label: 'Submit Application Form', path: '/institution/apply', requiredRoles: ['INSTITUTION_ADMIN', 'SUPER_ADMIN'] },
       { label: 'Track Applications', path: '/institution/tracking', requiredRoles: ['INSTITUTION_ADMIN', 'SUPER_ADMIN'] }

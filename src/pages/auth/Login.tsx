@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { DEMO_PASSWORD } from '../../services/authService';
+import { getDataMode } from '../../services/repositories';
 import { UserRole } from '../../types';
 import {
   User as UserIcon,
@@ -39,9 +40,10 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
+  const remoteAuthEnabled = getDataMode() === 'supabase';
 
-  const [email, setEmail] = useState('aicteadmin@apoorvasetu.demo');
-  const [password, setPassword] = useState('Apoorva@2026');
+  const [email, setEmail] = useState(remoteAuthEnabled ? '' : 'aicteadmin@apoorvasetu.demo');
+  const [password, setPassword] = useState(remoteAuthEnabled ? '' : 'Apoorva@2026');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -148,15 +150,22 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-white text-slate-800 relative selection:bg-blue-100 selection:text-blue-900">
-      {/* Top Floating Demo Credentials Helper for SIH Evaluators */}
+      {/* Demo helper only exists in offline demo mode; production uses Supabase Auth. */}
       <div className="absolute top-4 right-4 z-20">
-        <button
-          onClick={() => setIsDemoHelperOpen(true)}
-          className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white/90 hover:bg-white text-blue-700 border border-blue-200/80 shadow-xs hover:shadow-md text-xs font-semibold backdrop-blur-xs transition-all cursor-pointer"
-        >
-          <KeyRound className="w-3.5 h-3.5 text-blue-600" />
-          <span>Demo Credentials</span>
-        </button>
+        {remoteAuthEnabled ? (
+          <span className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-50 text-slate-600 border border-slate-200 text-xs font-semibold">
+            <Shield className="w-3.5 h-3.5 text-blue-600" />
+            <span>Official AICTE sign-in</span>
+          </span>
+        ) : (
+          <button
+            onClick={() => setIsDemoHelperOpen(true)}
+            className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white/90 hover:bg-white text-blue-700 border border-blue-200/80 shadow-xs hover:shadow-md text-xs font-semibold backdrop-blur-xs transition-all cursor-pointer"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-blue-600" />
+            <span>Demo Credentials</span>
+          </button>
+        )}
       </div>
 
       {/* Main Container: Split 2-Column Layout matching Reference Exactly */}
@@ -384,7 +393,7 @@ export const Login: React.FC = () => {
       </footer>
 
       {/* Demo Credentials Drawer / Popover for Evaluators */}
-      {isDemoHelperOpen && (
+      {!remoteAuthEnabled && isDemoHelperOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-modal-backdrop">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full shadow-2xl relative animate-modal-content">
             <button

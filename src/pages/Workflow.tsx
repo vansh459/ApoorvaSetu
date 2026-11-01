@@ -7,6 +7,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Application, ApplicationStage } from '../types';
+import { OPERATIONAL_STAGES, STAGE_META, canonicalStage } from '../workflow/stages';
 
 export const Workflow: React.FC = () => {
   const navigate = useNavigate();
@@ -14,80 +15,22 @@ export const Workflow: React.FC = () => {
 
   const [activeStageFilter, setActiveStageFilter] = useState<ApplicationStage>('Expert Visit Committee (EVC)');
 
-  const workflowStages: {
-    id: ApplicationStage;
-    number: number;
-    title: string;
-    description: string;
-    avgDays: number;
-    count: number;
-    color: string;
-    responsible: string;
-  }[] = [
-    {
-      id: 'Submitted',
-      number: 1,
-      title: 'Submitted & Auto-Ack',
-      description: 'Initial online filing, document upload, and payment reconciliation.',
-      avgDays: 2,
-      count: 476,
-      color: '#64748b',
-      responsible: 'Central Portal Automation'
-    },
-    {
-      id: 'Scrutiny / Re-scrutiny',
-      number: 2,
-      title: 'Scrutiny / Re-scrutiny',
-      description: 'Deficiency examination by Regional Scrutiny Committee.',
-      avgDays: 8,
-      count: 1482,
-      color: '#3b82f6',
-      responsible: 'Regional Scrutiny Committee'
-    },
-    {
-      id: 'Expert Visit Committee (EVC)',
-      number: 3,
-      title: 'Expert Visit Committee (EVC)',
-      description: 'On-site physical / hybrid inspection of labs, land, and faculties.',
-      avgDays: 14,
-      count: 1124,
-      color: '#8b5cf6',
-      responsible: 'Constituted Academic Committee'
-    },
-    {
-      id: 'SAC / SHC',
-      number: 4,
-      title: 'SAC / SHC Review',
-      description: 'Standing Appellate Committee hearing for deficiencies & appeals.',
-      avgDays: 7,
-      count: 896,
-      color: '#0d9488',
-      responsible: 'Appellate Hearing Bench'
-    },
-    {
-      id: 'Approval (Subject to Undertaking)',
-      number: 5,
-      title: 'Approval Subject to Undertaking',
-      description: 'Conditional approval pending notarized compliance affidavits.',
-      avgDays: 5,
-      count: 642,
-      color: '#f59e0b',
-      responsible: 'Approval Bureau / Regional Officer'
-    },
-    {
-      id: 'Final Approval',
-      number: 6,
-      title: 'Final Approval & EoA Issuance',
-      description: 'Council ratification and digitally sealed Letter of Approval.',
-      avgDays: 3,
-      count: 438,
-      color: '#10b981',
-      responsible: 'Member Secretary & Council'
-    }
-  ];
+  const workflowStages = OPERATIONAL_STAGES.map((stage, index) => {
+    const meta = STAGE_META[stage];
+    return {
+      id: stage,
+      number: index + 1,
+      title: meta.label,
+      description: meta.description,
+      avgDays: meta.slaDays,
+      count: applications.filter((app) => canonicalStage(app.stage) === stage).length,
+      color: meta.color,
+      responsible: meta.responsible
+    };
+  });
 
   const stageApplications = applications.filter(
-    (a: Application) => a.stage === activeStageFilter
+    (app: Application) => canonicalStage(app.stage) === canonicalStage(activeStageFilter)
   );
 
   return (
@@ -112,12 +55,12 @@ export const Workflow: React.FC = () => {
             </h2>
           </div>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-            6 Sequential Verification Gates
+            {workflowStages.length} Sequential Verification Gates
           </span>
         </div>
 
         {/* Pipeline Stepper Horizontal */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3">
           {workflowStages.map((stage) => {
             const isSelected = activeStageFilter === stage.id;
             return (

@@ -1,21 +1,55 @@
 import React, { useState } from 'react';
 import {
-  Sliders,
   Save,
   CheckCircle2,
-  AlertTriangle,
   Server,
   Calendar,
   Users,
-  ShieldCheck,
-  Bell
+  Clock3,
+  SlidersHorizontal
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { SystemConfig as ConfigType } from '../../types';
+import { OPERATIONAL_STAGES, getStageMeta } from '../../workflow/stages';
+import { resolveWorkflowConfig } from '../../workflow/config';
+
+const parseWarningDays = (value: string, fallback: number[]): number[] => {
+  const days = value
+    .split(',')
+    .map((part) => Number(part.trim()))
+    .filter((day) => Number.isFinite(day) && day >= 0);
+  return days.length ? days : fallback;
+};
 
 export const SystemConfigPage: React.FC = () => {
   const [config, setConfig] = useState<ConfigType>(() => authService.getSystemConfig());
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const workflow = resolveWorkflowConfig(config);
+  const stageSlas = workflow.stageSlas;
+  const matrix = workflow.escalationMatrix;
+
+  const updateStageSla = (stage: (typeof OPERATIONAL_STAGES)[number], days: number) => {
+    setConfig((prev) => ({
+      ...prev,
+      stageSlas: {
+        ...prev.stageSlas,
+        [stage]: {
+          days: Math.max(1, days || 1),
+          approachingPct: resolveWorkflowConfig(prev).stageSlas[stage]?.approachingPct ?? 80
+        }
+      }
+    }));
+  };
+
+  const updateEscalationDays = (level: number, days: number) => {
+    setConfig((prev) => ({
+      ...prev,
+      escalationMatrix: resolveWorkflowConfig(prev).escalationMatrix.map((rule) =>
+        rule.level === level ? { ...rule, breachDays: Math.max(0, days) } : rule
+      )
+    }));
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,7 +183,131 @@ export const SystemConfigPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Security & Operational Flags */}
+        {/* Card 3: Statutory SLA & Alert Configuration */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+          <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+              <Clock3 className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">
+                Statutory SLAs, Alerts & Escalation Matrix
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                Drives deadline tiers, reminder windows and automatic escalation across every case.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            {OPERATIONAL_STAGES.map((stage) => (
+              <div key={stage}>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  {getStageMeta(stage).label}
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={stageSlas[stage]?.days ?? 30}
+                    onChange={(e) => updateStageSla(stage, Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-teal-500 focus:outline-hidden"
+                  />
+                  <span className="text-[10px] text-slate-400 shrink-0">days</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-1">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Undertaking reminder windows (days)
+              </label>
+              <input
+                type="text"
+                value={workflow.undertakingWarningDays.join(', ')}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    undertakingWarningDays: parseWarningDays(e.target.value, workflow.undertakingWarningDays)
+                  })
+                }
+                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-teal-500 focus:outline-hidden"
+              />
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                Comma-separated reminder offsets before the evidence deadline.
+              </span>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Document expiry warning windows (days)
+              </label>
+              <input
+                type="text"
+                value={workflow.documentWarningDays.join(', ')}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    documentWarningDays: parseWarningDays(e.target.value, workflow.documentWarningDays)
+                  })
+                }
+                className="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:border-teal-500 focus:outline-hidden"
+              />
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                First value opens early warning; second value marks the document critical.
+              </span>
+            </div>
+          </div>
+
+          <div className="pt-1">
+            <div className="flex items-center space-x-2 mb-2">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-[11px] font-bold text-slate-700">
+                Escalation Matrix (days past the statutory deadline)
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              {matrix.map((rule) => (
+                <div key={rule.level} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-slate-900">Level {rule.level}</span>
+                    <span className="text-[10px] text-slate-500">
+                      {rule.targetRoles.map((role) => role.replace('_', ' ')).join(' + ')}
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min={0}
+                    max={90}
+                    value={rule.breachDays}
+                    onChange={(e) => updateEscalationDays(rule.level, Number(e.target.value))}
+                    className="w-full px-3 py-1.5 bg-white rounded-lg border border-slate-200 focus:border-teal-500 focus:outline-hidden"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <label className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 cursor-pointer">
+            <div>
+              <div className="font-bold text-slate-900">Business-day SLA clock</div>
+              <div className="text-[11px] text-slate-500">
+                Count weekdays only when computing statutory deadlines
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(workflow.businessDaysOnly)}
+              onChange={(e) => setConfig({ ...config, businessDaysOnly: e.target.checked })}
+              className="w-4 h-4 text-teal-600 rounded-md border-slate-300"
+            />
+          </label>
+        </div>
+
+        {/* Card 4: Security & Operational Flags */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
           <div className="flex items-center space-x-2.5 pb-2 border-b border-slate-100">
             <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">

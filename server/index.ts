@@ -2,15 +2,37 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { aiService } from './aiService.ts';
-import type { AIChatRequest } from './aiService.ts';
+import {
+  MAX_BODY_BYTES,
+  bodyTooLarge,
+  checkRateLimit,
+  isOriginAllowed,
+  resolveDemoRole,
+  validateChatBody,
+  verifyCaller
+} from './authGuard.ts';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
+app.disable('x-powered-by');
+app.use(
+  cors({
+    origin(origin, callback) {
+      callback(null, !origin || isOriginAllowed(origin));
+    },
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type'],
+    credentials: false
+  })
+);
+app.use(express.json({ limit: `${Math.floor(MAX_BODY_BYTES / 1024)}kb` }));
+
+function rejectedOrigin(origin: unknown): boolean {
+  return typeof origin === 'string' && origin.length > 0 && !isOriginAllowed(origin);
+}
 
 // Health Check
 app.get('/api/health', (_req, res) => {
@@ -34,27 +56,52 @@ app.get('/api/assistant/status', (_req, res) => {
 // Main AI Chat Endpoint
 app.post('/api/assistant/chat', async (req, res) => {
   try {
-    const { message, history, userRole, currentPath } = req.body as AIChatRequest;
+    if (rejectedOrigin(req.headers.origin)) {
+      res.status(403).json({ error: 'FORBIDDEN_ORIGIN', text: 'This origin is not allowed to call the assistant.' });
+      return;
+    }
 
-    if (!message || typeof message !== 'string') {
-      res.status(400).json({
-        error: 'BAD_REQUEST',
-        message: 'Message parameter is required and must be a string.'
+    if (bodyTooLarge(req)) {
+      res.status(413).json({ error: 'PAYLOAD_TOO_LARGE', text: 'Request body is too large.' });
+      return;
+    }
+
+    const callerResult = await verifyCaller(req);
+    if (!callerResult.ok) {
+      res.status(callerResult.status).json({
+        error: callerResult.status === 401 ? 'UNAUTHENTICATED' : 'FORBIDDEN',
+        text: callerResult.error
       });
       return;
     }
 
-    const result = await aiService.generateResponse({
-      message,
-      history,
-      userRole,
-      currentPath
-    });
-
-    if (result.isConfigError) {
-      res.status(200).json(result);
+    const rate = checkRateLimit(req, callerResult.caller);
+    if (!rate.ok) {
+      res.setHeader('Retry-After', String(rate.retryAfter));
+      res.status(429).json({
+        error: 'RATE_LIMITED',
+        text: 'Too many assistant requests. Please wait a moment before trying again.'
+      });
       return;
     }
+
+    const validated = validateChatBody(req.body);
+    if (!validated.ok) {
+      res.status(400).json({ error: 'BAD_REQUEST', text: validated.error });
+      return;
+    }
+
+    const userRole =
+      callerResult.caller.mode === 'supabase'
+        ? callerResult.caller.role
+        : resolveDemoRole((req.body as { userRole?: unknown } | undefined)?.userRole);
+
+    const result = await aiService.generateResponse({
+      message: validated.body.message,
+      history: validated.body.history,
+      userRole,
+      currentPath: validated.body.currentPath
+    });
 
     res.json(result);
   } catch (error: any) {
@@ -64,6 +111,19 @@ app.post('/api/assistant/chat', async (req, res) => {
       text: 'An internal server error occurred while processing the request.'
     });
   }
+});
+
+app.use((error: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (error?.type === 'entity.too.large' || error?.status === 413) {
+    res.status(413).json({ error: 'PAYLOAD_TOO_LARGE', text: 'Request body is too large.' });
+    return;
+  }
+  if (error?.type === 'entity.parse.failed' || error?.status === 400) {
+    res.status(400).json({ error: 'INVALID_JSON', text: 'Request body must be valid JSON.' });
+    return;
+  }
+  console.error('Unhandled server error:', error);
+  res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', text: 'An internal server error occurred.' });
 });
 
 app.listen(PORT, () => {

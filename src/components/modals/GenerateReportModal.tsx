@@ -1,112 +1,132 @@
-import React, { useState } from 'react';
-import { Download, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
+import {
+  filterApplicationsForUser,
+  filterDocumentsForUser,
+  filterEVCVisitsForUser,
+  filterUndertakingsForUser
+} from '../../services/rbacService';
+import { authService } from '../../services/authService';
+import { resolveWorkflowConfig } from '../../workflow/config';
+import {
+  REPORT_CATALOG,
+  buildReport,
+  reportFilename
+} from '../../workflow/reports';
+import type { ReportKind } from '../../workflow/reports';
+import { REGION_ORDER } from '../../workflow/selectors';
+import { buildCsv, downloadCsv } from '../../utils/csv';
+import { getNow } from '../../utils/dates';
+import type { Region } from '../../types';
+
+const focusRing =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2';
 
 export const GenerateReportModal: React.FC = () => {
-  const { activeModal, setActiveModal, applications, showToast } = useApp();
+  const { activeModal, setActiveModal, applications, evcVisits, undertakings, documents, showToast } =
+    useApp();
+  const { user } = useAuth();
 
-  const [reportType, setReportType] = useState('applications');
-  const [regionFilter, setRegionFilter] = useState('All');
-  const [downloading, setDownloading] = useState(false);
+  const [reportKind, setReportKind] = useState<ReportKind>('pendency');
+  const [regionFilter, setRegionFilter] = useState<string>(() =>
+    user?.role === 'REGIONAL_OFFICER' || user?.role === 'INSTITUTION_ADMIN'
+      ? user.region ?? 'All'
+      : 'All'
+  );
+
+  const config = resolveWorkflowConfig(authService.getSystemConfig());
+  const now = useMemo(() => getNow(), [activeModal]);
+
+  const regionLocked = user?.role === 'REGIONAL_OFFICER' || user?.role === 'INSTITUTION_ADMIN';
+  const regionOptions: Region[] = regionLocked && user?.region ? [user.region] : REGION_ORDER;
+
+  const table = useMemo(() => {
+    const matchesRegion = (region: Region) => regionFilter === 'All' || region === regionFilter;
+    return buildReport(reportKind, {
+      applications: filterApplicationsForUser(applications, user).filter((app) =>
+        matchesRegion(app.region)
+      ),
+      visits: filterEVCVisitsForUser(evcVisits, user).filter((visit) => matchesRegion(visit.region)),
+      undertakings: filterUndertakingsForUser(undertakings, user).filter((item) =>
+        matchesRegion(item.region)
+      ),
+      documents: filterDocumentsForUser(documents, user).filter((item) =>
+        matchesRegion(item.region)
+      ),
+      config,
+      now
+    });
+  }, [reportKind, regionFilter, applications, evcVisits, undertakings, documents, user, config, now]);
+
+  const definition = REPORT_CATALOG.find((item) => item.kind === reportKind) ?? REPORT_CATALOG[0];
 
   const handleDownload = () => {
-    setDownloading(true);
-
-    setTimeout(() => {
-      let csvContent = '';
-      let filename = `AICTE_Approval_Report_${new Date().toISOString().split('T')[0]}.csv`;
-
-      if (reportType === 'applications') {
-        csvContent = 'Application ID,Institute Name,Stage,Region,Status,Intake,Applied Date,Last Updated\n';
-        applications.forEach((a) => {
-          if (regionFilter === 'All' || a.region === regionFilter) {
-            csvContent += `"${a.id}","${a.instituteName}","${a.stage}","${a.region}","${a.status}",${a.intakeProposed},"${a.appliedDate}","${a.lastUpdated}"\n`;
-          }
-        });
-      } else if (reportType === 'compliance') {
-        csvContent = 'Category,Count,Status,Priority\n';
-        csvContent += '"Lease Documents (expiring < 3 months)",126,"Pending Review","High"\n';
-        csvContent += '"Other Institutional Undertakings",243,"Action Required","High"\n';
-        csvContent += '"Compliance Submissions (pending)",389,"Pending Verification","Medium"\n';
-        csvContent += '"Documents Expired",67,"Expired Notice Issued","Critical"\n';
-        csvContent += '"Documents Valid",4957,"Valid","Normal"\n';
-      } else {
-        csvContent = 'Region,Total Applications,Approved,Pending,Requiring Action\n';
-        csvContent += '"Northern",1248,680,480,88\n';
-        csvContent += '"Southern",1102,620,410,72\n';
-        csvContent += '"Eastern",934,510,360,64\n';
-        csvContent += '"Western",872,480,330,62\n';
-        csvContent += '"Central",648,360,240,48\n';
-        csvContent += '"North Eastern",391,210,150,31\n';
-        csvContent += '"Others",287,101,164,22\n';
-      }
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      setDownloading(false);
-      setActiveModal(null);
-      showToast(`Report "${filename}" exported successfully!`, 'success');
-    }, 600);
+    const csv = buildCsv(table.columns, table.rows);
+    const filename = reportFilename(definition, regionFilter, now);
+    downloadCsv(filename, csv);
+    setActiveModal(null);
+    showToast(`${definition.title} exported as ${filename}`, 'success');
   };
 
   return (
     <Modal
       isOpen={activeModal === 'generate-report'}
       onClose={() => setActiveModal(null)}
-      title="Generate Official AICTE Approval Report"
-      subtitle="Export consolidated data and compliance audits for records"
+      title="Export an official report"
+      subtitle="CSV generated from the same live data and filters as the reports screen"
       maxWidth="max-w-lg"
     >
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Report Data Domain
+          <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="modal-report">
+            Report
           </label>
           <select
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:border-blue-500"
+            id="modal-report"
+            value={reportKind}
+            onChange={(event) => setReportKind(event.target.value as ReportKind)}
+            className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-colors cursor-pointer ${focusRing}`}
           >
-            <option value="applications">Applications Master Dossier (Full Data)</option>
-            <option value="compliance">Compliance & Validity Audit Deficiencies</option>
-            <option value="regional">Regional Clearance & Pendency Summary</option>
+            {REPORT_CATALOG.map((item) => (
+              <option key={item.kind} value={item.kind}>
+                {item.title}
+              </option>
+            ))}
           </select>
+          <p className="text-[11px] text-slate-500 mt-1">{definition.description}</p>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Regional Office Filter
+          <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="modal-region">
+            Regional filter
           </label>
           <select
+            id="modal-region"
             value={regionFilter}
-            onChange={(e) => setRegionFilter(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-hidden focus:border-blue-500"
+            onChange={(event) => setRegionFilter(event.target.value)}
+            disabled={regionLocked}
+            className={`w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-colors disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer ${focusRing}`}
           >
-            <option value="All">All Regions (National Consolidated)</option>
-            <option value="Northern">Northern Region</option>
-            <option value="Southern">Southern Region</option>
-            <option value="Eastern">Eastern Region</option>
-            <option value="Western">Western Region</option>
-            <option value="Central">Central Region</option>
-            <option value="North Eastern">North Eastern Region</option>
+            {!regionLocked && <option value="All">All regions</option>}
+            {regionOptions.map((region) => (
+              <option key={region} value={region}>
+                {region} Region
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-start space-x-3 text-xs text-blue-900">
           <FileSpreadsheet className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold">Format: Standard CSV / Excel Ready</p>
+            <p className="font-bold">
+              {table.rows.length} {table.rows.length === 1 ? 'row' : 'rows'} ready for export
+            </p>
             <p className="text-[11px] text-blue-800/80 mt-0.5">
-              Exports clean tabular records compliant with AICTE central reporting format.
+              CSV with a UTF-8 byte-order mark so Excel opens regional names correctly.
             </p>
           </div>
         </div>
@@ -115,24 +135,18 @@ export const GenerateReportModal: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveModal(null)}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleDownload}
-            disabled={downloading}
-            className="flex items-center space-x-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm disabled:opacity-50"
+            disabled={table.rows.length === 0}
+            className={`flex items-center space-x-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${focusRing}`}
           >
-            {downloading ? (
-              <span>Preparing File...</span>
-            ) : (
-              <>
-                <Download className="w-3.5 h-3.5" />
-                <span>Export & Download CSV</span>
-              </>
-            )}
+            <Download className="w-3.5 h-3.5" />
+            <span>Download CSV</span>
           </button>
         </div>
       </div>

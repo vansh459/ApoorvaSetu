@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import {
   Calendar,
-  Building2,
-  FileCheck2,
   UploadCloud,
-  CheckCircle2,
-  Clock,
   MapPin,
   X,
-  FileText,
-  Star
+  ClipboardCheck,
+  AlertTriangle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { filterEVCVisitsForUser } from '../../services/rbacService';
+import { checklistProgress } from '../../workflow/evc';
+import { formatDisplayDate } from '../../utils/dates';
 import { EVCVisit } from '../../types';
 
 export const MyAssignedVisits: React.FC = () => {
   const { user } = useAuth();
-  const { evcVisits, showToast } = useApp();
+  const { evcVisits, completeEVC } = useApp();
+  const navigate = useNavigate();
 
   const assignedVisits = filterEVCVisitsForUser(evcVisits, user);
 
@@ -30,13 +30,26 @@ export const MyAssignedVisits: React.FC = () => {
   const [remarks, setRemarks] = useState('');
   const [safetyCompliance, setSafetyCompliance] = useState(true);
 
+  const selectedProgress = checklistProgress(selectedVisit);
+  const reportRecorded = Boolean(selectedVisit?.reportSubmitted);
+
   const handleSubmitReport = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVisit) return;
 
-    showToast(`Inspection report submitted for ${selectedVisit.instituteName}`, 'success');
-    setSelectedVisit(null);
-    setRemarks('');
+    const saved = completeEVC(selectedVisit.id, {
+      infrastructureScore: infraScore,
+      facultyScore,
+      labScore,
+      safetyCompliance,
+      recommendations: recommendation,
+      remarks
+    });
+
+    if (saved) {
+      setSelectedVisit(null);
+      setRemarks('');
+    }
   };
 
   return (
@@ -91,7 +104,7 @@ export const MyAssignedVisits: React.FC = () => {
               <div className="text-xs text-slate-500 flex items-center space-x-4 flex-wrap gap-y-1">
                 <span className="flex items-center space-x-1">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{visit.date || '02 Nov 2026'}</span>
+                  <span>{visit.date ? formatDisplayDate(visit.date) : 'Date pending'}</span>
                 </span>
                 <span className="flex items-center space-x-1">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
@@ -99,16 +112,45 @@ export const MyAssignedVisits: React.FC = () => {
                 </span>
                 <span>Committee: <strong className="text-slate-700">{visit.assignedCommittee}</strong></span>
               </div>
+
+              <div className="text-[11px] text-slate-500 flex items-center space-x-3 flex-wrap gap-y-1">
+                {visit.applicationId && <span>Case {visit.applicationId}</span>}
+                {visit.reportDueAt && !visit.reportSubmitted && (
+                  <span>Report due {formatDisplayDate(visit.reportDueAt)}</span>
+                )}
+                {visit.reportSubmitted ? (
+                  <span className="text-emerald-700 font-semibold">
+                    Report {visit.report?.id ?? ''} submitted
+                    {visit.report ? ` — ${visit.report.recommendations}` : ''}
+                  </span>
+                ) : (
+                  <span className="flex items-center space-x-1">
+                    <ClipboardCheck className="w-3.5 h-3.5 text-slate-400" />
+                    <span>
+                      Checklist {checklistProgress(visit).assessed}/{checklistProgress(visit).total} assessed
+                    </span>
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="shrink-0 flex items-center space-x-2.5">
-              <button
-                onClick={() => setSelectedVisit(visit)}
-                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
-              >
-                <UploadCloud className="w-3.5 h-3.5" />
-                <span>Submit Inspection Report</span>
-              </button>
+              {visit.reportSubmitted ? (
+                <button
+                  onClick={() => setSelectedVisit(visit)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  View Report
+                </button>
+              ) : (
+                <button
+                  onClick={() => setSelectedVisit(visit)}
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Submit Inspection Report</span>
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -132,6 +174,64 @@ export const MyAssignedVisits: React.FC = () => {
               Institution: <strong className="text-slate-800">{selectedVisit.instituteName}</strong> ({selectedVisit.id})
             </p>
 
+            {selectedProgress.assessed < selectedProgress.total && !reportRecorded && (
+              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-900">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
+                  <div className="space-y-1">
+                    <div className="font-bold">Inspection checklist incomplete</div>
+                    <p>
+                      {selectedProgress.assessed} of {selectedProgress.total} statutory items assessed. The report
+                      cannot be signed until the campus checklist is complete.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/evc/checklist')}
+                      className="font-semibold text-amber-800 underline underline-offset-2 cursor-pointer"
+                    >
+                      Open inspection checklist
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {reportRecorded ? (
+              <div className="space-y-3 text-xs">
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-2">
+                  <div className="font-bold text-emerald-900">
+                    Report {selectedVisit.report?.id} recorded
+                  </div>
+                  <div className="text-emerald-800">
+                    Recommendation: <strong>{selectedVisit.report?.recommendations}</strong>
+                  </div>
+                  <div className="text-emerald-800">
+                    Submitted {selectedVisit.reportSubmittedAt ? formatDisplayDate(selectedVisit.reportSubmittedAt) : ''}
+                    {selectedVisit.report?.inspectorName ? ` by ${selectedVisit.report.inspectorName}` : ''}
+                  </div>
+                  <p className="text-emerald-900/80">{selectedVisit.report?.remarks}</p>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: 'Infrastructure', value: selectedVisit.report?.infrastructureScore },
+                    { label: 'Faculty', value: selectedVisit.report?.facultyScore },
+                    { label: 'Laboratories', value: selectedVisit.report?.labScore }
+                  ].map((score) => (
+                    <div key={score.label} className="rounded-xl border border-slate-200 p-2.5 text-center">
+                      <div className="text-slate-500">{score.label}</div>
+                      <div className="text-sm font-bold text-slate-900">{score.value ?? '—'}/100</div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedVisit(null)}
+                  className="w-full py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold cursor-pointer hover:bg-slate-50"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmitReport} className="space-y-4 text-xs">
               {/* Scoring sliders */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3.5">
@@ -235,6 +335,13 @@ export const MyAssignedVisits: React.FC = () => {
                 />
               </div>
 
+              <div className="rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-2 text-slate-600 flex items-center justify-between">
+                <span>Checklist completion</span>
+                <span className="font-bold text-slate-900">
+                  {selectedProgress.assessed}/{selectedProgress.total}
+                </span>
+              </div>
+
               <div className="pt-2 flex items-center space-x-2">
                 <button
                   type="button"
@@ -245,12 +352,14 @@ export const MyAssignedVisits: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer shadow-sm"
+                  disabled={!selectedProgress.complete}
+                  className="flex-1 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold cursor-pointer shadow-sm disabled:bg-slate-300 disabled:cursor-not-allowed"
                 >
                   Sign & Submit Report
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

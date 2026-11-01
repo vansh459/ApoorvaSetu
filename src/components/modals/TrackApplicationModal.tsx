@@ -1,27 +1,32 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Search, CheckCircle2, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { filterApplicationsForUser } from '../../services/rbacService';
+import { canonicalStage } from '../../workflow/stages';
+import { getApplicationStagePath } from '../../workflow/routes';
+import { formatDisplayDate } from '../../utils/dates';
 
 export const TrackApplicationModal: React.FC = () => {
   const { activeModal, setActiveModal, applications, setSelectedApplication } = useApp();
-  const [appIdInput, setAppIdInput] = useState('AICTE/2025/12876');
+  const { user } = useAuth();
+  const [appIdInput, setAppIdInput] = useState('AICTE/2026/12876');
 
-  const matchedApp = applications.find(
+  const scopedApps = useMemo(
+    () => filterApplicationsForUser(applications, user),
+    [applications, user]
+  );
+
+  const matchedApp = scopedApps.find(
     (a) => a.id.toLowerCase().trim() === appIdInput.toLowerCase().trim()
-  ) || applications[0];
+  );
 
-  const stages = [
-    'Submitted',
-    'Scrutiny / Re-scrutiny',
-    'Expert Visit Committee (EVC)',
-    'SAC / SHC',
-    'Approval (Subject to Undertaking)',
-    'Final Approval'
-  ];
-
-  const currentStageIndex = matchedApp ? stages.indexOf(matchedApp.stage) : 0;
+  const stages = matchedApp ? getApplicationStagePath(matchedApp) : [];
+  const currentStageIndex = matchedApp
+    ? stages.indexOf(canonicalStage(matchedApp.stage))
+    : -1;
 
   return (
     <Modal
@@ -40,7 +45,7 @@ export const TrackApplicationModal: React.FC = () => {
               type="text"
               value={appIdInput}
               onChange={(e) => setAppIdInput(e.target.value)}
-              placeholder="Enter Application ID (e.g. AICTE/2025/12876)"
+              placeholder="Enter Application ID (e.g. AICTE/2026/12876)"
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-blue-500"
             />
           </div>
@@ -55,7 +60,7 @@ export const TrackApplicationModal: React.FC = () => {
         {/* Quick select buttons */}
         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
           <span>Quick check:</span>
-          {applications.slice(0, 4).map((a) => (
+          {scopedApps.slice(0, 4).map((a) => (
             <button
               key={a.id}
               onClick={() => setAppIdInput(a.id)}
@@ -78,6 +83,13 @@ export const TrackApplicationModal: React.FC = () => {
                 <p className="text-[11px] text-slate-500">
                   {matchedApp.type} • {matchedApp.region} Region
                 </p>
+                {matchedApp.stageDueAt && (
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Statutory deadline:{' '}
+                    <strong className="text-slate-700">{formatDisplayDate(matchedApp.stageDueAt)}</strong>
+                    {matchedApp.slaTier ? ` • ${matchedApp.slaTier}` : ''}
+                  </p>
+                )}
               </div>
               <StatusBadge status={matchedApp.status} />
             </div>

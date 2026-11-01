@@ -7,6 +7,7 @@ import {
   Region
 } from '../types';
 import { ROLE_DEFAULT_PERMISSIONS, ROLE_LABELS } from './rbacService';
+import { appendAudit, formatAuditTimestamp, listAuditLogs } from './auditService';
 
 // Storage keys
 const AUTH_SESSION_KEY = 'apoorvasetu_auth_session_v1';
@@ -825,34 +826,31 @@ class AuthService {
   // --- Audit Logs ---
 
   getAuditLogs(): AuditLog[] {
-    return [...this.auditLogs];
+    return listAuditLogs();
   }
 
   addAuditLog(log: Omit<AuditLog, 'id' | 'timestamp' | 'ipAddress'>): AuditLog {
-    const now = new Date();
-    const formatted = now.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    }) + ', ' + now.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
+    appendAudit(
+      {
+        action: log.action,
+        entityType: log.entityType,
+        entityId: log.entityId,
+        details: log.details,
+        previousState: log.previousState,
+        newState: log.newState,
+        eventType: log.eventType,
+        correlationId: log.correlationId,
+        source: log.source
+      },
+      { id: log.userId, name: log.userName, role: log.userRole }
+    );
 
-    const newLog: AuditLog = {
+    return {
       ...log,
       id: `LOG-${Date.now().toString(36).toUpperCase()}`,
-      timestamp: formatted,
-      ipAddress: '10.24.1.84'
+      timestamp: formatAuditTimestamp(),
+      ipAddress: '127.0.0.1'
     };
-
-    this.auditLogs.unshift(newLog);
-    if (this.auditLogs.length > 250) {
-      this.auditLogs = this.auditLogs.slice(0, 250);
-    }
-    localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(this.auditLogs));
-    return newLog;
   }
 
   // --- System Configuration ---

@@ -1,62 +1,104 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Building2,
-  Calendar,
   CheckCircle2,
   Clock,
   ArrowRight,
   RotateCcw,
   Check,
   XCircle,
-  FileText,
   Mail,
   Phone,
-  GraduationCap
+  GraduationCap,
+  AlertTriangle,
+  Undo2
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge } from '../common/StatusBadge';
-import { ApplicationStage } from '../../types';
+import { canonicalStage } from '../../workflow/stages';
+import { getApplicationStagePath } from '../../workflow/routes';
+import { reasonCodesFor } from '../../workflow/codes';
 
 export const ApplicationDetailModal: React.FC = () => {
   const {
     activeModal,
     setActiveModal,
     selectedApplication,
-    advanceApplication,
-    returnApplication,
-    approveApplication,
-    rejectApplication
+    transitionApplication,
+    checkTransition
   } = useApp();
 
-  const [returnReason, setReturnReason] = useState('');
-  const [isReturning, setIsReturning] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [isRejecting, setIsRejecting] = useState(false);
-
-  if (!selectedApplication) return null;
+  const [pendingAction, setPendingAction] = useState<'RETURN' | 'REJECT' | null>(null);
+  const [reasonCode, setReasonCode] = useState('');
+  const [note, setNote] = useState('');
 
   const app = selectedApplication;
+  const stages = useMemo(() => (app ? getApplicationStagePath(app) : []), [app]);
 
-  const stages: ApplicationStage[] = [
-    'Submitted',
-    'Scrutiny / Re-scrutiny',
-    'Expert Visit Committee (EVC)',
-    'SAC / SHC',
-    'Approval (Subject to Undertaking)',
-    'Final Approval'
-  ];
+  if (!app) return null;
 
-  const currentIdx = stages.indexOf(app.stage);
+  const currentIdx = stages.indexOf(canonicalStage(app.stage));
+  const isTerminal = app.status === 'Approved' || app.status === 'Rejected';
+  const isReturned = app.status === 'Returned';
+
+  const forwardCheck = checkTransition(app.id, { action: 'FORWARD', expectedVersion: app.version });
+  const approveCheck = checkTransition(app.id, { action: 'APPROVE', expectedVersion: app.version });
+  const resubmitCheck = checkTransition(app.id, { action: 'RESUBMIT', expectedVersion: app.version });
+  const returnProbe = checkTransition(app.id, {
+    action: 'RETURN',
+    reasonCode: 'OTHER',
+    note: 'probe',
+    expectedVersion: app.version
+  });
+  const rejectProbe = checkTransition(app.id, {
+    action: 'REJECT',
+    reasonCode: 'OTHER',
+    note: 'probe',
+    expectedVersion: app.version
+  });
+
+  const canAttempt = (result: { code?: string }) => result.code !== 'FORBIDDEN';
+  const showForward = currentIdx >= 0 && currentIdx < stages.length - 1 && canAttempt(forwardCheck);
+  const showApprove = canAttempt(approveCheck);
+  const showReturn = canAttempt(returnProbe);
+  const showReject = canAttempt(rejectProbe);
+  const hasActions = showForward || showApprove || showReturn || showReject;
+
+  const denialHints = [
+    showForward && !forwardCheck.ok ? forwardCheck.message : null,
+    showApprove && !approveCheck.ok ? approveCheck.message : null
+  ].filter((message): message is string => Boolean(message));
+
+  const openDeficiencies = (app.deficiencies ?? []).filter((deficiency) => !deficiency.resolvedAt);
+
+  const resetActionForm = () => {
+    setPendingAction(null);
+    setReasonCode('');
+    setNote('');
+  };
+
+  const submitAction = () => {
+    if (!pendingAction || !reasonCode || !note.trim()) return;
+    transitionApplication(app.id, {
+      action: pendingAction,
+      reasonCode,
+      note: note.trim(),
+      expectedVersion: app.version
+    });
+    resetActionForm();
+    setActiveModal(null);
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+    resetActionForm();
+  };
 
   return (
     <Modal
       isOpen={activeModal === 'app-detail'}
-      onClose={() => {
-        setActiveModal(null);
-        setIsReturning(false);
-        setIsRejecting(false);
-      }}
+      onClose={closeModal}
       title={`Application Dossier — ${app.id}`}
       subtitle={`${app.instituteName} • ${app.region} Region`}
       maxWidth="max-w-3xl"
@@ -87,119 +129,211 @@ export const ApplicationDetailModal: React.FC = () => {
 
         {/* Action Controls for Workflow */}
         <div className="bg-blue-50/50 border border-blue-200/70 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-800">
-              Regional Officer Workflow Controls
-            </span>
-            <span className="text-[11px] text-blue-700 font-medium">
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <span className="text-xs font-bold text-slate-800">Statutory Case Actions</span>
+            <span className="text-[11px] text-blue-700 font-medium text-right">
               Current Stage: <span className="font-bold">{app.stage}</span>
             </span>
           </div>
 
-          {isReturning ? (
-            <div className="space-y-2 animate-in fade-in">
-              <input
-                type="text"
-                value={returnReason}
-                onChange={(e) => setReturnReason(e.target.value)}
-                placeholder="Specify deficiency or required documents from institution..."
-                className="w-full px-3 py-2 text-xs bg-white border border-amber-300 rounded-xl focus:outline-hidden"
-              />
-              <div className="flex items-center space-x-2 justify-end">
-                <button
-                  onClick={() => setIsReturning(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    if (returnReason) {
-                      returnApplication(app.id, returnReason);
-                      setIsReturning(false);
-                      setActiveModal(null);
-                    }
-                  }}
-                  className="px-4 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg"
-                >
-                  Confirm Return for Correction
-                </button>
+          {isTerminal ? (
+            <div className="rounded-xl bg-white border border-slate-200 p-3 text-xs text-slate-600">
+              <div className="font-bold text-slate-800">
+                Decision recorded: {app.decision?.outcome ?? app.status}
               </div>
+              {app.decision && (
+                <>
+                  <div className="mt-1">
+                    Authority: <strong className="text-slate-800">{app.decision.competentAuthority ?? app.decision.by}</strong>
+                    {' '}({app.decision.code})
+                  </div>
+                  <p className="mt-1 text-slate-500">{app.decision.note}</p>
+                </>
+              )}
+              <p className="mt-2 text-[11px] text-slate-400">
+                Terminal cases are immutable; the record can only be read or exported.
+              </p>
             </div>
-          ) : isRejecting ? (
-            <div className="space-y-2 animate-in fade-in">
-              <input
-                type="text"
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Specify formal grounds for rejection..."
-                className="w-full px-3 py-2 text-xs bg-white border border-rose-300 rounded-xl focus:outline-hidden"
-              />
+          ) : isReturned ? (
+            <div className="space-y-2">
+              <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                Case returned for correction. The statutory clock is paused until the institution resubmits.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                {resubmitCheck.code !== 'FORBIDDEN' ? (
+                  <button
+                    onClick={() => {
+                      transitionApplication(app.id, {
+                        action: 'RESUBMIT',
+                        note: 'Corrections resubmitted by the institution.',
+                        expectedVersion: app.version
+                      });
+                      setActiveModal(null);
+                    }}
+                    disabled={!resubmitCheck.ok}
+                    title={resubmitCheck.ok ? undefined : resubmitCheck.message}
+                    className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                    <span>Resubmit Corrections</span>
+                  </button>
+                ) : (
+                  <p className="text-[11px] text-slate-600">
+                    Awaiting the institution to resubmit the corrected application.
+                  </p>
+                )}
+              </div>
+              {resubmitCheck.code !== 'FORBIDDEN' && !resubmitCheck.ok && (
+                <p className="text-[11px] text-rose-600">{resubmitCheck.message}</p>
+              )}
+            </div>
+          ) : pendingAction ? (
+            <div className="space-y-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label className="text-[11px] font-semibold text-slate-600 space-y-1">
+                  <span>Reason code</span>
+                  <select
+                    value={reasonCode}
+                    onChange={(event) => setReasonCode(event.target.value)}
+                    className="w-full px-2.5 py-2 text-xs bg-white border border-slate-300 rounded-lg"
+                  >
+                    <option value="">Select statutory reason…</option>
+                    {reasonCodesFor(pendingAction).map((reason) => (
+                      <option key={reason.code} value={reason.code}>
+                        {reason.code} — {reason.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-[11px] font-semibold text-slate-600 space-y-1">
+                  <span>Officer note {note.trim() ? '' : '(required)'}</span>
+                  <textarea
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    rows={2}
+                    placeholder={
+                      pendingAction === 'RETURN'
+                        ? 'State the deficiency and what the institution must correct…'
+                        : 'Record the statutory grounds for rejection…'
+                    }
+                    className="w-full px-2.5 py-2 text-xs bg-white border border-slate-300 rounded-lg resize-none"
+                  />
+                </label>
+              </div>
               <div className="flex items-center space-x-2 justify-end">
                 <button
-                  onClick={() => setIsRejecting(false)}
+                  onClick={resetActionForm}
                   className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    if (rejectReason) {
-                      rejectApplication(app.id, rejectReason);
-                      setIsRejecting(false);
-                      setActiveModal(null);
-                    }
-                  }}
-                  className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg"
+                  onClick={submitAction}
+                  disabled={!reasonCode || !note.trim()}
+                  className={`px-4 py-1.5 text-xs font-bold text-white rounded-lg disabled:bg-slate-300 disabled:cursor-not-allowed ${
+                    pendingAction === 'RETURN'
+                      ? 'bg-amber-600 hover:bg-amber-700'
+                      : 'bg-rose-600 hover:bg-rose-700'
+                  }`}
                 >
-                  Confirm Rejection
+                  {pendingAction === 'RETURN' ? 'Confirm Return for Correction' : 'Confirm Rejection'}
                 </button>
               </div>
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              {currentIdx < stages.length - 1 && (
+              {showForward && (
                 <button
                   onClick={() => {
-                    advanceApplication(app.id);
+                    transitionApplication(app.id, { action: 'FORWARD', expectedVersion: app.version });
                     setActiveModal(null);
                   }}
-                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                  disabled={!forwardCheck.ok}
+                  title={forwardCheck.ok ? undefined : forwardCheck.message}
+                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
                 >
                   <span>Advance to Next Stage</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
 
-              <button
-                onClick={() => setIsReturning(true)}
-                className="flex items-center space-x-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Return for Correction</span>
-              </button>
+              {showReturn && (
+                <button
+                  onClick={() => setPendingAction('RETURN')}
+                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Return for Correction</span>
+                </button>
+              )}
 
-              <button
-                onClick={() => {
-                  approveApplication(app.id);
-                  setActiveModal(null);
-                }}
-                className="flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Grant Final Approval</span>
-              </button>
+              {showApprove && (
+                <button
+                  onClick={() => {
+                    transitionApplication(app.id, {
+                      action: 'APPROVE',
+                      reasonCode: 'APPROVED_FINAL',
+                      note: 'Final approval granted by the AICTE Competent Authority.',
+                      expectedVersion: app.version
+                    });
+                    setActiveModal(null);
+                  }}
+                  disabled={!approveCheck.ok}
+                  title={approveCheck.ok ? undefined : approveCheck.message}
+                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Grant Final Approval</span>
+                </button>
+              )}
 
-              <button
-                onClick={() => setIsRejecting(true)}
-                className="flex items-center space-x-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors ml-auto"
-              >
-                <XCircle className="w-3.5 h-3.5" />
-                <span>Reject</span>
-              </button>
+              {showReject && (
+                <button
+                  onClick={() => setPendingAction('REJECT')}
+                  className="flex items-center space-x-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors ml-auto"
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span>Reject</span>
+                </button>
+              )}
+
+              {!hasActions && (
+                <p className="text-[11px] text-slate-500">
+                  Read-only view — no statutory action is available to your role at this stage.
+                </p>
+              )}
+            </div>
+          )}
+
+          {!isTerminal && !isReturned && !pendingAction && denialHints.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {denialHints.map((hint) => (
+                <p key={hint} className="text-[11px] text-rose-700 flex items-start gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                  <span>{hint}</span>
+                </p>
+              ))}
             </div>
           )}
         </div>
+
+        {openDeficiencies.length > 0 && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+            <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider mb-2">
+              Open Deficiencies ({openDeficiencies.length})
+            </h4>
+            <div className="space-y-2">
+              {openDeficiencies.map((deficiency, index) => (
+                <div key={`${deficiency.code}-${index}`} className="text-[11px] text-amber-900">
+                  <span className="font-bold font-mono">{deficiency.code}</span>
+                  {' · '}
+                  <span>{deficiency.note}</span>
+                  <span className="text-amber-700"> — raised at {deficiency.stage} on {deficiency.raisedAt} by {deficiency.raisedBy}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Multi-Stage Visual Stepper */}
         <div>

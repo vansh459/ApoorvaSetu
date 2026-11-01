@@ -4,23 +4,28 @@ import {
   Search,
   MapPin,
   Users,
-  XCircle
+  XCircle,
+  ClipboardList
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { filterEVCVisitsForUser } from '../services/rbacService';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { checklistProgress } from '../workflow/evc';
+import { formatDisplayDate, getNow, toIsoDate } from '../utils/dates';
 import { EVCVisit } from '../types';
 
 export const EVCScheduling: React.FC = () => {
-  const { evcVisits, setActiveModal, cancelEVC, rescheduleEVC, showToast } = useApp();
+  const { evcVisits, setActiveModal, cancelEVC, rescheduleEVC } = useApp();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
   const [regionFilter, setRegionFilter] = useState('All');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [rescheduleTargetId, setRescheduleTargetId] = useState<string | null>(null);
-  const [newDateInput, setNewDateInput] = useState('2025-11-20');
+  const [newDateInput, setNewDateInput] = useState(toIsoDate(getNow()));
 
   const scopedVisits = React.useMemo(() => {
     return filterEVCVisitsForUser(evcVisits, user);
@@ -216,33 +221,46 @@ export const EVCScheduling: React.FC = () => {
                     <span className="font-semibold text-slate-600">Assigned Committee:</span>
                     <span>{visit.assignedCommittee}</span>
                   </div>
+
+                  <div className="text-[11px] text-slate-500 flex items-center space-x-3 flex-wrap gap-y-1 pt-1">
+                    {visit.applicationId && <span>Case {visit.applicationId}</span>}
+                    {visit.reportDueAt && <span>Report due {formatDisplayDate(visit.reportDueAt)}</span>}
+                    {visit.reportSubmitted ? (
+                      <span className="text-emerald-700 font-semibold">
+                        Report submitted {visit.reportSubmittedAt ? formatDisplayDate(visit.reportSubmittedAt) : ''}
+                      </span>
+                    ) : (
+                      <span>
+                        Checklist {checklistProgress(visit).assessed}/{checklistProgress(visit).total}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Right Action buttons */}
               <div className="flex items-center space-x-2 self-end md:self-center shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 w-full md:w-auto justify-end">
-                <button
-                  onClick={() => {
-                    setRescheduleTargetId(visit.id);
-                    setNewDateInput(visit.date);
-                  }}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                >
-                  Reschedule
-                </button>
-
                 {visit.status !== 'Completed' && (
                   <button
                     onClick={() => {
-                      showToast(`Inspection report verified for ${visit.instituteName}!`, 'success');
+                      setRescheduleTargetId(visit.id);
+                      setNewDateInput(visit.date || toIsoDate(getNow()));
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                   >
-                    Mark Done
+                    Reschedule
                   </button>
                 )}
 
-                {visit.status !== 'Cancelled' && (
+                <button
+                  onClick={() => navigate('/evc/queue')}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center space-x-1.5"
+                >
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  <span>EVC Queue</span>
+                </button>
+
+                {visit.status !== 'Cancelled' && visit.status !== 'Completed' && (
                   <button
                     onClick={() => cancelEVC(visit.id)}
                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"

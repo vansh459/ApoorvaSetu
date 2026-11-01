@@ -2,8 +2,15 @@ import React, { useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
+import { getDataMode } from '../../services/repositories';
 import { Permission, UserRole } from '../../types';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
+
+const remoteAuthEnabled = getDataMode() === 'supabase';
+
+function sessionValid(user: unknown): boolean {
+  return remoteAuthEnabled ? Boolean(user) : authService.isSessionValid();
+}
 
 interface ProtectedRouteProps {
   children?: React.ReactNode;
@@ -24,8 +31,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Active server-side session verification check
-  const isServerValid = authService.isSessionValid();
+  // Active session verification: Supabase Auth in production, signed demo session offline.
+  const isServerValid = sessionValid(user);
 
   useEffect(() => {
     // If client state thinks authenticated, but backend session is missing/revoked, force logout
@@ -108,9 +115,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
  * Automatically forwards authenticated sessions to the role dashboard.
  */
 export const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-  const isServerValid = authService.isSessionValid();
+  const isServerValid = sessionValid(user);
 
   if (isLoading) {
     return (

@@ -71,7 +71,7 @@ export const Notifications: React.FC = () => {
               }`}
             >
               {tab === 'All'
-                ? `All Notifications (${notifications.length})`
+                ? `All Notifications (${scopedNotifs.length})`
                 : tab === 'Unread'
                 ? `Unread (${unreadCount})`
                 : 'High Priority Only'}

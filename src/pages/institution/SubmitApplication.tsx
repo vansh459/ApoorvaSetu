@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
+import { APPLICATION_TYPE_OPTIONS, resolveRoute } from '../../workflow/routes';
 
 export const SubmitApplication: React.FC = () => {
   const navigate = useNavigate();
@@ -114,16 +115,11 @@ export const SubmitApplication: React.FC = () => {
             </h2>
 
             <div className="space-y-2.5">
-              {[
-                { title: 'Extension of Approval (EoA)', desc: 'Annual renewal of approval for existing running programs' },
-                { title: 'Increase in Approved Intake', desc: 'Expand student seat capacity in verified programs' },
-                { title: 'Introduction of New Courses / Emerging Areas', desc: 'Add AI, Data Science, Cyber Security, or Green Tech disciplines' },
-                { title: 'Closure of Non-viable Programs', desc: 'Phased or progressive closure of low-intake courses' }
-              ].map((cat) => (
+              {APPLICATION_TYPE_OPTIONS.map((option) => (
                 <label
-                  key={cat.title}
-                  onClick={() => setAppType(cat.title)}
-                  className={`p-3.5 rounded-xl border flex items-start space-x-3 cursor-pointer transition-all ${appType === cat.title
+                  key={option.value}
+                  onClick={() => setAppType(option.value)}
+                  className={`p-3.5 rounded-xl border flex items-start space-x-3 cursor-pointer transition-all ${appType === option.value
                       ? 'border-blue-500 bg-blue-50/40 shadow-xs'
                       : 'border-slate-200 hover:bg-slate-50'
                     }`}
@@ -131,16 +127,21 @@ export const SubmitApplication: React.FC = () => {
                   <input
                     type="radio"
                     name="appType"
-                    checked={appType === cat.title}
-                    onChange={() => setAppType(cat.title)}
+                    checked={appType === option.value}
+                    onChange={() => setAppType(option.value)}
                     className="mt-0.5 text-blue-600"
                   />
                   <div>
-                    <div className="font-bold text-slate-900">{cat.title}</div>
-                    <div className="text-[11px] text-slate-500">{cat.desc}</div>
+                    <div className="font-bold text-slate-900">{option.value}</div>
+                    <div className="text-[11px] text-slate-500">{option.description}</div>
                   </div>
                 </label>
               ))}
+            </div>
+
+            <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-100 text-[11px] text-blue-900">
+              <span className="font-bold">Automated routing: </span>
+              {resolveRoute(appType).stages.join(' → ')}
             </div>
 
             <div className="pt-4 flex justify-end">

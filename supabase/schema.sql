@@ -109,6 +109,12 @@ CREATE TABLE IF NOT EXISTS documents (
     status TEXT NOT NULL DEFAULT 'Pending',
     file_size TEXT NOT NULL,
     file_type TEXT NOT NULL DEFAULT 'PDF',
+    document_type_code TEXT,
+    renewal_of_id TEXT REFERENCES documents(id) ON DELETE SET NULL,
+    renewal_status TEXT,
+    renewal_note TEXT,
+    verified_by TEXT,
+    storage_path TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -192,36 +198,12 @@ ALTER TABLE regional_offices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_config ENABLE ROW LEVEL SECURITY;
 
--- Development / Hackathon access policies (allows read/write via anon API)
-DO $$
-BEGIN
-    DROP POLICY IF EXISTS "Public full access institutes" ON institutes;
-    CREATE POLICY "Public full access institutes" ON institutes FOR ALL USING (true) WITH CHECK (true);
-
-    DROP POLICY IF EXISTS "Public full access applications" ON applications;
-    CREATE POLICY "Public full access applications" ON applications FOR ALL USING (true) WITH CHECK (true);
-
-    DROP POLICY IF EXISTS "Public full access evc_visits" ON evc_visits;
-    CREATE POLICY "Public full access evc_visits" ON evc_visits FOR ALL USING (true) WITH CHECK (true);
-
-    DROP POLICY IF EXISTS "Public full access compliance_records" ON compliance_records;
-    CREATE POLICY "Public full access compliance_records" ON compliance_records FOR ALL USING (true) WITH CHECK (true);
-
-    DROP POLICY IF EXISTS "Public full access documents" ON documents;
-    CREATE POLICY "Public full access documents" ON documents FOR ALL USING (true) WITH CHECK (true);
-
-    DROP POLICY IF EXISTS "Public full access notifications" ON notifications;
-    CREATE POLICY "Public full access notifications" ON notifications FOR ALL USING (true) WITH CHECK (true);
-
-    DROP POLICY IF EXISTS "Public full access regional_offices" ON regional_offices;
-    CREATE POLICY "Public full access regional_offices" ON regional_offices FOR ALL USING (true) WITH CHECK (true);
-
-    DROP POLICY IF EXISTS "Public full access audit_logs" ON audit_logs;
-    CREATE POLICY "Public full access audit_logs" ON audit_logs FOR ALL USING (true) WITH CHECK (true);
-
-    DROP POLICY IF EXISTS "Public full access system_config" ON system_config;
-    CREATE POLICY "Public full access system_config" ON system_config FOR ALL USING (true) WITH CHECK (true);
-END $$;
+-- SECURITY: this file only bootstraps tables and demo rows.
+-- RLS is enabled above and no permissive policy is created, so anon and
+-- authenticated requests are denied by default. Role-scoped policies, the
+-- profiles/audit/webhook tables and the storage bucket live in
+-- supabase/migrations/20261101090000_production_hardening.sql.
+-- The offline demo never calls Supabase, so it does not need these policies.
 
 -- ------------------------------------------------------------------------------
 -- INITIAL SEED DATA

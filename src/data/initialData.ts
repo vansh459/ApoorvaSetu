@@ -1,16 +1,77 @@
 import {
   Application,
+  ApplicationTimelineEvent,
   Institute,
   EVCVisit,
   ComplianceRecord,
   DocumentItem,
   NotificationItem,
-  RegionalOffice
+  RegionalOffice,
+  Undertaking
 } from '../types';
+import { formatDisplayDate, toIsoDate } from '../utils/dates';
+
+const SEED_DAY_MS = 24 * 60 * 60 * 1000;
+const seedToday = new Date();
+
+function seedDate(offsetDays: number): string {
+  return toIsoDate(new Date(seedToday.getTime() + offsetDays * SEED_DAY_MS));
+}
+
+function seedStamp(offsetDays: number): string {
+  return new Date(seedToday.getTime() + offsetDays * SEED_DAY_MS).toISOString();
+}
+
+function seedDisplay(offsetDays: number): string {
+  return formatDisplayDate(seedDate(offsetDays));
+}
+
+function seedDisplayParts(offsetDays: number): { day: string; month: string } {
+  const [year, month, day] = seedDate(offsetDays).split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return {
+    day: String(date.getDate()).padStart(2, '0'),
+    month: date.toLocaleString('en-US', { month: 'short' })
+  };
+}
+
+const completed = (
+  stage: string,
+  offsetDays: number,
+  officer?: string,
+  notes?: string
+): ApplicationTimelineEvent => ({
+  stage,
+  date: seedDisplay(offsetDays),
+  status: 'completed',
+  officer,
+  notes,
+  enteredAt: seedDate(offsetDays)
+});
+
+const current = (
+  stage: string,
+  offsetDays: number,
+  officer?: string,
+  notes?: string
+): ApplicationTimelineEvent => ({
+  stage,
+  date: seedDisplay(offsetDays),
+  status: 'current',
+  officer,
+  notes,
+  enteredAt: seedDate(offsetDays)
+});
+
+const pending = (stage: string): ApplicationTimelineEvent => ({
+  stage,
+  date: 'Pending',
+  status: 'pending'
+});
 
 export const initialApplications: Application[] = [
   {
-    id: 'AICTE/2025/12876',
+    id: 'AICTE/2026/12876',
     instituteId: 'INST-101',
     instituteName: 'ABC Institute of Tech',
     type: 'Extension of Approval (EoA)',
@@ -18,30 +79,32 @@ export const initialApplications: Application[] = [
     state: 'Uttar Pradesh',
     stage: 'Expert Visit Committee (EVC)',
     status: 'In Progress',
-    lastUpdated: '21 Oct 2025',
-    appliedDate: '12 Sep 2025',
+    stageEnteredAt: seedDate(-4),
+    stageDueAt: seedDate(17),
+    lastUpdated: seedDisplay(-1),
+    appliedDate: seedDisplay(-50),
     category: 'Engineering & Technology',
     intakeProposed: 480,
     programs: ['Computer Science & Engg', 'Electronics & Comm', 'Mechanical Engg'],
     contactEmail: 'registrar@abctech.edu.in',
     contactPhone: '+91 98765 43210',
-    remarks: 'Physical EVC visit scheduled for 02 Nov 2025. Committee constituted.',
+    remarks: `Physical EVC visit scheduled for ${seedDisplay(6)}. Committee constituted.`,
+    evcVisitId: 'EVC-8805',
     documents: [
-      { name: 'Fire Safety Certificate', type: 'PDF', status: 'Verified', uploadedOn: '15 Sep 2025' },
-      { name: 'Land Registration Deed', type: 'PDF', status: 'Verified', uploadedOn: '12 Sep 2025' },
-      { name: 'Faculty Cadre Ratio Declaration', type: 'PDF', status: 'Pending', uploadedOn: '18 Sep 2025' }
+      { name: 'Fire Safety Certificate', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-45) },
+      { name: 'Land Registration Deed', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-50) },
+      { name: 'Faculty Cadre Ratio Declaration', type: 'PDF', status: 'Pending', uploadedOn: seedDisplay(-3) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '12 Sep 2025', status: 'completed', officer: 'Portal Auto-ack', notes: 'Application fee paid and submitted.' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '28 Sep 2025', status: 'completed', officer: 'Dr. R. K. Sharma (RO)', notes: 'Primary scrutiny cleared without deficiencies.' },
-      { stage: 'Expert Visit Committee (EVC)', date: '21 Oct 2025', status: 'current', officer: 'Committee Head: Prof. S. Banerjee', notes: 'Inspection scheduled for facility audit.' },
-      { stage: 'SAC / SHC', date: 'Pending', status: 'pending' },
-      { stage: 'Approval (Subject to Undertaking)', date: 'Pending', status: 'pending' },
-      { stage: 'Final Approval', date: 'Pending', status: 'pending' }
+      completed('Submitted', -50, 'Portal Auto-ack', 'Application fee paid and submitted.'),
+      completed('Scrutiny / Re-scrutiny', -35, 'Dr. R. K. Sharma (RO)', 'Primary scrutiny cleared without deficiencies.'),
+      current('Expert Visit Committee (EVC)', -4, 'Committee Head: Prof. S. Banerjee', 'Inspection scheduled for facility audit.'),
+      pending('Approval (Subject to Undertaking)'),
+      pending('Final Approval')
     ]
   },
   {
-    id: 'AICTE/2025/12875',
+    id: 'AICTE/2026/12875',
     instituteId: 'INST-102',
     instituteName: 'XYZ College of Engg.',
     type: 'New Technical Campus',
@@ -49,8 +112,10 @@ export const initialApplications: Application[] = [
     state: 'Maharashtra',
     stage: 'Scrutiny / Re-scrutiny',
     status: 'In Progress',
-    lastUpdated: '20 Oct 2025',
-    appliedDate: '18 Sep 2025',
+    stageEnteredAt: seedDate(-26),
+    stageDueAt: seedDate(4),
+    lastUpdated: seedDisplay(-1),
+    appliedDate: seedDisplay(-31),
     category: 'Engineering & Technology',
     intakeProposed: 360,
     programs: ['AI & Data Science', 'Information Tech', 'Civil Engg'],
@@ -58,50 +123,53 @@ export const initialApplications: Application[] = [
     contactPhone: '+91 98220 11223',
     remarks: 'Re-scrutiny requested for revised master plan and floor area calculations.',
     documents: [
-      { name: 'Building Approval Plan', type: 'PDF', status: 'Pending', uploadedOn: '19 Sep 2025' },
-      { name: 'Society Registration', type: 'PDF', status: 'Verified', uploadedOn: '18 Sep 2025' }
+      { name: 'Building Approval Plan', type: 'PDF', status: 'Pending', uploadedOn: seedDisplay(-28) },
+      { name: 'Society Registration', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-31) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '18 Sep 2025', status: 'completed', officer: 'Portal Auto-ack', notes: 'Initial submission' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '20 Oct 2025', status: 'current', officer: 'Er. A. Kulkarni (Western RO)', notes: 'Clarification sought on land conversion certificate.' },
-      { stage: 'Expert Visit Committee (EVC)', date: 'Pending', status: 'pending' },
-      { stage: 'SAC / SHC', date: 'Pending', status: 'pending' },
-      { stage: 'Approval (Subject to Undertaking)', date: 'Pending', status: 'pending' },
-      { stage: 'Final Approval', date: 'Pending', status: 'pending' }
+      completed('Submitted', -31, 'Portal Auto-ack', 'Initial submission'),
+      current('Scrutiny / Re-scrutiny', -26, 'Er. A. Kulkarni (Western RO)', 'Clarification sought on land conversion certificate.'),
+      pending('Expert Visit Committee (EVC)'),
+      pending('SAC / SHC'),
+      pending('Approval (Subject to Undertaking)'),
+      pending('Final Approval')
     ]
   },
   {
-    id: 'AICTE/2025/12874',
+    id: 'AICTE/2026/12874',
     instituteId: 'INST-103',
     instituteName: 'Global Institute',
-    type: 'Increase in Intake',
+    type: 'New Technical Campus',
     region: 'Southern',
     state: 'Karnataka',
     stage: 'SAC / SHC',
     status: 'Pending',
-    lastUpdated: '19 Oct 2025',
-    appliedDate: '01 Sep 2025',
+    stageEnteredAt: seedDate(-21),
+    stageDueAt: seedDate(0),
+    lastUpdated: seedDisplay(-2),
+    appliedDate: seedDisplay(-90),
     category: 'Management',
     intakeProposed: 180,
     programs: ['MBA General', 'MBA Business Analytics'],
     contactEmail: 'dean@globalmgmt.edu',
     contactPhone: '+91 97410 99887',
-    remarks: 'Standing Appellate Committee review set for hearing on 05 Nov 2025.',
+    remarks: `Standing Appellate Committee review set for hearing on ${seedDisplay(3)}.`,
+    evcVisitId: 'EVC-8806',
     documents: [
-      { name: 'Audited Financial Statements', type: 'PDF', status: 'Verified', uploadedOn: '02 Sep 2025' },
-      { name: 'Affiliation Letter - Bangalore Univ', type: 'PDF', status: 'Verified', uploadedOn: '05 Sep 2025' }
+      { name: 'Audited Financial Statements', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-88) },
+      { name: 'Affiliation Letter - Bangalore Univ', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-85) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '01 Sep 2025', status: 'completed', officer: 'Portal Auto-ack' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '15 Sep 2025', status: 'completed', officer: 'Southern RO Committee' },
-      { stage: 'Expert Visit Committee (EVC)', date: '08 Oct 2025', status: 'completed', officer: 'Prof. M. Swamy' },
-      { stage: 'SAC / SHC', date: '19 Oct 2025', status: 'current', officer: 'SAC Bench-2', notes: 'Review of student-teacher ratio deficiency response.' },
-      { stage: 'Approval (Subject to Undertaking)', date: 'Pending', status: 'pending' },
-      { stage: 'Final Approval', date: 'Pending', status: 'pending' }
+      completed('Submitted', -90, 'Portal Auto-ack'),
+      completed('Scrutiny / Re-scrutiny', -70, 'Southern RO Committee'),
+      completed('Expert Visit Committee (EVC)', -40, 'Prof. M. Swamy'),
+      current('SAC / SHC', -21, 'SAC Bench-2', 'Review of student-teacher ratio deficiency response.'),
+      pending('Approval (Subject to Undertaking)'),
+      pending('Final Approval')
     ]
   },
   {
-    id: 'AICTE/2025/12873',
+    id: 'AICTE/2026/12873',
     instituteId: 'INST-104',
     instituteName: 'Techno Institute',
     type: 'Extension of Approval (EoA)',
@@ -109,8 +177,10 @@ export const initialApplications: Application[] = [
     state: 'West Bengal',
     stage: 'Approval (Subject to Undertaking)',
     status: 'Action Required',
-    lastUpdated: '18 Oct 2025',
-    appliedDate: '25 Aug 2025',
+    stageEnteredAt: seedDate(-18),
+    stageDueAt: seedDate(-3),
+    lastUpdated: seedDisplay(-1),
+    appliedDate: seedDisplay(-75),
     category: 'Engineering & Technology',
     intakeProposed: 420,
     programs: ['Electrical Engg', 'Computer Science', 'Cyber Security'],
@@ -118,20 +188,19 @@ export const initialApplications: Application[] = [
     contactPhone: '+91 93300 44556',
     remarks: 'Pending signed affidavit for ramp/barrier-free environment compliance before EoA release.',
     documents: [
-      { name: 'Barrier-Free Environment Affidavit', type: 'PDF', status: 'Rejected', uploadedOn: '10 Oct 2025' },
-      { name: 'Structural Safety Certificate', type: 'PDF', status: 'Verified', uploadedOn: '28 Aug 2025' }
+      { name: 'Barrier-Free Environment Affidavit', type: 'PDF', status: 'Rejected', uploadedOn: seedDisplay(-10) },
+      { name: 'Structural Safety Certificate', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-72) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '25 Aug 2025', status: 'completed' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '10 Sep 2025', status: 'completed' },
-      { stage: 'Expert Visit Committee (EVC)', date: '30 Sep 2025', status: 'completed' },
-      { stage: 'SAC / SHC', date: '12 Oct 2025', status: 'completed' },
-      { stage: 'Approval (Subject to Undertaking)', date: '18 Oct 2025', status: 'current', officer: 'Approval Bureau', notes: 'Action Required: Upload notarized affidavit on stamp paper.' },
-      { stage: 'Final Approval', date: 'Pending', status: 'pending' }
+      completed('Submitted', -75),
+      completed('Scrutiny / Re-scrutiny', -60),
+      completed('Expert Visit Committee (EVC)', -45),
+      current('Approval (Subject to Undertaking)', -18, 'Approval Bureau', 'Action Required: Upload notarized affidavit on stamp paper.'),
+      pending('Final Approval')
     ]
   },
   {
-    id: 'AICTE/2025/12872',
+    id: 'AICTE/2026/12872',
     instituteId: 'INST-105',
     instituteName: 'Sunrise College',
     type: 'Extension of Approval (EoA)',
@@ -139,58 +208,71 @@ export const initialApplications: Application[] = [
     state: 'Madhya Pradesh',
     stage: 'Final Approval',
     status: 'Approved',
-    lastUpdated: '17 Oct 2025',
-    appliedDate: '15 Aug 2025',
+    stageEnteredAt: seedDate(-20),
+    stageDueAt: seedDate(-10),
+    lastUpdated: seedDisplay(-10),
+    appliedDate: seedDisplay(-85),
     category: 'Pharmacy',
     intakeProposed: 100,
     programs: ['B.Pharm', 'M.Pharm Pharmaceutics'],
     contactEmail: 'principal@sunrisecollege.ac.in',
     contactPhone: '+91 755 2776655',
-    remarks: 'Approval Letter AICTE/ERO/2025/EOA-0994 issued and sealed digitally.',
+    remarks: 'Approval Letter issued and sealed digitally.',
+    evcVisitId: 'EVC-8803',
+    decision: {
+      outcome: 'Approved',
+      code: 'APPROVED_FINAL',
+      note: 'Approved for Academic Year 2026-27 after compliance verification.',
+      by: 'Member Secretary, AICTE',
+      at: seedDate(-10),
+      competentAuthority: 'Member Secretary, AICTE'
+    },
+    lastActionBy: 'Member Secretary, AICTE',
     documents: [
-      { name: 'PCI NOC Certificate', type: 'PDF', status: 'Verified', uploadedOn: '16 Aug 2025' },
-      { name: 'Lab Infrastructure Verification', type: 'PDF', status: 'Verified', uploadedOn: '22 Sep 2025' }
+      { name: 'PCI NOC Certificate', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-84) },
+      { name: 'Lab Infrastructure Verification', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-50) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '15 Aug 2025', status: 'completed' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '02 Sep 2025', status: 'completed' },
-      { stage: 'Expert Visit Committee (EVC)', date: '22 Sep 2025', status: 'completed' },
-      { stage: 'SAC / SHC', date: '05 Oct 2025', status: 'completed' },
-      { stage: 'Approval (Subject to Undertaking)', date: '12 Oct 2025', status: 'completed' },
-      { stage: 'Final Approval', date: '17 Oct 2025', status: 'completed', officer: 'Member Secretary, AICTE', notes: 'Approved for Academic Year 2026-27.' }
+      completed('Submitted', -85),
+      completed('Scrutiny / Re-scrutiny', -70),
+      completed('Expert Visit Committee (EVC)', -55),
+      completed('Approval (Subject to Undertaking)', -35),
+      completed('Final Approval', -10, 'Member Secretary, AICTE', 'Approved for Academic Year 2026-27.')
     ]
   },
   {
-    id: 'AICTE/2025/12871',
+    id: 'AICTE/2026/12871',
     instituteId: 'INST-106',
     instituteName: 'NIT Rourkela',
-    type: 'New Course Introduction',
+    type: 'Extension of Approval (EoA)',
     region: 'Eastern',
     state: 'Odisha',
     stage: 'Expert Visit Committee (EVC)',
     status: 'In Progress',
-    lastUpdated: '16 Oct 2025',
-    appliedDate: '20 Aug 2025',
+    stageEnteredAt: seedDate(-14),
+    stageDueAt: seedDate(7),
+    lastUpdated: seedDisplay(-6),
+    appliedDate: seedDisplay(-60),
     category: 'Engineering & Technology',
     intakeProposed: 60,
     programs: ['M.Tech Quantum Computing'],
     contactEmail: 'director@nitrkl.ac.in',
     contactPhone: '+91 661 2462001',
-    remarks: 'EVC Visit confirmed for 24 Oct 2025.',
+    remarks: `EVC visit completed on ${seedDisplay(-13)}; inspection report is overdue.`,
+    evcVisitId: 'EVC-8801',
     documents: [
-      { name: 'Senate Approval Minutes', type: 'PDF', status: 'Verified', uploadedOn: '20 Aug 2025' }
+      { name: 'Senate Approval Minutes', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-60) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '20 Aug 2025', status: 'completed' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '10 Sep 2025', status: 'completed' },
-      { stage: 'Expert Visit Committee (EVC)', date: '16 Oct 2025', status: 'current', notes: 'Visit date 24 Oct 2025' },
-      { stage: 'SAC / SHC', date: 'Pending', status: 'pending' },
-      { stage: 'Approval (Subject to Undertaking)', date: 'Pending', status: 'pending' },
-      { stage: 'Final Approval', date: 'Pending', status: 'pending' }
+      completed('Submitted', -60),
+      completed('Scrutiny / Re-scrutiny', -40),
+      current('Expert Visit Committee (EVC)', -14, 'Committee East-A', `Visit conducted ${seedDisplay(-13)}; report pending.`),
+      pending('Approval (Subject to Undertaking)'),
+      pending('Final Approval')
     ]
   },
   {
-    id: 'AICTE/2025/12870',
+    id: 'AICTE/2026/12870',
     instituteId: 'INST-107',
     instituteName: 'IIIT Hyderabad',
     type: 'Extension of Approval',
@@ -198,57 +280,78 @@ export const initialApplications: Application[] = [
     state: 'Telangana',
     stage: 'Expert Visit Committee (EVC)',
     status: 'In Progress',
-    lastUpdated: '15 Oct 2025',
-    appliedDate: '10 Aug 2025',
+    stageEnteredAt: seedDate(-2),
+    stageDueAt: seedDate(19),
+    lastUpdated: seedDisplay(-1),
+    appliedDate: seedDisplay(-35),
     category: 'Engineering & Technology',
     intakeProposed: 300,
     programs: ['B.Tech Computer Science', 'B.Tech ECE'],
     contactEmail: 'academics@iiit.ac.in',
     contactPhone: '+91 40 66531000',
-    remarks: 'Hybrid EVC committee inspection confirmed for 28 Oct 2025.',
+    remarks: `Hybrid EVC committee inspection confirmed for ${seedDisplay(5)}.`,
+    evcVisitId: 'EVC-8802',
     documents: [
-      { name: 'Research Grant Audit', type: 'PDF', status: 'Verified', uploadedOn: '12 Aug 2025' }
+      { name: 'Research Grant Audit', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-33) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '10 Aug 2025', status: 'completed' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '01 Sep 2025', status: 'completed' },
-      { stage: 'Expert Visit Committee (EVC)', date: '15 Oct 2025', status: 'current' },
-      { stage: 'SAC / SHC', date: 'Pending', status: 'pending' },
-      { stage: 'Approval (Subject to Undertaking)', date: 'Pending', status: 'pending' },
-      { stage: 'Final Approval', date: 'Pending', status: 'pending' }
+      completed('Submitted', -35),
+      completed('Scrutiny / Re-scrutiny', -20),
+      current('Expert Visit Committee (EVC)', -2),
+      pending('Approval (Subject to Undertaking)'),
+      pending('Final Approval')
     ]
   },
   {
-    id: 'AICTE/2025/12869',
+    id: 'AICTE/2026/12869',
     instituteId: 'INST-108',
     instituteName: 'GGSIPU Delhi',
     type: 'Addition of Integrated Course',
     region: 'Northern',
     state: 'Delhi',
-    stage: 'Expert Visit Committee (EVC)',
-    status: 'In Progress',
-    lastUpdated: '14 Oct 2025',
-    appliedDate: '05 Aug 2025',
+    stage: 'Scrutiny / Re-scrutiny',
+    status: 'Returned',
+    stageEnteredAt: seedDate(-20),
+    stageDueAt: seedDate(10),
+    lastUpdated: seedDisplay(-3),
+    appliedDate: seedDisplay(-32),
     category: 'Engineering & Technology',
     intakeProposed: 120,
     programs: ['Integrated B.Tech - M.Tech Biotech'],
     contactEmail: 'vc@ipu.ac.in',
     contactPhone: '+91 11 25302170',
-    remarks: 'EVC Visit set for 02 Nov 2025 at Dwarka Campus.',
+    remarks: 'Returned for correction (DOC_MISSING): the state NOC copy is illegible.',
+    deficiencies: [
+      {
+        code: 'DOC_MISSING',
+        note: 'The State Government NOC uploaded on the portal is illegible. Upload a signed, self-attested copy.',
+        stage: 'Scrutiny / Re-scrutiny',
+        raisedAt: seedDate(-3),
+        raisedBy: 'Dr. R. K. Sharma (RO)'
+      }
+    ],
+    returns: [
+      {
+        fromStage: 'Scrutiny / Re-scrutiny',
+        toStage: 'Scrutiny / Re-scrutiny',
+        code: 'DOC_MISSING',
+        note: 'The State Government NOC uploaded on the portal is illegible. Upload a signed, self-attested copy.',
+        by: 'Dr. R. K. Sharma (RO)',
+        at: seedDate(-3)
+      }
+    ],
     documents: [
-      { name: 'State Govt NOC', type: 'PDF', status: 'Verified', uploadedOn: '06 Aug 2025' }
+      { name: 'State Govt NOC', type: 'PDF', status: 'Pending', uploadedOn: seedDisplay(-30) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '05 Aug 2025', status: 'completed' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '25 Aug 2025', status: 'completed' },
-      { stage: 'Expert Visit Committee (EVC)', date: '14 Oct 2025', status: 'current' },
-      { stage: 'SAC / SHC', date: 'Pending', status: 'pending' },
-      { stage: 'Approval (Subject to Undertaking)', date: 'Pending', status: 'pending' },
-      { stage: 'Final Approval', date: 'Pending', status: 'pending' }
+      completed('Submitted', -32),
+      current('Scrutiny / Re-scrutiny', -20, 'Dr. R. K. Sharma (RO)', 'Returned (DOC_MISSING): the state NOC copy is illegible.'),
+      pending('Approval (Subject to Undertaking)'),
+      pending('Final Approval')
     ]
   },
   {
-    id: 'AICTE/2025/12868',
+    id: 'AICTE/2026/12868',
     instituteId: 'INST-109',
     instituteName: 'VIT Vellore',
     type: 'Extension of Approval',
@@ -256,28 +359,30 @@ export const initialApplications: Application[] = [
     state: 'Tamil Nadu',
     stage: 'Expert Visit Committee (EVC)',
     status: 'Pending',
-    lastUpdated: '13 Oct 2025',
-    appliedDate: '01 Aug 2025',
+    stageEnteredAt: seedDate(-5),
+    stageDueAt: seedDate(16),
+    lastUpdated: seedDisplay(-2),
+    appliedDate: seedDisplay(-40),
     category: 'Engineering & Technology',
     intakeProposed: 1200,
     programs: ['B.Tech Software Engg', 'B.Tech Bio-medical'],
     contactEmail: 'registrar@vit.ac.in',
     contactPhone: '+91 416 2202020',
-    remarks: 'Committee constitution pending for 07 Nov 2025 visit.',
+    remarks: `Committee constitution pending for the ${seedDisplay(9)} visit.`,
+    evcVisitId: 'EVC-8804',
     documents: [
-      { name: 'Campus Safety Audit', type: 'PDF', status: 'Verified', uploadedOn: '04 Aug 2025' }
+      { name: 'Campus Safety Audit', type: 'PDF', status: 'Verified', uploadedOn: seedDisplay(-38) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '01 Aug 2025', status: 'completed' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '20 Aug 2025', status: 'completed' },
-      { stage: 'Expert Visit Committee (EVC)', date: '13 Oct 2025', status: 'current' },
-      { stage: 'SAC / SHC', date: 'Pending', status: 'pending' },
-      { stage: 'Approval (Subject to Undertaking)', date: 'Pending', status: 'pending' },
-      { stage: 'Final Approval', date: 'Pending', status: 'pending' }
+      completed('Submitted', -40),
+      completed('Scrutiny / Re-scrutiny', -25),
+      current('Expert Visit Committee (EVC)', -5),
+      pending('Approval (Subject to Undertaking)'),
+      pending('Final Approval')
     ]
   },
   {
-    id: 'AICTE/2025/12867',
+    id: 'AICTE/2026/12867',
     instituteId: 'INST-110',
     instituteName: 'Apex School of Architecture',
     type: 'New Technical Campus',
@@ -285,20 +390,22 @@ export const initialApplications: Application[] = [
     state: 'Assam',
     stage: 'Scrutiny / Re-scrutiny',
     status: 'In Progress',
-    lastUpdated: '11 Oct 2025',
-    appliedDate: '28 Aug 2025',
+    stageEnteredAt: seedDate(-42),
+    stageDueAt: seedDate(-12),
+    lastUpdated: seedDisplay(-4),
+    appliedDate: seedDisplay(-50),
     category: 'Architecture',
     intakeProposed: 80,
     programs: ['B.Arch', 'M.Arch Urban Design'],
     contactEmail: 'info@apexarch.edu.in',
     contactPhone: '+91 361 2459988',
-    remarks: 'Council of Architecture (COA) synchronization under review.',
+    remarks: 'Council of Architecture (COA) synchronization under review; scrutiny deadline crossed.',
     documents: [
-      { name: 'COA Concurrence Letter', type: 'PDF', status: 'Pending', uploadedOn: '01 Sep 2025' }
+      { name: 'COA Concurrence Letter', type: 'PDF', status: 'Pending', uploadedOn: seedDisplay(-46) }
     ],
     timeline: [
-      { stage: 'Submitted', date: '28 Aug 2025', status: 'completed' },
-      { stage: 'Scrutiny / Re-scrutiny', date: '11 Oct 2025', status: 'current' }
+      completed('Submitted', -50),
+      current('Scrutiny / Re-scrutiny', -42, 'Dr. P. K. Goswami (RO)', 'COA concurrence still awaited; statutory scrutiny window crossed.')
     ]
   }
 ];
@@ -499,78 +606,107 @@ export const initialInstitutes: Institute[] = [
 export const initialEVCVisits: EVCVisit[] = [
   {
     id: 'EVC-8801',
-    applicationId: 'AICTE/2025/12871',
+    applicationId: 'AICTE/2026/12871',
     instituteId: 'INST-106',
     instituteName: 'NIT Rourkela',
     stateRegion: 'Odisha (Eastern Region)',
     region: 'Eastern',
-    date: '2025-10-24',
-    displayDate: { day: '24', month: 'Oct' },
+    date: seedDate(-13),
+    displayDate: seedDisplayParts(-13),
     status: 'Scheduled',
     assignedCommittee: 'Committee East-A (Prof. H. K. Dash, Prof. R. Misra)',
     committeeMembers: ['Prof. H. K. Dash (IIT Kharagpur)', 'Prof. R. Misra (Jadavpur Univ)', 'AICTE Observer: Shri P. Roy'],
     mode: 'Physical',
+    scheduledAt: seedDate(-13),
+    reportDueAt: seedDate(-6),
     reportSubmitted: false
   },
   {
     id: 'EVC-8802',
-    applicationId: 'AICTE/2025/12870',
+    applicationId: 'AICTE/2026/12870',
     instituteId: 'INST-107',
     instituteName: 'IIIT Hyderabad',
     stateRegion: 'Telangana (Southern Region)',
     region: 'Southern',
-    date: '2025-10-28',
-    displayDate: { day: '28', month: 'Oct' },
+    date: seedDate(5),
+    displayDate: seedDisplayParts(5),
     status: 'Scheduled',
     assignedCommittee: 'Committee South-C (Prof. K. Rajan, Dr. N. Murthy)',
     committeeMembers: ['Prof. K. Rajan (IIT Madras)', 'Dr. N. Murthy (NIT Warangal)', 'AICTE Observer: Smt. L. Reddy'],
     mode: 'Hybrid',
+    scheduledAt: seedDate(5),
+    reportDueAt: seedDate(12),
     reportSubmitted: false
   },
   {
     id: 'EVC-8803',
-    applicationId: 'AICTE/2025/12869',
-    instituteId: 'INST-108',
-    instituteName: 'GGSIPU',
-    stateRegion: 'Delhi (Northern Region)',
-    region: 'Northern',
-    date: '2025-11-02',
-    displayDate: { day: '02', month: 'Nov' },
-    status: 'Scheduled',
-    assignedCommittee: 'Committee North-B (Prof. A. K. Jain, Prof. V. K. Aggarwal)',
-    committeeMembers: ['Prof. A. K. Jain (DTU)', 'Prof. V. K. Aggarwal (IIT Delhi)', 'AICTE Observer: Shri R. K. Mathur'],
+    applicationId: 'AICTE/2026/12872',
+    instituteId: 'INST-105',
+    instituteName: 'Sunrise College',
+    stateRegion: 'Madhya Pradesh (Central Region)',
+    region: 'Central',
+    date: seedDate(-55),
+    displayDate: seedDisplayParts(-55),
+    status: 'Completed',
+    assignedCommittee: 'Committee Central-A (Prof. R. Shukla, Dr. M. Tiwari)',
+    committeeMembers: ['Prof. R. Shukla (MANIT Bhopal)', 'Dr. M. Tiwari (RGPV)', 'AICTE Observer: Shri S. Nair'],
     mode: 'Physical',
-    reportSubmitted: false
+    scheduledAt: seedDate(-55),
+    reportDueAt: seedDate(-48),
+    reportSubmitted: true,
+    reportSubmittedAt: seedDate(-50)
   },
   {
     id: 'EVC-8804',
-    applicationId: 'AICTE/2025/12868',
+    applicationId: 'AICTE/2026/12868',
     instituteId: 'INST-109',
     instituteName: 'VIT Vellore',
     stateRegion: 'Tamil Nadu (Southern Region)',
     region: 'Southern',
-    date: '2025-11-07',
-    displayDate: { day: '07', month: 'Nov' },
+    date: seedDate(9),
+    displayDate: seedDisplayParts(9),
     status: 'Pending',
     assignedCommittee: 'Panel Composition Pending',
     committeeMembers: ['Awaiting nomination from Southern Regional Committee'],
     mode: 'Physical',
+    scheduledAt: seedDate(9),
+    reportDueAt: seedDate(16),
     reportSubmitted: false
   },
   {
     id: 'EVC-8805',
-    applicationId: 'AICTE/2025/12876',
+    applicationId: 'AICTE/2026/12876',
     instituteId: 'INST-101',
     instituteName: 'ABC Institute of Tech',
     stateRegion: 'Uttar Pradesh (Northern Region)',
     region: 'Northern',
-    date: '2025-11-12',
-    displayDate: { day: '12', month: 'Nov' },
+    date: seedDate(6),
+    displayDate: seedDisplayParts(6),
     status: 'Scheduled',
     assignedCommittee: 'Committee North-D (Prof. S. Banerjee, Dr. O. P. Singh)',
     committeeMembers: ['Prof. S. Banerjee (IIT Roorkee)', 'Dr. O. P. Singh (KNIT Sultanpur)'],
     mode: 'Physical',
+    scheduledAt: seedDate(6),
+    reportDueAt: seedDate(13),
     reportSubmitted: false
+  },
+  {
+    id: 'EVC-8806',
+    applicationId: 'AICTE/2026/12874',
+    instituteId: 'INST-103',
+    instituteName: 'Global Institute',
+    stateRegion: 'Karnataka (Southern Region)',
+    region: 'Southern',
+    date: seedDate(-40),
+    displayDate: seedDisplayParts(-40),
+    status: 'Completed',
+    assignedCommittee: 'Committee South-B (Prof. M. Swamy, Dr. P. Bhat)',
+    committeeMembers: ['Prof. M. Swamy (NIT Surathkal)', 'Dr. P. Bhat (VTU)', 'AICTE Observer: Smt. R. Menon'],
+    mode: 'Hybrid',
+    scheduledAt: seedDate(-40),
+    reportDueAt: seedDate(-33),
+    reportSubmitted: true,
+    reportSubmittedAt: seedDate(-36)
   }
 ];
 
@@ -583,7 +719,7 @@ export const initialComplianceRecords: ComplianceRecord[] = [
     instituteId: 'INST-101',
     region: 'Northern',
     status: 'Pending',
-    dueDate: '2025-11-30',
+    dueDate: seedDate(7),
     urgency: 'high'
   },
   {
@@ -594,7 +730,7 @@ export const initialComplianceRecords: ComplianceRecord[] = [
     instituteId: 'INST-104',
     region: 'Eastern',
     status: 'Critical',
-    dueDate: '2025-10-31',
+    dueDate: seedDate(-12),
     urgency: 'high'
   },
   {
@@ -605,18 +741,18 @@ export const initialComplianceRecords: ComplianceRecord[] = [
     instituteId: 'INST-102',
     region: 'Western',
     status: 'Pending',
-    dueDate: '2025-11-15',
+    dueDate: seedDate(11),
     urgency: 'medium'
   },
   {
     id: 'CMP-104',
     title: 'Documents Expired',
     category: 'Expired Documents',
-    instituteName: 'Shri Ram Polytechnic',
-    instituteId: 'INST-111',
-    region: 'Central',
+    instituteName: 'ABC Institute of Tech',
+    instituteId: 'INST-101',
+    region: 'Northern',
     status: 'Expired',
-    dueDate: '2025-10-01',
+    dueDate: seedDate(-45),
     urgency: 'high'
   },
   {
@@ -627,7 +763,7 @@ export const initialComplianceRecords: ComplianceRecord[] = [
     instituteId: 'INST-105',
     region: 'Central',
     status: 'Verified',
-    dueDate: '2026-10-15',
+    dueDate: seedDate(365),
     urgency: 'low'
   }
 ];
@@ -640,24 +776,27 @@ export const initialDocuments: DocumentItem[] = [
     instituteName: 'ABC Institute of Tech',
     instituteId: 'INST-101',
     region: 'Northern',
-    uploadDate: '12 Sep 2025',
-    expiryDate: '15 Dec 2025',
-    status: 'Pending',
+    uploadDate: seedDate(-500),
+    expiryDate: seedDate(-45),
+    status: 'Expired',
     fileSize: '4.2 MB',
-    fileType: 'PDF'
+    fileType: 'PDF',
+    documentTypeCode: 'LAND_OWNERSHIP_DEED'
   },
   {
     id: 'DOC-502',
-    title: 'Fire Safety NOC (Valid 2025-2028)',
+    title: 'Fire Safety NOC (Valid to 2028)',
     category: 'Fire Safety',
     instituteName: 'ABC Institute of Tech',
     instituteId: 'INST-101',
     region: 'Northern',
-    uploadDate: '15 Sep 2025',
-    expiryDate: '14 Sep 2028',
+    uploadDate: seedDate(-400),
+    expiryDate: seedDate(700),
     status: 'Verified',
     fileSize: '2.1 MB',
-    fileType: 'PDF'
+    fileType: 'PDF',
+    documentTypeCode: 'FIRE_SAFETY_NOC',
+    verifiedBy: 'Dr. R. K. Sharma (Northern RO)'
   },
   {
     id: 'DOC-503',
@@ -666,11 +805,13 @@ export const initialDocuments: DocumentItem[] = [
     instituteName: 'XYZ College of Engg.',
     instituteId: 'INST-102',
     region: 'Western',
-    uploadDate: '19 Sep 2025',
-    expiryDate: '19 Sep 2030',
+    uploadDate: seedDate(-300),
+    expiryDate: seedDate(1600),
     status: 'Verified',
     fileSize: '5.8 MB',
-    fileType: 'PDF'
+    fileType: 'PDF',
+    documentTypeCode: 'BUILDING_STABILITY',
+    verifiedBy: 'Dr. A. K. Verma (Western RO)'
   },
   {
     id: 'DOC-504',
@@ -679,24 +820,29 @@ export const initialDocuments: DocumentItem[] = [
     instituteName: 'Global Institute',
     instituteId: 'INST-103',
     region: 'Southern',
-    uploadDate: '05 Sep 2025',
-    expiryDate: '30 Jun 2026',
+    uploadDate: seedDate(-200),
+    expiryDate: seedDate(500),
     status: 'Verified',
     fileSize: '1.4 MB',
-    fileType: 'PDF'
+    fileType: 'PDF',
+    documentTypeCode: 'UNIVERSITY_AFFILIATION',
+    renewalStatus: 'Submitted',
+    verifiedBy: 'Dr. K. R. Iyer (Southern RO)'
   },
   {
     id: 'DOC-505',
-    title: 'Audited Balance Sheet & Financial Statements AY 2024-25',
+    title: 'Audited Balance Sheet & Financial Statements',
     category: 'Audit & Finance',
     instituteName: 'Techno Institute',
     instituteId: 'INST-104',
     region: 'Eastern',
-    uploadDate: '28 Aug 2025',
-    expiryDate: '31 Mar 2026',
+    uploadDate: seedDate(-90),
+    expiryDate: seedDate(240),
     status: 'Verified',
     fileSize: '8.3 MB',
-    fileType: 'PDF'
+    fileType: 'PDF',
+    documentTypeCode: 'AUDITED_FINANCIALS',
+    verifiedBy: 'Dr. A. K. Verma (Eastern RO)'
   },
   {
     id: 'DOC-506',
@@ -705,19 +851,189 @@ export const initialDocuments: DocumentItem[] = [
     instituteName: 'Techno Institute',
     instituteId: 'INST-104',
     region: 'Eastern',
-    uploadDate: '10 Oct 2025',
-    expiryDate: '10 Oct 2026',
+    uploadDate: seedDate(-10),
+    expiryDate: seedDate(45),
     status: 'Pending',
     fileSize: '1.9 MB',
-    fileType: 'PDF'
+    fileType: 'PDF',
+    documentTypeCode: 'BARRIER_FREE_AFFIDAVIT'
+  },
+  {
+    id: 'DOC-507',
+    title: 'Registered Land Lease Deed (30-year tenure)',
+    category: 'Land & Building',
+    instituteName: 'ABC Institute of Tech',
+    instituteId: 'INST-101',
+    region: 'Northern',
+    uploadDate: seedDate(-400),
+    expiryDate: seedDate(7),
+    status: 'Verified',
+    fileSize: '6.1 MB',
+    fileType: 'PDF',
+    documentTypeCode: 'LAND_LEASE_DEED',
+    verifiedBy: 'Dr. R. K. Sharma (Northern RO)'
+  },
+  {
+    id: 'DOC-508',
+    title: 'State Government University Affiliation Extension (renewal)',
+    category: 'Affiliation',
+    instituteName: 'Global Institute',
+    instituteId: 'INST-103',
+    region: 'Southern',
+    uploadDate: seedDate(-3),
+    expiryDate: seedDate(500),
+    status: 'Pending',
+    fileSize: '1.6 MB',
+    fileType: 'PDF',
+    documentTypeCode: 'UNIVERSITY_AFFILIATION',
+    renewalOfId: 'DOC-504',
+    renewalStatus: 'Submitted'
+  },
+  {
+    id: 'DOC-509',
+    title: 'Fire Safety NOC Renewal (2026-2033)',
+    category: 'Fire Safety',
+    instituteName: 'Techno Institute',
+    instituteId: 'INST-104',
+    region: 'Eastern',
+    uploadDate: seedDate(-30),
+    expiryDate: seedDate(900),
+    status: 'Verified',
+    fileSize: '2.4 MB',
+    fileType: 'PDF',
+    documentTypeCode: 'FIRE_SAFETY_NOC',
+    renewalOfId: 'DOC-510',
+    renewalStatus: 'Verified',
+    verifiedBy: 'Dr. A. K. Verma (Eastern RO)'
+  },
+  {
+    id: 'DOC-510',
+    title: 'Fire Safety NOC (2019-2024)',
+    category: 'Fire Safety',
+    instituteName: 'Techno Institute',
+    instituteId: 'INST-104',
+    region: 'Eastern',
+    uploadDate: seedDate(-1000),
+    expiryDate: seedDate(-400),
+    status: 'Superseded',
+    fileSize: '1.7 MB',
+    fileType: 'PDF',
+    documentTypeCode: 'FIRE_SAFETY_NOC'
+  }
+];
+
+export const initialUndertakings: Undertaking[] = [
+  {
+    id: 'UND-2601',
+    applicationId: 'AICTE/2026/12873',
+    instituteId: 'INST-104',
+    instituteName: 'Techno Institute',
+    region: 'Eastern',
+    conditionCode: 'UND_BARRIER_FREE',
+    title: 'Barrier-free environment affidavit',
+    dueDate: seedDate(-12),
+    evidenceDocumentIds: [],
+    status: 'Pending',
+    escalationLevel: 0
+  },
+  {
+    id: 'UND-2602',
+    applicationId: 'AICTE/2026/12873',
+    instituteId: 'INST-104',
+    instituteName: 'Techno Institute',
+    region: 'Eastern',
+    conditionCode: 'UND_FACULTY_RETENTION',
+    title: 'Faculty retention undertaking',
+    dueDate: seedDate(4),
+    evidenceDocumentIds: ['Faculty_Retention_Bond_2026.pdf'],
+    submittedAt: seedStamp(-2),
+    submittedBy: 'Registrar, Techno Institute',
+    status: 'Submitted',
+    escalationLevel: 0
+  },
+  {
+    id: 'UND-2603',
+    applicationId: 'AICTE/2026/12873',
+    instituteId: 'INST-104',
+    instituteName: 'Techno Institute',
+    region: 'Eastern',
+    conditionCode: 'UND_FIRE_NOC',
+    title: 'Fire safety NOC renewal',
+    dueDate: seedDate(27),
+    evidenceDocumentIds: ['Fire_NOC_Renewal_2026.pdf'],
+    submittedAt: seedStamp(-20),
+    submittedBy: 'Registrar, Techno Institute',
+    verifiedAt: seedStamp(-16),
+    verifiedBy: 'Dr. A. K. Verma (Eastern RO)',
+    status: 'Verified',
+    escalationLevel: 0
+  },
+  {
+    id: 'UND-2604',
+    applicationId: 'AICTE/2026/12873',
+    instituteId: 'INST-104',
+    instituteName: 'Techno Institute',
+    region: 'Eastern',
+    conditionCode: 'UND_FEE_REFUND',
+    title: 'Fee refund policy affidavit',
+    dueDate: seedDate(9),
+    evidenceDocumentIds: ['Fee_Refund_Affidavit_draft.pdf'],
+    submittedAt: seedStamp(-8),
+    submittedBy: 'Registrar, Techno Institute',
+    rejectionReason: 'Affidavit was not notarised and the refund timeline differs from the AICTE policy.',
+    status: 'Rejected',
+    escalationLevel: 0
+  },
+  {
+    id: 'UND-2605',
+    applicationId: 'AICTE/2026/12873',
+    instituteId: 'INST-104',
+    instituteName: 'Techno Institute',
+    region: 'Eastern',
+    conditionCode: 'UND_LAB_AUGMENTATION',
+    title: 'Laboratory augmentation plan',
+    dueDate: seedDate(42),
+    evidenceDocumentIds: [],
+    status: 'Pending',
+    escalationLevel: 0
+  },
+  {
+    id: 'UND-2606',
+    applicationId: 'AICTE/2026/12872',
+    instituteId: 'INST-105',
+    instituteName: 'Sunrise College',
+    region: 'Central',
+    conditionCode: 'UND_FACULTY_RETENTION',
+    title: 'Faculty retention undertaking',
+    dueDate: seedDate(-25),
+    evidenceDocumentIds: ['Faculty_Retention_Bond_2026.pdf'],
+    submittedAt: seedStamp(-30),
+    submittedBy: 'Principal, Sunrise College',
+    verifiedAt: seedStamp(-25),
+    verifiedBy: 'Dr. Arvind Saxena (Central RO)',
+    status: 'Verified',
+    escalationLevel: 0
+  },
+  {
+    id: 'UND-2607',
+    applicationId: 'AICTE/2026/12872',
+    instituteId: 'INST-105',
+    instituteName: 'Sunrise College',
+    region: 'Central',
+    conditionCode: 'UND_FEE_REFUND',
+    title: 'Fee refund policy affidavit',
+    dueDate: seedDate(55),
+    evidenceDocumentIds: [],
+    status: 'Pending',
+    escalationLevel: 0
   }
 ];
 
 export const initialNotifications: NotificationItem[] = [
   {
     id: 'NOTIF-1',
-    title: 'EVC Visit Scheduled for NIT Rourkela',
-    description: 'Expert Visit Committee East-A has been confirmed for 24 Oct 2025.',
+    title: 'EVC Report Overdue for NIT Rourkela',
+    description: 'The inspection report from the East-A committee is past its filing deadline.',
     category: 'evc',
     timestamp: '10 mins ago',
     read: false,
@@ -726,8 +1042,8 @@ export const initialNotifications: NotificationItem[] = [
   },
   {
     id: 'NOTIF-2',
-    title: 'Urgent: 126 Lease Documents Expiring',
-    description: 'Notice generated for institutions with lease validity ending within 90 days.',
+    title: 'Lease Documents Expiring Within 90 Days',
+    description: 'Notice generated for institutions whose lease validity ends inside the warning window.',
     category: 'compliance',
     timestamp: '1 hour ago',
     read: false,
@@ -737,7 +1053,7 @@ export const initialNotifications: NotificationItem[] = [
   {
     id: 'NOTIF-3',
     title: 'Techno Institute Undertaking Overdue',
-    description: 'Barrier-free environment affidavit returned with remarks. Awaiting resubmission.',
+    description: 'Barrier-free environment affidavit is past due. Awaiting resubmission.',
     category: 'application',
     timestamp: '3 hours ago',
     read: false,
@@ -747,7 +1063,7 @@ export const initialNotifications: NotificationItem[] = [
   {
     id: 'NOTIF-4',
     title: 'Western Region Scrutiny Target 90% Completed',
-    description: '1,482 applications processed through Stage 2 scrutiny this cycle.',
+    description: 'Scrutiny throughput for the current cycle is approaching the regional target.',
     category: 'system',
     timestamp: '1 day ago',
     read: true,
@@ -757,7 +1073,7 @@ export const initialNotifications: NotificationItem[] = [
   {
     id: 'NOTIF-5',
     title: 'Annual EoA Letters Ready for Final Dispatch',
-    description: '438 applications have cleared Final Approval stage and digital signs appended.',
+    description: 'Approved applications have cleared Final Approval and carry a recorded competent authority.',
     category: 'application',
     timestamp: '2 days ago',
     read: true,

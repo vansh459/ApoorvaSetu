@@ -1,7 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, UserRole, Permission } from '../types';
 import { authService } from '../services/authService';
+import { supabaseAuthService } from '../services/supabaseAuthService';
+import { getDataMode } from '../services/repositories';
 import { hasPermission as checkPermission, hasAnyRole } from '../services/rbacService';
+
+const remoteAuthEnabled = getDataMode() === 'supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -20,16 +24,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Synchronously initialize authenticated user from backend session storage
   // Prevents blank screens, flashing, and false unauthenticated redirects during browser navigation
   const [user, setUser] = useState<User | null>(() => {
+    if (remoteAuthEnabled) return null;
     try {
       return authService.validateSession();
     } catch {
       return null;
     }
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(remoteAuthEnabled);
 
   // Authoritative session verification directly from server session registry & backend user store
   const verifySession = useCallback(() => {
+    if (remoteAuthEnabled) {
+      void supabaseAuthService
+        .getSessionUser()
+        .then(setUser)
+        .catch(() => setUser(null));
+      return null;
+    }
     try {
       const validatedUser = authService.validateSession();
       setUser(validatedUser);
@@ -40,8 +52,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  // Supabase mode restores the Auth session asynchronously and tracks refreshes.
+  useEffect(() => {
+    if (!remoteAuthEnabled) return;
+    let active = true;
+
+    supabaseAuthService
+      .getSessionUser()
+      .then((remoteUser) => {
+        if (active) setUser(remoteUser);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    const unsubscribe = supabaseAuthService.onAuthChange((remoteUser) => {
+      if (active) setUser(remoteUser);
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+
   // Listen for session invalidation, BFCache restoration, and history navigation
   useEffect(() => {
+    if (remoteAuthEnabled) return;
+
     // Listen to browser BFCache restoration and history navigation
     const handlePageShow = (e: PageTransitionEvent) => {
       if (e.persisted || !authService.isSessionValid()) {
@@ -75,6 +116,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, rememberMe = false): Promise<User> => {
     setIsLoading(true);
     try {
+      if (remoteAuthEnabled) {
+        const remoteUser = await supabaseAuthService.signIn(email, password);
+        setUser(remoteUser);
+        return remoteUser;
+      }
       const session = await authService.login(email, password, rememberMe);
       setUser(session.user);
       return session.user;
@@ -84,7 +130,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    authService.logout();
+    if (remoteAuthEnabled) {
+      void supabaseAuthService.signOut();
+    } else {
+      authService.logout();
+    }
     setUser(null);
   };
 

@@ -10,9 +10,12 @@ import {
   History,
   FileBarChart,
   Bell,
+  BellRing,
+  TrendingUp,
   Clock3,
   Workflow,
   CalendarDays,
+  ClipboardList,
   ShieldCheck,
   FolderArchive,
   FileCheck,
@@ -27,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
+import { filterAlertsForUser } from '../../services/rbacService';
 import { UserRole } from '../../types';
 
 interface SidebarProps {
@@ -44,9 +48,12 @@ interface NavItem {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { notifications } = useApp();
+  const { notifications, alerts } = useApp();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const openAlertCount = filterAlertsForUser(alerts, user).filter(
+    (alert) => alert.status !== 'Resolved'
+  ).length;
 
   // Build role-specific navigation strictly matching prompt specifications
   const getNavItems = (): NavItem[] => {
@@ -60,8 +67,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { name: 'Regional Management', path: '/regions-officials', icon: MapPin },
           { name: 'System Configuration', path: '/admin/system-config', icon: Sliders },
           { name: 'Audit Logs', path: '/admin/audit-logs', icon: History },
+          { name: 'Pendency & Workload', path: '/pendency', icon: TrendingUp },
           { name: 'Reports & Analytics', path: '/reports', icon: FileBarChart },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount || 3 }
+          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
         ];
 
       case 'AICTE_ADMIN':
@@ -70,11 +79,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { name: 'Applications', path: '/applications', icon: Clock3 },
           { name: 'Institutes', path: '/institutes', icon: Building2 },
           { name: 'Stages & Workflow', path: '/workflow', icon: Workflow },
+          { name: 'Pendency & Workload', path: '/pendency', icon: TrendingUp },
           { name: 'EVC Scheduling', path: '/evc-scheduling', icon: CalendarDays },
+          { name: 'EVC Queue', path: '/evc/queue', icon: ClipboardList },
           { name: 'Undertakings & Compliance', path: '/compliance', icon: ShieldCheck },
           { name: 'Documents', path: '/documents', icon: FolderArchive },
           { name: 'Reports & Evidence', path: '/reports', icon: FileBarChart },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount || 3 }
+          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
         ];
 
       case 'REGIONAL_OFFICER':
@@ -84,22 +96,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { name: 'Institutes', path: '/institutes', icon: Building2 },
           { name: 'Document Verification', path: '/documents', icon: FileCheck },
           { name: 'EVC Coordination', path: '/evc-scheduling', icon: CalendarDays },
+          { name: 'EVC Queue', path: '/evc/queue', icon: ClipboardList },
           { name: 'Compliance Monitoring', path: '/compliance', icon: ShieldCheck },
+          { name: 'Pendency & Workload', path: '/pendency', icon: TrendingUp },
           { name: 'Escalations', path: '/regional/escalations', icon: AlertCircle },
           { name: 'Regional Reports', path: '/reports', icon: FileBarChart },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount || 2 }
+          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
         ];
 
       case 'EVC_MEMBER':
         return [
           { name: 'Dashboard', path: '/', icon: LayoutDashboard },
           { name: 'My Assigned Visits', path: '/evc/my-visits', icon: CalendarDays },
+          { name: 'EVC Queue', path: '/evc/queue', icon: ClipboardList },
           { name: 'EVC Calendar', path: '/evc-scheduling', icon: Clock3 },
           { name: 'Institution Details', path: '/institutes', icon: Building2 },
           { name: 'Inspection Checklist', path: '/evc/checklist', icon: ClipboardCheck },
           { name: 'Evidence Upload', path: '/evc/evidence', icon: UploadCloud },
           { name: 'Inspection Reports', path: '/evc/my-visits', icon: FolderArchive },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount || 1 }
+          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
         ];
 
       case 'INSTITUTION_ADMIN':
@@ -112,7 +129,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { name: 'Documents', path: '/documents', icon: FolderArchive },
           { name: 'Undertakings & Compliance', path: '/compliance', icon: ShieldCheck },
           { name: 'EVC Visits', path: '/evc-scheduling', icon: CalendarDays },
-          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount || 2 }
+          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
         ];
 
       default:
@@ -121,7 +139,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { name: 'Applications', path: '/applications', icon: Clock3 },
           { name: 'Institutes', path: '/institutes', icon: Building2 },
           { name: 'Reports', path: '/reports', icon: FileBarChart },
-          { name: 'Notifications', path: '/notifications', icon: Bell }
+          { name: 'Alert Center', path: '/alerts', icon: BellRing, badge: openAlertCount },
+          { name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount }
         ];
     }
   };

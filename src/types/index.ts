@@ -19,6 +19,111 @@ export type ApplicationStatus =
   | 'Rejected'
   | 'Returned';
 
+export type RouteId =
+  | 'ROUTE_SCRUTINY_ONLY'
+  | 'ROUTE_SCRUTINY_EVC'
+  | 'ROUTE_EVC_SAC'
+  | 'ROUTE_EVC_ONLY'
+  | 'ROUTE_SCRUTINY_SAC'
+  | 'ROUTE_SAC_APPEAL';
+
+export type SlaTier = 'On Track' | 'Approaching' | 'Due Today' | 'Breached' | 'Paused';
+
+export type DataMode = 'demo' | 'supabase';
+
+export interface WorkflowRoute {
+  id: RouteId;
+  label: string;
+  applicationTypes: string[];
+  stages: ApplicationStage[];
+  requiresEVC: boolean;
+  requiresUndertaking: boolean;
+  requiresSAC: boolean;
+}
+
+export interface StageSla {
+  days: number;
+  approachingPct: number;
+}
+
+export interface EscalationRule {
+  level: 1 | 2 | 3;
+  breachDays: number;
+  targetRoles: UserRole[];
+}
+
+export interface NotificationRule {
+  eventType: string;
+  enabled: boolean;
+  channels: ('inapp' | 'email')[];
+  notifyRoles: UserRole[];
+}
+
+export interface Deficiency {
+  code: string;
+  note: string;
+  stage: ApplicationStage;
+  raisedAt: string;
+  raisedBy: string;
+  resolvedAt?: string;
+}
+
+export interface ReturnRecord {
+  fromStage: ApplicationStage;
+  toStage: ApplicationStage;
+  code: string;
+  note: string;
+  by: string;
+  at: string;
+  resubmittedAt?: string;
+}
+
+export interface ApplicationDecision {
+  outcome: 'Approved' | 'Rejected';
+  code: string;
+  note: string;
+  by: string;
+  at: string;
+  competentAuthority: string;
+}
+
+export interface Undertaking {
+  id: string;
+  applicationId: string;
+  instituteId: string;
+  instituteName: string;
+  region: Region;
+  conditionCode: string;
+  title: string;
+  dueDate: string;
+  evidenceDocumentIds: string[];
+  submittedAt?: string;
+  submittedBy?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  rejectionReason?: string;
+  status: 'Pending' | 'Submitted' | 'Verified' | 'Rejected' | 'Overdue' | 'Escalated';
+  escalationLevel: number;
+}
+
+export interface SystemAlert {
+  id: string;
+  rule: string;
+  entityType: 'Application' | 'EVC' | 'Undertaking' | 'Document';
+  entityId: string;
+  tier: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  dedupeKey: string;
+  createdAt: string;
+  status: 'Open' | 'Acknowledged' | 'Resolved';
+  title: string;
+  description: string;
+  link?: string;
+  region?: Region;
+  instituteId?: string;
+  targetRoles?: UserRole[];
+}
+
 export type Region = 
   | 'Northern'
   | 'Southern'
@@ -93,6 +198,10 @@ export interface ApplicationTimelineEvent {
   status: 'completed' | 'current' | 'pending';
   officer?: string;
   notes?: string;
+  enteredAt?: string;
+  dueAt?: string;
+  actorId?: string;
+  action?: string;
 }
 
 export interface Application {
@@ -119,6 +228,18 @@ export interface Application {
     uploadedOn: string;
   }[];
   remarks?: string;
+  routeId?: RouteId;
+  stageEnteredAt?: string;
+  stageDueAt?: string;
+  slaTier?: SlaTier;
+  assignedOfficerId?: string;
+  deficiencies?: Deficiency[];
+  returns?: ReturnRecord[];
+  decision?: ApplicationDecision;
+  caseSummary?: string;
+  evcVisitId?: string;
+  version?: number;
+  lastActionBy?: string;
 }
 
 export interface Institute {
@@ -155,6 +276,19 @@ export interface EVCVisit {
   committeeMembers: string[];
   mode: 'Physical' | 'Hybrid' | 'Virtual';
   reportSubmitted?: boolean;
+  scheduledAt?: string;
+  reportDueAt?: string;
+  reportSubmittedAt?: string;
+  slaTier?: SlaTier;
+  escalationLevel?: number;
+  report?: InspectionReport;
+  checklist?: EVCVisitChecklistItem[];
+  evidenceFiles?: string[];
+}
+
+export interface EVCVisitChecklistItem {
+  id: string;
+  passed: boolean;
 }
 
 export interface ComplianceRecord {
@@ -169,6 +303,10 @@ export interface ComplianceRecord {
   submissionDate?: string;
   documentRef?: string;
   urgency: 'high' | 'medium' | 'low';
+  undertakingId?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  escalationLevel?: number;
 }
 
 export interface DocumentItem {
@@ -180,9 +318,16 @@ export interface DocumentItem {
   region: Region;
   uploadDate: string;
   expiryDate: string;
-  status: 'Verified' | 'Pending' | 'Expired';
+  status: 'Verified' | 'Pending' | 'Expired' | 'Rejected' | 'Superseded';
   fileSize: string;
   fileType: string;
+  documentTypeCode?: string;
+  renewalOfId?: string;
+  renewalStatus?: 'Requested' | 'Submitted' | 'Verified' | 'Rejected';
+  renewalNote?: string;
+  verifiedBy?: string;
+  storagePath?: string;
+  expiryTier?: string;
 }
 
 export interface NotificationItem {
@@ -197,6 +342,9 @@ export interface NotificationItem {
   targetRole?: UserRole;
   targetRegion?: Region;
   targetInstituteId?: string;
+  dedupeKey?: string;
+  eventType?: string;
+  targetUserId?: string;
 }
 
 export interface RegionalOffice {
@@ -219,12 +367,15 @@ export interface AuditLog {
   userName: string;
   userRole: UserRole;
   action: string;
-  entityType: 'Application' | 'User' | 'EVC' | 'Compliance' | 'Document' | 'System' | 'Auth';
+  entityType: 'Application' | 'User' | 'EVC' | 'Compliance' | 'Document' | 'System' | 'Auth' | 'Undertaking' | 'Alert' | 'Escalation';
   entityId: string;
   details: string;
   previousState?: string;
   newState?: string;
   ipAddress: string;
+  eventType?: string;
+  correlationId?: string;
+  source?: 'ui' | 'system' | 'cron';
 }
 
 export interface SystemConfig {
@@ -236,6 +387,12 @@ export interface SystemConfig {
   notificationEmailAlerts: boolean;
   requireTwoFactorForAdmin: boolean;
   maxUploadSizeMB: number;
+  stageSlas?: Partial<Record<ApplicationStage, StageSla>>;
+  escalationMatrix?: EscalationRule[];
+  notificationRules?: NotificationRule[];
+  documentWarningDays?: number[];
+  undertakingWarningDays?: number[];
+  businessDaysOnly?: boolean;
 }
 
 export interface InspectionReport {
@@ -268,4 +425,12 @@ export interface EscalationItem {
   urgency: 'Medium' | 'High' | 'Critical';
   reason: string;
   status: 'Open' | 'Under Review' | 'Resolved';
+  level?: number;
+  slaBreachDays?: number;
+  dedupeKey?: string;
+  entityType?: 'Application' | 'EVC' | 'Undertaking' | 'Document';
+  entityId?: string;
+  acknowledgedBy?: string;
+  acknowledgedAt?: string;
+  resolvedAt?: string;
 }

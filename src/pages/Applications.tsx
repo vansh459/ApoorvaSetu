@@ -5,13 +5,16 @@ import {
   Plus,
   ArrowUpDown,
   Eye,
+  FileText,
   RotateCcw
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { filterApplicationsForUser } from '../services/rbacService';
+import { filterApplicationsForUser, hasPermission } from '../services/rbacService';
 import { StatusBadge } from '../components/common/StatusBadge';
-import { Region } from '../types';
+import { ApplicationStage, Region } from '../types';
+import { APPLICATION_TYPE_OPTIONS } from '../workflow/routes';
+import { OPERATIONAL_STAGES, STAGE_META, canonicalStage } from '../workflow/stages';
 
 export const Applications: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -53,6 +56,7 @@ export const Applications: React.FC = () => {
   const [newIntake, setNewIntake] = useState(300);
 
   const { user } = useAuth();
+  const canCreateApplication = hasPermission(user, 'applications.create');
 
   const scopedApps = useMemo(() => {
     return filterApplicationsForUser(applications, user);
@@ -67,7 +71,8 @@ export const Applications: React.FC = () => {
           app.type.toLowerCase().includes(search.toLowerCase());
 
         const matchesRegion = selectedRegion === 'All' || app.region === selectedRegion;
-        const matchesStage = selectedStage === 'All' || app.stage === selectedStage;
+        const matchesStage =
+          selectedStage === 'All' || canonicalStage(app.stage) === canonicalStage(selectedStage as ApplicationStage);
         const matchesStatus = selectedStatus === 'All' || app.status === selectedStatus;
 
         return matchesSearch && matchesRegion && matchesStage && matchesStatus;
@@ -112,13 +117,15 @@ export const Applications: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsCreating(true)}
-          className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Application</span>
-        </button>
+        {canCreateApplication && (
+          <button
+            onClick={() => setIsCreating(true)}
+            className="flex items-center space-x-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Application</span>
+          </button>
+        )}
       </div>
 
       {/* Scope banner for Regional Officer or Institution Admin */}
@@ -149,7 +156,7 @@ export const Applications: React.FC = () => {
       )}
 
       {/* New Application Inline Modal/Card */}
-      {isCreating && (
+      {isCreating && canCreateApplication && (
         <div className="bg-white rounded-2xl border border-blue-200 p-5 shadow-sm space-y-4 animate-in fade-in">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h3 className="text-sm font-bold text-slate-800">
@@ -205,10 +212,11 @@ export const Applications: React.FC = () => {
                 onChange={(e) => setNewType(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
               >
-                <option value="Extension of Approval (EoA)">Extension of Approval (EoA)</option>
-                <option value="New Technical Campus">New Technical Campus</option>
-                <option value="Increase in Intake">Increase in Intake</option>
-                <option value="New Course Introduction">New Course Introduction</option>
+                {APPLICATION_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.value}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -276,12 +284,11 @@ export const Applications: React.FC = () => {
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-150"
             >
               <option value="All">All Stages</option>
-              <option value="Submitted">Submitted</option>
-              <option value="Scrutiny / Re-scrutiny">Scrutiny / Re-scrutiny</option>
-              <option value="Expert Visit Committee (EVC)">Expert Visit Committee (EVC)</option>
-              <option value="SAC / SHC">SAC / SHC</option>
-              <option value="Approval (Subject to Undertaking)">Approval (Subject to Undertaking)</option>
-              <option value="Final Approval">Final Approval</option>
+              {OPERATIONAL_STAGES.map((stage) => (
+                <option key={stage} value={stage}>
+                  {STAGE_META[stage].label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -395,16 +402,29 @@ export const Applications: React.FC = () => {
                       {app.lastUpdated}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => {
-                          setSelectedApplication(app);
-                          setActiveModal('app-detail');
-                        }}
-                        className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white active:scale-95 rounded-lg text-slate-700 font-semibold text-xs transition-all duration-150 cursor-pointer shadow-2xs"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Inspect</span>
-                      </button>
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => {
+                            setSelectedApplication(app);
+                            setActiveModal('case-summary');
+                          }}
+                          className="inline-flex items-center space-x-1 px-2.5 py-1 bg-white border border-slate-200 hover:border-blue-300 hover:text-blue-700 active:scale-95 rounded-lg text-slate-600 font-semibold text-xs transition-all duration-150 cursor-pointer"
+                          title="Open printable case summary"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Summary</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedApplication(app);
+                            setActiveModal('app-detail');
+                          }}
+                          className="inline-flex items-center space-x-1 px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white active:scale-95 rounded-lg text-slate-700 font-semibold text-xs transition-all duration-150 cursor-pointer shadow-2xs"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Inspect</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

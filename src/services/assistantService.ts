@@ -1,5 +1,14 @@
 import { User } from '../types/index.ts';
 import { ActionLink } from '../data/platformKnowledgeBase.ts';
+import { getDataMode } from './repositories/index.ts';
+import { isSupabaseConfigured, supabase } from './supabaseClient.ts';
+
+async function authHeaders(): Promise<Record<string, string>> {
+  if (getDataMode() !== 'supabase' || !isSupabaseConfigured) return {};
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export interface ChatMessageItem {
   id: string;
@@ -39,7 +48,8 @@ class AssistantService {
       const response = await fetch('/api/assistant/chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(await authHeaders())
         },
         body: JSON.stringify({
           message: trimmed,

@@ -25,6 +25,11 @@
   * {
     box-sizing: border-box;
   }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
 }
 
 /* Custom scrollbars for tables and widgets */
@@ -238,5 +243,34 @@
   .card-interactive {
     animation: none !important;
     transform: none !important;
+  }
+}
+
+/* Print the open case summary without the surrounding application shell */
+@media print {
+  body > * {
+    visibility: hidden;
+  }
+  .case-summary-shell,
+  .case-summary-drawer,
+  .case-summary-drawer * {
+    visibility: visible;
+  }
+  .case-summary-shell {
+    position: static !important;
+  }
+  .case-summary-shell > div:first-child {
+    display: none;
+  }
+  .case-summary-drawer {
+    position: static !important;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    overflow: visible;
+    box-shadow: none;
+  }
+  .case-summary-drawer .flex-1 {
+    overflow: visible;
   }
 }
