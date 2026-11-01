@@ -85,13 +85,19 @@ verifications always require an authorised officer. **Reset Demo Data** re-seeds
 |---|---|---|
 | `demo` (default) | No Supabase configuration, or `VITE_DATA_MODE=demo` | localStorage persistence, seeded data, no network |
 | `supabase` | `VITE_DATA_MODE=supabase` plus `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Supabase reads/writes, Auth, RLS and Storage |
+| `postgres` | `VITE_DATA_MODE=postgres` at build time plus a server `DATABASE_URL` | Prisma/Postgres persistence, server sessions and RBAC, local or Supabase file storage |
+
+Postgres mode is documented in [docs/POSTGRES-DATA-LAYER.md](docs/POSTGRES-DATA-LAYER.md). Run it
+locally with `docker compose -f docker-compose.yml -f docker-compose.postgres.yml up --build`.
 
 Environment variables:
 
 ```bash
-VITE_DATA_MODE=demo                    # or supabase
+VITE_DATA_MODE=demo                    # or supabase / postgres
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
+DATABASE_URL=...                       # Postgres mode (server-side only)
+DIRECT_URL=...                         # migrations (Neon direct URL)
 GEMINI_API_KEY=...                     # AI assistant (server-side only)
 AI_PROVIDER=gemini
 AI_MODEL=gemini-3-flash-preview

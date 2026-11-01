@@ -30,11 +30,18 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
   // Load message history for active user or initialize with welcome message
   useEffect(() => {
     if (!isOpen) return;
+    let cancelled = false;
 
-    const saved = assistantService.loadHistory(user?.id);
-    if (saved && saved.length > 0) {
-      setMessages(saved);
-    } else {
+    const load = async () => {
+      const remote = await assistantService.loadRemoteHistory(user?.id);
+      if (cancelled) return;
+
+      const saved = remote ?? assistantService.loadHistory(user?.id);
+      if (saved && saved.length > 0) {
+        setMessages(saved);
+        return;
+      }
+
       const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const initialGreeting: ChatMessageItem = {
         id: `msg-init-${Date.now()}`,
@@ -44,7 +51,12 @@ export const AIChatPanel: React.FC<AIChatPanelProps> = ({
       };
       setMessages([initialGreeting]);
       assistantService.saveHistory([initialGreeting], user?.id);
-    }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, user?.id, user?.name, user?.roleTitle]);
 
   // Auto-scroll to latest message

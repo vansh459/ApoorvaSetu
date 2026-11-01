@@ -11,11 +11,18 @@ services:
       SEED_ON_START: "1"
       STORAGE_DRIVER: local
       UPLOAD_DIR: /app/data/uploads
+      UPLOAD_MAX_MB: "25"
     volumes:
       - apoorvasetu_uploads:/app/data/uploads
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
 
   db:
     image: postgres:17-alpine

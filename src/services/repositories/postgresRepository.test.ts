@@ -70,7 +70,7 @@ describe('postgres repository', () => {
     const updated = await repository.upsertApplication(application);
     expect(updated).toBe(true);
     expect(fetchMock).toHaveBeenLastCalledWith(
-      '/applications/APP-1',
+      '/api/applications/APP-1',
       expect.objectContaining({ method: 'PUT' })
     );
 
@@ -78,7 +78,7 @@ describe('postgres repository', () => {
     const created = await repository.upsertApplication({ ...application, id: 'APP-NEW' });
     expect(created).toBe(true);
     expect(fetchMock).toHaveBeenLastCalledWith(
-      '/applications',
+      '/api/applications',
       expect.objectContaining({ method: 'POST' })
     );
   });

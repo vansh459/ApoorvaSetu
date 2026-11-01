@@ -7,12 +7,11 @@ import type {
   SystemAlert,
   Undertaking,
   UserRole
-} from '../types';
-import type { DomainEvent, DomainEventType, WorkflowConfig } from './types';
-import { canonicalStage, getStageMeta } from './stages';
-import { applicationOverdueWindow, documentExpiry, evcReportWindow, isDeadlineTier, undertakingDueWindow } from './sla';
-import type { OverdueWindow } from './sla';
-import { formatDisplayDate, getNow, toIsoDate } from '../utils/dates';
+} from '../types/index.ts';
+import type { DomainEvent, DomainEventType, WorkflowConfig } from './types.ts';
+import { canonicalStage, getStageMeta } from './stages.ts';
+import { applicationOverdueWindow, documentExpiry, evcReportWindow, isDeadlineTier, undertakingDueWindow } from './sla.ts';
+import { formatDisplayDate, getNow, toIsoDate } from '../utils/dates.ts';
 
 export interface SweepState {
   applications: Application[];
@@ -59,7 +58,7 @@ interface Candidate {
   targetRoles?: UserRole[];
 }
 
-const AUTOMATED_RAISER = 'Automated SLA Monitor';
+export const AUTOMATED_RAISER = 'Automated SLA Monitor';
 
 const SEVERITY_BY_TIER: Record<string, SystemAlert['severity']> = {  Approaching: 'medium',
   'Due Today': 'high',

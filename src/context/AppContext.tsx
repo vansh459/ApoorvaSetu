@@ -219,40 +219,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [applications, setApplications] = useState<Application[]>(() =>
-    readLocal<Application[]>('applications', initialApplications).map((app) => normalizeApplication(app))
+    (repository.isRemote ? [] : readLocal<Application[]>('applications', initialApplications)).map(
+      (app) => normalizeApplication(app)
+    )
   );
 
   const [institutes, setInstitutes] = useState<Institute[]>(() =>
-    readLocal<Institute[]>('institutes', initialInstitutes)
+    repository.isRemote ? [] : readLocal<Institute[]>('institutes', initialInstitutes)
   );
 
   const [evcVisits, setEvcVisits] = useState<EVCVisit[]>(() =>
-    readLocal<EVCVisit[]>('evcVisits', initialEVCVisits).map((visit) => normalizeEVCVisit(visit))
+    (repository.isRemote ? [] : readLocal<EVCVisit[]>('evcVisits', initialEVCVisits)).map((visit) =>
+      normalizeEVCVisit(visit)
+    )
   );
 
   const [complianceRecords, setComplianceRecords] = useState<ComplianceRecord[]>(() =>
-    readLocal<ComplianceRecord[]>('complianceRecords', initialComplianceRecords)
+    repository.isRemote ? [] : readLocal<ComplianceRecord[]>('complianceRecords', initialComplianceRecords)
   );
 
   const [documents, setDocuments] = useState<DocumentItem[]>(() =>
-    readLocal<DocumentItem[]>('documents', initialDocuments).map(normalizeDocument)
+    (repository.isRemote ? [] : readLocal<DocumentItem[]>('documents', initialDocuments)).map(
+      normalizeDocument
+    )
   );
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() =>
-    readLocal<NotificationItem[]>('notifications', initialNotifications)
+    repository.isRemote ? [] : readLocal<NotificationItem[]>('notifications', initialNotifications)
   );
 
   const [undertakings, setUndertakings] = useState<Undertaking[]>(() => {
+    if (repository.isRemote) return [];
     const stored = readLocal<Undertaking[]>('undertakings', initialUndertakings);
     return stored.length ? stored : initialUndertakings;
   });
 
   const [alerts, setAlerts] = useState<SystemAlert[]>(() =>
-    readLocal<SystemAlert[]>('alerts', [])
+    repository.isRemote ? [] : readLocal<SystemAlert[]>('alerts', [])
   );
 
   const [escalations, setEscalations] = useState<EscalationItem[]>(() =>
-    readLocal<EscalationItem[]>('escalations', [])
+    repository.isRemote ? [] : readLocal<EscalationItem[]>('escalations', [])
   );
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -262,10 +269,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toasts, setToasts] = useState<ToastInfo[]>([]);
   const [demoClockOffsetDays, setDemoClockOffsetDays] = useState(0);
   const [remoteRevision, setRemoteRevision] = useState(0);
+  const [remoteReady, setRemoteReady] = useState(!repository.isRemote);
 
   // Hydrate from the configured data source. Demo mode resolves synchronously above.
   useEffect(() => {
-    if (!repository.isRemote || !remoteUserId) return;
+    if (!repository.isRemote || !remoteUserId) {
+      if (repository.isRemote) setRemoteReady(false);
+      return;
+    }
     let isMounted = true;
     const loadRemoteData = async () => {
       try {
@@ -294,6 +305,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (snapshot.undertakings !== undefined) setUndertakings(snapshot.undertakings);
         if (snapshot.alerts !== undefined) setAlerts(snapshot.alerts);
         if (snapshot.escalations !== undefined) setEscalations(snapshot.escalations);
+        setRemoteReady(true);
       } catch (error) {
         console.warn('Remote data fetch failed, using local demo cache', error);
       }
@@ -306,7 +318,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Coalesce bursts of row changes into one refresh; the sweep can write several tables at once.
   useEffect(() => {
-    if (!repository.isRemote) return;
+    if (!repository.isRemote || !remoteUserId) return;
     let timer: number | undefined;
     const scheduleRefresh = () => {
       if (timer) window.clearTimeout(timer);
@@ -319,7 +331,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (timer) window.clearTimeout(timer);
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, []);
+  }, [remoteUserId]);
 
   // Demo-mode persistence. Remote mode writes through the repository on each command.
   useEffect(() => {
@@ -1167,7 +1179,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       action: 'ATTACH_EVC_EVIDENCE',
       entityType: 'EVC',
       entityId: visitId,
-      details: `Evidence "${title}" attached to inspection ${visitId}.`,
+      details: `Evidence "${title.split('/').pop()}" attached to inspection ${visitId}.`,
       newState: JSON.stringify({ evidenceFiles: evidenceFiles.length }),
       source: 'ui'
     });
@@ -1184,7 +1196,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       action: 'REMOVE_EVC_EVIDENCE',
       entityType: 'EVC',
       entityId: visitId,
-      details: `Evidence "${title}" removed from inspection ${visitId}.`,
+      details: `Evidence "${title.split('/').pop()}" removed from inspection ${visitId}.`,
       newState: JSON.stringify({ evidenceFiles: evidenceFiles.length }),
       source: 'ui'
     });
@@ -2003,6 +2015,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const runSweep = () => {
+    // Remote mode: the sweep writes alerts, escalations and audits on behalf of the whole
+    // dataset, so it runs from the super admin session only. Other roles see a scoped view
+    // that would re-raise the same deadline conditions on every pass.
+    if (repository.isRemote && (!remoteReady || authUser?.role !== 'SUPER_ADMIN')) return;
     const state = sweepStateRef.current;
     const result = sweepDeadlines({
       ...state,

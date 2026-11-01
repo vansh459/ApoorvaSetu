@@ -25,7 +25,8 @@ export const InspectionChecklist: React.FC = () => {
   const assignedVisits = filterEVCVisitsForUser(evcVisits, user);
 
   const [visitId, setVisitId] = useState(assignedVisits[0]?.id ?? '');
-  const visit = assignedVisits.find((item) => item.id === visitId);
+  // The snapshot hydrates after mount in Postgres mode, so fall back to the first assigned visit.
+  const visit = assignedVisits.find((item) => item.id === visitId) ?? assignedVisits[0];
   const [marks, setMarks] = useState<EVCVisitChecklistItem[]>(visit?.checklist ?? []);
 
   useEffect(() => {
@@ -91,7 +92,7 @@ export const InspectionChecklist: React.FC = () => {
               <Field label="Inspection visit" htmlFor="checklist-visit">
                 <Select
                   id="checklist-visit"
-                  value={visitId}
+                  value={visit?.id ?? ''}
                   onChange={(e) => setVisitId(e.target.value)}
                 >
                   {assignedVisits.map((item) => (

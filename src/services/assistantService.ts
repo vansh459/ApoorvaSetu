@@ -96,16 +96,50 @@ class AssistantService {
     return [];
   }
 
+  /** Postgres mode returns the server copy; demo and Supabase keep the local cache. */
+  async loadRemoteHistory(userId?: string): Promise<ChatMessageItem[] | null> {
+    if (getDataMode() !== 'postgres' || !userId) return null;
+    try {
+      const response = await fetch('/api/assistant/history', { credentials: 'include' });
+      if (!response.ok) return null;
+      const body = (await response.json()) as { messages?: ChatMessageItem[] };
+      return Array.isArray(body.messages) ? body.messages : [];
+    } catch {
+      return null;
+    }
+  }
+
   saveHistory(messages: ChatMessageItem[], userId?: string): void {
     try {
       localStorage.setItem(this.getStorageKey(userId), JSON.stringify(messages));
     } catch {}
+
+    if (getDataMode() !== 'postgres' || !userId) return;
+    void fetch('/api/assistant/history', {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: messages.map((message) => ({
+          id: message.id,
+          sender: message.sender,
+          text: message.text,
+          timestamp: message.timestamp
+        })),
+        currentPath: typeof window === 'undefined' ? undefined : window.location.pathname
+      })
+    }).catch(() => {
+      // The local cache still renders the conversation if the server write fails.
+    });
   }
 
   clearHistory(userId?: string): void {
     try {
       localStorage.removeItem(this.getStorageKey(userId));
     } catch {}
+
+    if (getDataMode() !== 'postgres' || !userId) return;
+    void fetch('/api/assistant/history', { method: 'DELETE', credentials: 'include' }).catch(() => {});
   }
 }
 

@@ -18,10 +18,13 @@ import { errorHandler, HttpError } from './http.ts';
 import { getPrisma, isDatabaseConfigured } from './db.ts';
 import { handleEvents } from './events.ts';
 import { requireSession } from './session.ts';
+import { getStorage } from './storage/index.ts';
 import { authRouter } from './routes/auth.ts';
 import { adminRouter } from './routes/admin.ts';
 import { dataRouter } from './routes/data.ts';
 import { workflowRouter } from './routes/workflow.ts';
+import { filesRouter } from './routes/files.ts';
+import { assistantRouter } from './routes/assistant.ts';
 
 dotenv.config();
 
@@ -73,12 +76,34 @@ app.get('/api/health', async (_req, res) => {
     }
   }
 
+  let storage: string = 'unconfigured';
+  try {
+    storage = getStorage().driver;
+  } catch {
+    storage = 'unconfigured';
+  }
+
   res.json({
     status: 'ok',
     service: 'ApoorvaSetu AI Assistant Backend',
     database,
+    storage,
     timestamp: new Date().toISOString()
   });
+});
+
+// Readiness: only green once the database answers, so compose waits for migrations.
+app.get('/api/ready', async (_req, res) => {
+  if (!isDatabaseConfigured()) {
+    res.status(503).json({ ready: false, database: 'unconfigured' });
+    return;
+  }
+  try {
+    await getPrisma().$queryRaw`SELECT 1`;
+    res.json({ ready: true, database: 'connected' });
+  } catch {
+    res.status(503).json({ ready: false, database: 'error' });
+  }
 });
 
 app.use('/api/auth', authRouter);
@@ -162,6 +187,8 @@ app.get('/api/events', requireSession, (req, res) => {
 // the session guard only applies to these endpoints.
 app.use('/api', adminRouter);
 app.use('/api', workflowRouter);
+app.use('/api', filesRouter);
+app.use('/api', assistantRouter);
 app.use('/api', dataRouter);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -206,7 +233,15 @@ if (existsSync(indexHtml)) {
 }
 
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (error?.type === 'entity.too.large' || error?.status === 413) {
+  if (!(error instanceof HttpError) && error?.code === 'P2002') {
+    res.status(409).json({ error: 'ALREADY_EXISTS', text: 'That record already exists.' });
+    return;
+  }
+  if (!(error instanceof HttpError) && error?.code === 'P2025') {
+    res.status(404).json({ error: 'NOT_FOUND', text: 'The record was not found.' });
+    return;
+  }
+  if (!(error instanceof HttpError) && (error?.type === 'entity.too.large' || error?.status === 413)) {
     res.status(413).json({ error: 'PAYLOAD_TOO_LARGE', text: 'Request body is too large.' });
     return;
   }

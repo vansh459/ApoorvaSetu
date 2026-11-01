@@ -25,6 +25,7 @@ import {
   hasPermission
 } from '../../src/services/rbacService.ts';
 import { clearDatabase, seedDatabase } from '../../prisma/seedData.ts';
+import { AUTOMATED_RAISER } from '../../src/workflow/alerts.ts';
 import { getPrisma } from '../db.ts';
 import { writeAudit } from '../audit.ts';
 import { broadcast } from '../events.ts';
@@ -360,6 +361,11 @@ const notificationSpec: SaveSpec<NotificationItem> = {
     return row ? toNotification(row) : null;
   },
   create: async (notification) => {
+    // The client sweep re-emits the same event from every session; dedupeKey makes POST idempotent.
+    const existing = notification.dedupeKey
+      ? await prisma().notificationItem.findFirst({ where: { dedupeKey: notification.dedupeKey } })
+      : null;
+    if (existing) return toNotification(existing);
     await prisma().notificationItem.create({ data: toNotificationData(notification) });
   },
   update: async (notification) => {
@@ -383,6 +389,9 @@ const alertSpec: SaveSpec<SystemAlert> = {
     return row ? toSystemAlert(row) : null;
   },
   create: async (alert) => {
+    // dedupeKey is the stable identity of a deadline condition; a second sweep must not fail.
+    const existing = await prisma().systemAlert.findUnique({ where: { dedupeKey: alert.dedupeKey } });
+    if (existing) return toSystemAlert(existing);
     await prisma().systemAlert.create({ data: toSystemAlertData(alert) });
   },
   update: async (alert) => {
@@ -402,10 +411,16 @@ const escalationSpec: SaveSpec<EscalationItem> = {
     return row ? toEscalation(row) : null;
   },
   create: async (escalation, user) => {
+    if (escalation.dedupeKey) {
+      const open = await prisma().escalationItem.findFirst({
+        where: { dedupeKey: escalation.dedupeKey, status: { not: 'Resolved' } }
+      });
+      if (open) return toEscalation(open);
+    }
     const acknowledged = escalation.status !== 'Open';
     const stamped = {
       ...escalation,
-      raisedBy: user.name,
+      raisedBy: escalation.raisedBy === AUTOMATED_RAISER ? AUTOMATED_RAISER : user.name,
       acknowledgedBy: acknowledged ? user.name : undefined,
       acknowledgedAt: acknowledged ? nowStamp() : undefined,
       resolvedAt: escalation.status === 'Resolved' ? nowStamp() : undefined

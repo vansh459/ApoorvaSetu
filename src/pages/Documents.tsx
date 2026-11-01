@@ -54,6 +54,14 @@ import {
 } from '../workflow/documents';
 import { formatDisplayDate, getNow, toIsoDate } from '../utils/dates';
 import { statusTone } from '../utils/statusTone';
+import {
+  fileTypeLabel,
+  formatFileSize,
+  getDownloadUrl,
+  isFileUploadEnabled,
+  uploadFile
+} from '../services/fileStorage';
+import type { UploadedFile } from '../services/fileStorage';
 
 type ValidityFilter =
   | 'All'
@@ -95,13 +103,14 @@ interface FileMeta {
 }
 
 function fileMetaFrom(file: File): FileMeta {
-  const extension = file.name.split('.').pop()?.toUpperCase() ?? 'PDF';
   return {
     name: file.name,
-    size: `${Math.max(0.1, file.size / (1024 * 1024)).toFixed(1)} MB`,
-    type: extension === 'JPEG' ? 'JPG' : extension
+    size: formatFileSize(file.size),
+    type: fileTypeLabel(file)
   };
 }
+
+const remoteFiles = isFileUploadEnabled();
 
 export const Documents: React.FC = () => {
   const {
@@ -151,12 +160,14 @@ export const Documents: React.FC = () => {
   );
   const [expiryTouched, setExpiryTouched] = useState(false);
   const [docInstId, setDocInstId] = useState(user?.instituteId ?? '');
-  const [docFile, setDocFile] = useState<FileMeta | null>(null);
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [renewalDoc, setRenewalDoc] = useState<DocumentItem | null>(null);
   const [renewalExpiry, setRenewalExpiry] = useState('');
   const [renewalNote, setRenewalNote] = useState('');
-  const [renewalFile, setRenewalFile] = useState<FileMeta | null>(null);
+  const [renewalFile, setRenewalFile] = useState<File | null>(null);
+  const [isRenewing, setIsRenewing] = useState(false);
 
   const [rejectTarget, setRejectTarget] = useState<DocumentItem | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -261,7 +272,7 @@ export const Documents: React.FC = () => {
     }
   };
 
-  const handleUploadSubmit = (event: React.FormEvent) => {
+  const handleUploadSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const type = getDocumentType(docType);
     if (!selectedInstitute) {
@@ -273,6 +284,20 @@ export const Documents: React.FC = () => {
       return;
     }
 
+    let uploaded: UploadedFile | null = null;
+    if (remoteFiles && docFile) {
+      setIsUploading(true);
+      try {
+        uploaded = await uploadFile(docFile, 'document');
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'The document could not be uploaded.', 'error');
+        return;
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
+    const meta = docFile ? fileMetaFrom(docFile) : null;
     const succeeded = uploadDocument({
       title: docTitle.trim() || type?.label || 'Institutional document',
       category: type?.category ?? 'AICTE Approvals',
@@ -282,8 +307,9 @@ export const Documents: React.FC = () => {
       uploadDate: docIssuedOn || toIsoDate(getNow()),
       expiryDate: docExpiryDate,
       status: 'Pending',
-      fileSize: docFile?.size ?? '2.4 MB',
-      fileType: docFile?.type ?? 'PDF',
+      fileSize: uploaded?.size ?? meta?.size ?? '2.4 MB',
+      fileType: uploaded?.type ?? meta?.type ?? 'PDF',
+      storagePath: uploaded?.key,
       documentTypeCode: docType
     });
 
@@ -304,14 +330,29 @@ export const Documents: React.FC = () => {
     setRenewalDoc(doc);
   };
 
-  const handleRenewalSubmit = (event: React.FormEvent) => {
+  const handleRenewalSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!renewalDoc) return;
+
+    let uploaded: UploadedFile | null = null;
+    if (remoteFiles && renewalFile) {
+      setIsRenewing(true);
+      try {
+        uploaded = await uploadFile(renewalFile, 'document');
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'The renewed certificate could not be uploaded.', 'error');
+        return;
+      } finally {
+        setIsRenewing(false);
+      }
+    }
+
+    const meta = renewalFile ? fileMetaFrom(renewalFile) : null;
     const succeeded = submitDocumentRenewal(renewalDoc.id, {
       expiryDate: renewalExpiry,
-      fileSize: renewalFile?.size,
-      fileType: renewalFile?.type,
-      storagePath: renewalFile?.name,
+      fileSize: uploaded?.size ?? meta?.size,
+      fileType: uploaded?.type ?? meta?.type,
+      storagePath: uploaded?.key ?? renewalFile?.name,
       note: renewalNote.trim() || undefined
     });
     if (succeeded) setRenewalDoc(null);
@@ -327,7 +368,24 @@ export const Documents: React.FC = () => {
     }
   };
 
-  const handleDownload = (doc: DocumentItem) => {
+  const handleDownload = async (doc: DocumentItem) => {
+    if (doc.storagePath && remoteFiles) {
+      try {
+        const url = await getDownloadUrl(doc.storagePath);
+        if (url) {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          showToast(`Opening stored copy of ${doc.title}.`, 'success');
+          return;
+        }
+      } catch (error) {
+        showToast(
+          error instanceof Error ? error.message : 'The stored file could not be opened.',
+          'error'
+        );
+        return;
+      }
+    }
+
     const validity = validityFor(doc);
     const textContent = [
       'AICTE VERIFIED REPOSITORY DOCUMENT',
@@ -580,7 +638,7 @@ export const Documents: React.FC = () => {
                     size="sm"
                     variant="ghost"
                     icon={<Download className="h-3.5 w-3.5" />}
-                    onClick={() => handleDownload(doc)}
+                    onClick={() => void handleDownload(doc)}
                   >
                     Download
                   </Button>
@@ -649,8 +707,8 @@ export const Documents: React.FC = () => {
             <Button variant="secondary" onClick={() => setIsUploadOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" form="upload-document-form">
-              Upload document
+            <Button type="submit" form="upload-document-form" disabled={isUploading}>
+              {isUploading ? 'Uploading…' : 'Upload document'}
             </Button>
           </>
         }
@@ -728,7 +786,11 @@ export const Documents: React.FC = () => {
             )}
           </Field>
 
-          <Field label="Scanned copy" htmlFor="doc-file" hint="Metadata is recorded in demo mode.">
+          <Field
+            label="Scanned copy"
+            htmlFor="doc-file"
+            hint={remoteFiles ? 'Stored privately and served through signed links.' : 'Metadata is recorded in demo mode.'}
+          >
             <label
               htmlFor="doc-file"
               className="flex cursor-pointer items-center justify-between gap-3 rounded-control border border-dashed border-line-strong bg-surface-2 px-4 py-3 transition-colors duration-150 hover:border-ink-3"
@@ -737,10 +799,12 @@ export const Documents: React.FC = () => {
                 <Paperclip className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-ink">
-                    {docFile?.name ?? 'Choose a PDF or image'}
+                    {docFile ? fileMetaFrom(docFile).name : 'Choose a PDF or image'}
                   </div>
                   <div className="text-xs text-ink-2">
-                    {docFile ? `${docFile.size} ${docFile.type}` : 'PDF, PNG or JPG'}
+                    {docFile
+                      ? `${fileMetaFrom(docFile).size} ${fileMetaFrom(docFile).type}`
+                      : 'PDF, PNG or JPG'}
                   </div>
                 </div>
               </div>
@@ -750,8 +814,7 @@ export const Documents: React.FC = () => {
                 accept=".pdf,.png,.jpg,.jpeg"
                 className="sr-only"
                 onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  setDocFile(file ? fileMetaFrom(file) : null);
+                  setDocFile(event.target.files?.[0] ?? null);
                 }}
               />
               <span className="shrink-0 text-xs font-semibold text-accent">Browse</span>
@@ -774,8 +837,8 @@ export const Documents: React.FC = () => {
             <Button variant="secondary" onClick={() => setRenewalDoc(null)}>
               Cancel
             </Button>
-            <Button type="submit" form="renewal-document-form">
-              Submit for verification
+            <Button type="submit" form="renewal-document-form" disabled={isRenewing}>
+              {isRenewing ? 'Uploading…' : 'Submit for verification'}
             </Button>
           </>
         }
@@ -800,7 +863,11 @@ export const Documents: React.FC = () => {
             <Field
               label="Renewed certificate"
               htmlFor="renewal-file"
-              hint="PDF or image. Metadata is recorded in demo mode."
+              hint={
+                remoteFiles
+                  ? 'PDF or image, stored privately with a signed link.'
+                  : 'PDF or image. Metadata is recorded in demo mode.'
+              }
             >
               <label
                 htmlFor="renewal-file"
@@ -810,11 +877,11 @@ export const Documents: React.FC = () => {
                   <Paperclip className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium text-ink">
-                      {renewalFile?.name ?? 'Choose the renewed certificate'}
+                      {renewalFile ? fileMetaFrom(renewalFile).name : 'Choose the renewed certificate'}
                     </div>
                     <div className="text-xs text-ink-2">
                       {renewalFile
-                        ? `${renewalFile.size} ${renewalFile.type}`
+                        ? `${fileMetaFrom(renewalFile).size} ${fileMetaFrom(renewalFile).type}`
                         : 'PDF, PNG or JPG'}
                     </div>
                   </div>
@@ -825,8 +892,7 @@ export const Documents: React.FC = () => {
                   accept=".pdf,.png,.jpg,.jpeg"
                   className="sr-only"
                   onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    setRenewalFile(file ? fileMetaFrom(file) : null);
+                    setRenewalFile(event.target.files?.[0] ?? null);
                   }}
                 />
                 <span className="shrink-0 text-xs font-semibold text-accent">Browse</span>
@@ -901,7 +967,7 @@ export const Documents: React.FC = () => {
             <Button
               icon={<Download className="h-4 w-4" />}
               onClick={() => {
-                if (previewDoc) handleDownload(previewDoc);
+                if (previewDoc) void handleDownload(previewDoc);
                 setPreviewDoc(null);
               }}
             >

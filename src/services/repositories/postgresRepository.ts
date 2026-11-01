@@ -164,7 +164,10 @@ class PostgresRepository implements Repository {
     const body = JSON.stringify(entity);
 
     const send = async (method: 'POST' | 'PUT') => {
-      const url = method === 'POST' ? endpoint : `${endpoint}/${encodeURIComponent(entity.id)}`;
+      const url =
+        method === 'POST'
+          ? `/api${endpoint}`
+          : `/api${endpoint}/${encodeURIComponent(entity.id)}`;
       return request<unknown>(url, { method, body });
     };
 
@@ -302,7 +305,7 @@ class PostgresRepository implements Repository {
   ): Promise<VerifyResponse> {
     try {
       return await request<VerifyResponse>(
-        `${VERIFY_ENDPOINTS[entity]}/${encodeURIComponent(id)}/verify`,
+        `/api${VERIFY_ENDPOINTS[entity]}/${encodeURIComponent(id)}/verify`,
         { method: 'POST', body: JSON.stringify(payload) }
       );
     } catch (error) {
