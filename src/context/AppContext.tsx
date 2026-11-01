@@ -51,7 +51,8 @@ import {
   rejectRenewalInList,
   verifyDocumentInList
 } from '../workflow/documents';
-import { appendAudit } from '../services/auditService';
+import { appendAudit, hydrateRemoteAuditLogs } from '../services/auditService';
+import { useAuth } from './AuthContext';
 import type {
   ActorRef,
   AuditDraft,
@@ -197,6 +198,9 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const repository = getRepository();
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user: authUser } = useAuth();
+  const remoteUserId = repository.isRemote ? (authUser?.id ?? null) : null;
+
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
     const saved = readLocal<UserProfile | null>('user', null);
     if (saved) return saved;
@@ -258,12 +262,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Hydrate from the configured data source. Demo mode resolves synchronously above.
   useEffect(() => {
-    if (!repository.isRemote) return;
+    if (!repository.isRemote || !remoteUserId) return;
     let isMounted = true;
     const loadRemoteData = async () => {
       try {
         const snapshot = await repository.loadRemote();
         if (!isMounted || !snapshot) return;
+        authService.applyRemoteState({
+          users: snapshot.users,
+          rolePermissions: snapshot.rolePermissions,
+          config: snapshot.config ?? null
+        });
+        if (snapshot.auditLogs) hydrateRemoteAuditLogs(snapshot.auditLogs);
         if (snapshot.applications !== undefined) {
           setApplications(snapshot.applications.map((app) => normalizeApplication(app)));
         }
@@ -289,7 +299,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => {
       isMounted = false;
     };
-  }, [remoteRevision]);
+  }, [remoteRevision, remoteUserId]);
 
   // Coalesce bursts of row changes into one refresh; the sweep can write several tables at once.
   useEffect(() => {
@@ -378,6 +388,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
+
+  // A rejected remote write means the local view may have drifted; reload the snapshot.
+  useEffect(() => {
+    if (!repository.onWriteError) return;
+    return repository.onWriteError((message) => {
+      showToast(message, 'error');
+      setRemoteRevision((value) => value + 1);
+    });
+  }, []);
 
   const randomizeCurrentUser = () => {
     const newName = getRandomFullName();
@@ -550,7 +569,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!result.ok || !result.app) {
       if (result.code === 'VERSION_CONFLICT') {
-        setApplications(readLocal<Application[]>('applications', []).map((item) => normalizeApplication(item)));
+        if (repository.isRemote) {
+          setRemoteRevision((value) => value + 1);
+        } else {
+          setApplications(
+            readLocal<Application[]>('applications', []).map((item) => normalizeApplication(item))
+          );
+        }
       }
       showToast(result.message || 'This action is not permitted.', 'error');
       return result;

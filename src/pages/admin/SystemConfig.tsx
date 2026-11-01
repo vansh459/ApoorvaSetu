@@ -60,6 +60,7 @@ const SettingToggle: React.FC<SettingToggleProps> = ({
 export const SystemConfigPage: React.FC = () => {
   const [config, setConfig] = useState<ConfigType>(() => authService.getSystemConfig());
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const workflow = resolveWorkflowConfig(config);
   const stageSlas = workflow.stageSlas;
@@ -87,11 +88,16 @@ export const SystemConfigPage: React.FC = () => {
     }));
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    authService.updateSystemConfig(config);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    setError(null);
+    try {
+      await authService.updateSystemConfig(config);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save the configuration.');
+    }
   };
 
   return (
@@ -110,6 +116,12 @@ export const SystemConfigPage: React.FC = () => {
       {savedSuccess && (
         <Notice tone="success" icon={Check} title="Settings saved">
           The new configuration is live across active sessions.
+        </Notice>
+      )}
+
+      {error && (
+        <Notice tone="danger" title="Could not save settings">
+          {error}
         </Notice>
       )}
 

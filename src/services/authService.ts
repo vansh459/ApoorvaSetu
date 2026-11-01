@@ -73,6 +73,35 @@ export interface ServerSessionRecord {
   userAgent: string;
 }
 
+async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await fetch(path, {
+    credentials: 'include',
+    ...init,
+    headers: {
+      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(init.headers ?? {})
+    }
+  });
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}.`;
+    try {
+      const body = (await response.json()) as { text?: string };
+      if (body.text) message = body.text;
+    } catch {
+      // Keep the status-based message when the body is not JSON.
+    }
+    throw new Error(message);
+  }
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+export interface RemoteAuthState {
+  users?: User[];
+  rolePermissions?: { role: UserRole; permissions: Permission[] }[];
+  config?: SystemConfig | null;
+}
+
 export interface AuthSession {
   token: string;
   user: User;
@@ -362,6 +391,19 @@ class AuthService {
   }
 
   /**
+   * Mirror the server snapshot into the synchronous caches the UI reads.
+   */
+  applyRemoteState(state: RemoteAuthState): void {
+    if (state.users) this.users = state.users;
+    if (state.rolePermissions) {
+      const permissions = { ...ROLE_DEFAULT_PERMISSIONS };
+      for (const entry of state.rolePermissions) permissions[entry.role] = entry.permissions;
+      this.rolePermissions = permissions;
+    }
+    if (state.config) this.systemConfig = state.config;
+  }
+
+  /**
    * Authoritative server-side session validator.
    * Re-evaluates cryptographic token and re-fetches user directly from backend DB.
    * Never trusts client-supplied role or claims.
@@ -587,7 +629,16 @@ class AuthService {
     return [...this.users];
   }
 
-  createUser(userData: Omit<User, 'id' | 'createdAt' | 'initials'>): User {
+  async createUser(userData: Omit<User, 'id' | 'createdAt' | 'initials'>): Promise<User> {
+    if (this.remoteMode) {
+      const { user } = await apiRequest<{ user: User }>('/api/users', {
+        method: 'POST',
+        body: JSON.stringify(userData)
+      });
+      this.users = [user, ...this.users.filter((item) => item.id !== user.id)];
+      return user;
+    }
+
     const authCheck = this.authorizeAction('users.create');
     if (!authCheck.authorized) {
       throw new Error(authCheck.reason || 'Unauthorized to create users.');
@@ -624,7 +675,16 @@ class AuthService {
     return newUser;
   }
 
-  updateUser(id: string, updates: Partial<User>): User {
+  async updateUser(id: string, updates: Partial<User>): Promise<User> {
+    if (this.remoteMode) {
+      const { user } = await apiRequest<{ user: User }>(`/api/users/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+      });
+      this.users = this.users.map((item) => (item.id === user.id ? user : item));
+      return user;
+    }
+
     const authCheck = this.authorizeAction('users.update');
     if (!authCheck.authorized) {
       throw new Error(authCheck.reason || 'Unauthorized to update users.');
@@ -652,7 +712,16 @@ class AuthService {
     return this.users[idx];
   }
 
-  toggleUserStatus(id: string): User {
+  async toggleUserStatus(id: string): Promise<User> {
+    if (this.remoteMode) {
+      const { user } = await apiRequest<{ user: User }>(
+        `/api/users/${encodeURIComponent(id)}/toggle`,
+        { method: 'POST' }
+      );
+      this.users = this.users.map((item) => (item.id === user.id ? user : item));
+      return user;
+    }
+
     const authCheck = this.authorizeAction('users.update');
     if (!authCheck.authorized) {
       throw new Error(authCheck.reason || 'Unauthorized to modify user status.');
@@ -719,13 +788,24 @@ class AuthService {
     return { ...this.systemConfig };
   }
 
-  updateSystemConfig(updates: Partial<SystemConfig>): SystemConfig {
+  async updateSystemConfig(updates: Partial<SystemConfig>): Promise<SystemConfig> {
+    const next = { ...this.systemConfig, ...updates };
+
+    if (this.remoteMode) {
+      const { config } = await apiRequest<{ config: SystemConfig }>('/api/config', {
+        method: 'PUT',
+        body: JSON.stringify(next)
+      });
+      this.systemConfig = config;
+      return config;
+    }
+
     const authCheck = this.authorizeAction('system.config');
     if (!authCheck.authorized) {
       throw new Error(authCheck.reason || 'Unauthorized to modify system configuration.');
     }
 
-    this.systemConfig = { ...this.systemConfig, ...updates };
+    this.systemConfig = next;
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(this.systemConfig));
 
     this.addAuditLog({
@@ -747,19 +827,35 @@ class AuthService {
     return { ...this.rolePermissions };
   }
 
-  updateRolePermission(role: UserRole, permission: Permission, enabled: boolean): void {
+  async updateRolePermission(
+    role: UserRole,
+    permission: Permission,
+    enabled: boolean
+  ): Promise<void> {
+    const current = this.rolePermissions[role] || [];
+    const updated = enabled
+      ? Array.from(new Set([...current, permission]))
+      : current.filter((p) => p !== permission);
+
+    if (this.remoteMode) {
+      const { rolePermission } = await apiRequest<{
+        rolePermission: { role: UserRole; permissions: Permission[] };
+      }>(`/api/roles/${encodeURIComponent(role)}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify({ permissions: updated })
+      });
+      this.rolePermissions[role] = rolePermission.permissions;
+      this.users = this.users.map((user) =>
+        user.role === role ? { ...user, permissions: rolePermission.permissions } : user
+      );
+      return;
+    }
+
     const authCheck = this.authorizeAction('roles.manage');
     if (!authCheck.authorized) {
       throw new Error(authCheck.reason || 'Unauthorized to modify role permissions.');
     }
 
-    const current = this.rolePermissions[role] || [];
-    let updated: Permission[];
-    if (enabled) {
-      updated = Array.from(new Set([...current, permission]));
-    } else {
-      updated = current.filter((p) => p !== permission);
-    }
     this.rolePermissions[role] = updated;
     localStorage.setItem(PERMISSIONS_STORAGE_KEY, JSON.stringify(this.rolePermissions));
 

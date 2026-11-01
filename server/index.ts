@@ -16,7 +16,11 @@ import {
 } from './authGuard.ts';
 import { errorHandler } from './http.ts';
 import { getPrisma, isDatabaseConfigured } from './db.ts';
+import { handleEvents } from './events.ts';
+import { requireSession } from './session.ts';
 import { authRouter } from './routes/auth.ts';
+import { adminRouter } from './routes/admin.ts';
+import { dataRouter } from './routes/data.ts';
 
 dotenv.config();
 
@@ -147,6 +151,16 @@ app.post('/api/assistant/chat', async (req, res) => {
     });
   }
 });
+
+// Live data feed for the browser repository (SSE).
+app.get('/api/events', requireSession, (req, res) => {
+  handleEvents(req, res);
+});
+
+// Authenticated data and administration APIs. Mounted after the assistant routes so
+// the session guard only applies to these endpoints.
+app.use('/api', adminRouter);
+app.use('/api', dataRouter);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(here, '..', 'dist');

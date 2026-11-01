@@ -21,6 +21,7 @@ import {
   Field,
   Input,
   Modal,
+  Notice,
   PageHeader,
   Select
 } from '../../components/ui';
@@ -31,6 +32,7 @@ export const UserManagement: React.FC = () => {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [error, setError] = useState<string | null>(null);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -44,33 +46,43 @@ export const UserManagement: React.FC = () => {
     setUsers(authService.getUsers());
   };
 
-  const handleToggleStatus = (id: string) => {
-    authService.toggleUserStatus(id);
-    refreshList();
+  const handleToggleStatus = async (id: string) => {
+    setError(null);
+    try {
+      await authService.toggleUserStatus(id);
+      refreshList();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update the account.');
+    }
   };
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newEmail) return;
 
-    authService.createUser({
-      name: newName,
-      email: newEmail,
-      role: newRole,
-      roleTitle: ROLE_LABELS[newRole],
-      designation: newDesignation || `${ROLE_LABELS[newRole]} Official`,
-      phone: newPhone || '+91 11 29581000',
-      region: newRole === 'REGIONAL_OFFICER' ? (newRegion as any) : undefined,
-      isActive: true,
-      permissions: []
-    });
+    setError(null);
+    try {
+      await authService.createUser({
+        name: newName,
+        email: newEmail,
+        role: newRole,
+        roleTitle: ROLE_LABELS[newRole],
+        designation: newDesignation || `${ROLE_LABELS[newRole]} Official`,
+        phone: newPhone || '+91 11 29581000',
+        region: newRole === 'REGIONAL_OFFICER' ? (newRegion as any) : undefined,
+        isActive: true,
+        permissions: []
+      });
 
-    setIsCreateOpen(false);
-    setNewName('');
-    setNewEmail('');
-    setNewPhone('');
-    setNewDesignation('');
-    refreshList();
+      setIsCreateOpen(false);
+      setNewName('');
+      setNewEmail('');
+      setNewPhone('');
+      setNewDesignation('');
+      refreshList();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create the account.');
+    }
   };
 
   const filteredUsers = users.filter((u) => {
@@ -191,6 +203,12 @@ export const UserManagement: React.FC = () => {
           </Button>
         }
       />
+
+      {error && (
+        <Notice tone="danger" icon={XCircle}>
+          {error}
+        </Notice>
+      )}
 
       <Card>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_13rem_13rem]">

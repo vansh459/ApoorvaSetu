@@ -8,9 +8,12 @@ import type {
   EVCVisit,
   Institute,
   NotificationItem,
+  Permission,
   SystemAlert,
   SystemConfig,
-  Undertaking
+  Undertaking,
+  User,
+  UserRole
 } from '../../types';
 import type {
   DomainEvent,
@@ -30,6 +33,8 @@ export interface RepositorySnapshot {
   escalations?: EscalationItem[];
   auditLogs?: AuditLog[];
   config?: SystemConfig | null;
+  users?: User[];
+  rolePermissions?: { role: UserRole; permissions: Permission[] }[];
 }
 
 export interface TransitionResponse {

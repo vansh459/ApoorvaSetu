@@ -15,6 +15,7 @@ export const RolePermissions: React.FC = () => {
     authService.getRolePermissions()
   );
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const roles: UserRole[] = [
     'SUPER_ADMIN',
@@ -87,7 +88,7 @@ export const RolePermissions: React.FC = () => {
     }
   ];
 
-  const handleToggle = (role: UserRole, permission: Permission) => {
+  const handleToggle = async (role: UserRole, permission: Permission) => {
     if (role === 'SUPER_ADMIN') return;
 
     const current = permissionsMap[role] || [];
@@ -98,10 +99,16 @@ export const RolePermissions: React.FC = () => {
 
     const nextMap = { ...permissionsMap, [role]: updated };
     setPermissionsMap(nextMap);
+    setError(null);
 
-    authService.updateRolePermission(role, permission, !isEnabled);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+    try {
+      await authService.updateRolePermission(role, permission, !isEnabled);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2500);
+    } catch (err) {
+      setPermissionsMap(permissionsMap);
+      setError(err instanceof Error ? err.message : 'Could not update the permission.');
+    }
   };
 
   return (
@@ -115,6 +122,12 @@ export const RolePermissions: React.FC = () => {
       {savedSuccess && (
         <Notice tone="success" icon={Check}>
           Permissions updated in the active directory.
+        </Notice>
+      )}
+
+      {error && (
+        <Notice tone="danger" icon={X}>
+          {error}
         </Notice>
       )}
 

@@ -45,9 +45,9 @@ import { ApplicationTracking } from './pages/institution/ApplicationTracking';
 
 export function App() {
   return (
-    <AppProvider>
-      <BrowserRouter>
-        <AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppProvider>
           <Routes>
             {/* Public Auth Route */}
             <Route
@@ -266,9 +266,9 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </AppProvider>
+        </AppProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

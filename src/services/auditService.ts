@@ -14,6 +14,12 @@ export interface AuditActor {
 }
 
 let legacyMigrated = false;
+let remoteLogs: AuditLog[] | null = null;
+
+/** Mirror the server audit trail for pages that read logs synchronously. */
+export function hydrateRemoteAuditLogs(logs: AuditLog[]): void {
+  remoteLogs = logs;
+}
 
 export function formatAuditTimestamp(date: Date = getNow()): string {
   return `${formatDisplayDate(date)}, ${date.toLocaleTimeString('en-US', {
@@ -77,6 +83,7 @@ export function appendAudit(draft: AuditDraft, actor: AuditActor): void {
 }
 
 export function listAuditLogs(): AuditLog[] {
+  if (getRepository().isRemote) return remoteLogs ?? [];
   migrateLegacyLogs();
   return readLocal<AuditLog[]>('auditLogs', []);
 }

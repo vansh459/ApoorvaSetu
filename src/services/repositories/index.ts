@@ -1,6 +1,7 @@
 import type { DataMode } from '../../types';
 import { isSupabaseConfigured } from '../supabaseClient';
 import { localRepository } from './localRepository';
+import { postgresRepository } from './postgresRepository';
 import { supabaseRepository } from './supabaseRepository';
 import type { Repository } from './types';
 
@@ -13,9 +14,11 @@ export function getDataMode(): DataMode {
 }
 
 export function getRepository(mode: DataMode = getDataMode()): Repository {
-  return mode === 'supabase' ? supabaseRepository : localRepository;
+  if (mode === 'postgres') return postgresRepository;
+  if (mode === 'supabase') return supabaseRepository;
+  return localRepository;
 }
 
-export { localRepository, supabaseRepository };
+export { localRepository, postgresRepository, supabaseRepository };
 export * from './localRepository';
 export type { Repository, RepositorySnapshot } from './types';
