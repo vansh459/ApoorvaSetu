@@ -1,0 +1,16 @@
+pre-flight: row present? [] | undertakings=7 | audit=148
+login institute -> 200
+P-63a POST /api/undertakings as INSTITUTION_ADMIN (own instituteId) -> 201
+     {"entity":{"id":"UND-PROBE-63","applicationId":"AICTE/2026/12876","instituteId":"INST-101","instituteName":"ABC Institute of Tech","region":"Northern","conditionCode":"UND_FACULTY_RETENTION","title":"Faculty retention undertaking (probe)","
+     stored: UND-PROBE-63|2026-11-20|L0|Submitted|evid=Probe_Faculty_Retention.pdf|subBy=Dr. K. S. Murthy   audit 149 -> 149
+P-63b PUT its own dueDate 2026-11-20 -> 2027-11-20 by that institution -> 200
+     stored: UND-PROBE-63|2027-11-20|L0|Submitted|evid=EMPTY|subBy=Dr. K. S. Murthy   audit 149 -> 149
+     ^ note what the round-trip cost: evidenceDocumentIds is EMPTY again and escalationLevel
+       stayed 0 - the fields the body omitted were written, not preserved (L9-07).
+-- delete the probe row by primary key, then prove the dataset is where round 13 left it --
+DELETE 1
+   row after delete: []
+   seed-shape rows checked: 7 | mismatches: 0
+   evidence links restored on UND-2602: ["Faculty_Retention_Bond_2026.pdf"]
+   final counts: undertakings=7 docs=10 cmp=5 audit=149 sessions=113
+ROUND 13B COMPLETE 2026-11-01T19:09:56Z

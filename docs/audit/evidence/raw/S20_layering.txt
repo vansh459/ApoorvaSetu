@@ -1,0 +1,46 @@
+=== S-20 layer violations: src/workflow imports ===
+src/workflow/alerts.ts:10:} from '../types/index.ts';
+src/workflow/config.ts:7:} from '../types/index.ts';
+src/workflow/documents.ts:1:import type { DocumentItem } from '../types';
+src/workflow/engine.ts:9:} from '../types/index.ts';
+src/workflow/evc.ts:1:import type { Application, EVCVisit, EVCVisitChecklistItem } from '../types';
+src/workflow/notifications.ts:1:import type { Application, NotificationItem, Region, UserRole } from '../types';
+src/workflow/reports.ts:1:import type { Application, DocumentItem, EVCVisit, Region, Undertaking } from '../types';
+src/workflow/routes.ts:1:import type { Application, ApplicationStage, RouteId, WorkflowRoute } from '../types/index.ts';
+src/workflow/selectors.ts:9:} from '../types';
+src/workflow/sla.ts:1:import type { Application, DocumentItem, EVCVisit, SlaTier, Undertaking } from '../types/index.ts';
+src/workflow/stages.ts:1:import type { ApplicationStage, UserRole } from '../types/index.ts';
+src/workflow/templates.ts:1:import type { Application } from '../types';
+src/workflow/types.ts:9:} from '../types/index.ts';
+src/workflow/undertakings.ts:1:import type { Application, RouteId, Undertaking } from '../types/index.ts';
+=== src/workflow external deps ===
+from '../types'
+from '../utils/dates'
+from './__tests__/fixtures'
+from './alerts'
+from './config'
+from './documents'
+from './engine'
+from './evc'
+from './notifications'
+from './reports'
+=== server importing src (allowed shared core) ===
+from '../src/data/platformKnowledgeBase.ts'
+from '../src/services/aiGuard.ts'
+from '../src/services/integration/types.ts'
+from '../src/services/rbacService.ts'
+from '../src/types/index.ts'
+from '../src/utils/dates.ts'
+from '../src/workflow/config.ts'
+from '../src/workflow/types.ts'
+=== client-only modules imported by server (would break) ===
+server/mappers/entities.ts:243:    id: document.id,
+server/mappers/entities.ts:244:    title: document.title,
+server/mappers/entities.ts:245:    category: document.category,
+server/mappers/entities.ts:246:    instituteName: document.instituteName,
+server/mappers/entities.ts:247:    instituteId: document.instituteId,
+server/mappers/entities.ts:248:    region: document.region,
+server/mappers/entities.ts:249:    uploadDate: document.uploadDate,
+server/mappers/entities.ts:250:    expiryDate: document.expiryDate,
+server/mappers/entities.ts:251:    status: document.status,
+server/mappers/entities.ts:252:    fileSize: document.fileSize,

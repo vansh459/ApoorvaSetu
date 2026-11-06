@@ -1,0 +1,166 @@
+
+================ P-46 the notification order a browser actually gets - no writes at all ================
+data.ts:491   db.notificationItem.findMany({ orderBy: { timestamp: "desc" } })
+audit.ts:16   formatAuditTimestamp -> "02 Nov 2026, 06:14 PM"  (en-GB day first)
+-- what the seed stores in notification_items."timestamp" --
+   id    |  timestamp  | read 
+---------+-------------+------
+ NOTIF-1 | 10 mins ago | f
+ NOTIF-2 | 1 hour ago  | f
+ NOTIF-3 | 3 hours ago | f
+ NOTIF-4 | 1 day ago   | t
+ NOTIF-5 | 2 days ago  | t
+(5 rows)
+
+-- the SQL Prisma emits, verbatim --
+   id    |  timestamp  
+---------+-------------
+ NOTIF-3 | 3 hours ago
+ NOTIF-5 | 2 days ago
+ NOTIF-1 | 10 mins ago
+ NOTIF-2 | 1 hour ago
+ NOTIF-4 | 1 day ago
+(5 rows)
+
+-- the same array as it arrives over HTTP (superadmin snapshot) --
+  feed order (first = shown at the top of the Notifications page):
+    1 NOTIF-3   "3 hours ago" | Techno Institute Undertaking Overdue
+    2 NOTIF-5   "2 days ago" | Annual EoA Letters Ready for Final Dispatch
+    3 NOTIF-1   "10 mins ago" | EVC Report Overdue for NIT Rourkela
+    4 NOTIF-2   "1 hour ago" | Lease Documents Expiring Within 90 Days
+    5 NOTIF-4   "1 day ago" | Western Region Scrutiny Target 90% Completed
+  newest-first order the labels imply: NOTIF-1 > NOTIF-2 > NOTIF-3 > NOTIF-4 > NOTIF-5
+  order the server returned        : NOTIF-3 > NOTIF-5 > NOTIF-1 > NOTIF-2 > NOTIF-4
+  positions correct: 0 of 5
+-- does the client re-sort before rendering? --
+   grep -c '.sort(' src/pages/Notifications.tsx -> 0
+0
+   grep -n 'sort' src/services/repositories/postgresRepository.ts -> 
+   the server reuses the browser-side filter and it only filters, never sorts:
+     324:export function filterNotificationsForUser(
+     325-  notifications: NotificationItem[],
+     326-  user: User | null | undefined
+     327-): NotificationItem[] {
+     328-  if (!user) return [];
+     329-  if (user.role === 'SUPER_ADMIN' || user.role === 'AICTE_ADMIN') {
+     330-    return notifications;
+     331-  }
+
+================ P-47 what the two TEXT time columns actually hold (format census over live rows) ================
+        tbl         | rows | display_stamp | relative_label | other 
+--------------------+------+---------------+----------------+-------
+ notification_items |    5 |             0 |              5 |     0
+ audit_logs         |   94 |            94 |              0 |     0
+(2 rows)
+
+-- the same column, two authors, two formats, one ORDER BY --
+   server-stamped rows (writeAudit -> formatAuditTimestamp): 01 Nov 2026, 05:44 PM
+   seed rows (src/data/initialData.ts -> seedDisplayParts):  '10 mins ago', '2 days ago'
+-- and the deadline columns are ISO, which does sort correctly --
+   id    |  dueDate   
+---------+------------
+ CMP-104 | 2026-09-17
+ CMP-102 | 2026-10-20
+ CMP-101 | 2026-11-08
+ CMP-103 | 2026-11-12
+ CMP-105 | 2027-11-01
+(5 rows)
+
+   mismatch between text order and instant order on compliance_records.dueDate:
+  rows where text rank <> date rank: 0
+  rows where text rank <> date rank on documents.expiryDate: 0
+
+================ P-48 the mechanism, inside a transaction that is rolled back ================
+   rows before: compliance=5 notif=5
+  ORDER BY "dueDate" ASC as the server runs it, with two display-format dates present:
+   id    |   dueDate   
+---------+-------------
+ X-P48-B | 01 Dec 2026
+ X-P48-A | 05 Nov 2026
+ CMP-104 | 2026-09-17
+ CMP-102 | 2026-10-20
+ X-P48-C | 2026-11-05
+ CMP-101 | 2026-11-08
+ CMP-103 | 2026-11-12
+ CMP-105 | 2027-11-01
+(8 rows)
+
+  the same rows ordered by the instant they mean:
+   id    |   dueDate   
+---------+-------------
+ CMP-104 | 2026-09-17
+ CMP-102 | 2026-10-20
+ X-P48-C | 2026-11-05
+ X-P48-A | 05 Nov 2026
+ CMP-101 | 2026-11-08
+ CMP-103 | 2026-11-12
+ X-P48-B | 01 Dec 2026
+ CMP-105 | 2027-11-01
+(8 rows)
+
+  ORDER BY timestamp DESC with a Dec-2026 and a Nov-2026 display stamp in the column:
+    id    |       timestamp       
+----------+-----------------------
+ NOTIF-3  | 3 hours ago
+ X-P48-N1 | 20 Nov 2026, 09:00 AM
+ NOTIF-5  | 2 days ago
+ NOTIF-1  | 10 mins ago
+ NOTIF-2  | 1 hour ago
+ NOTIF-4  | 1 day ago
+ X-P48-N2 | 01 Dec 2026, 09:00 AM
+(7 rows)
+
+  a targetRole no persona can ever match, stored verbatim (payload.ts casts it, oneOf is not applied):
+    id    | targetRole 
+----------+------------
+ X-P48-N1 | NOT_A_ROLE
+ X-P48-N2 | SUPERADMIN
+(2 rows)
+
+   the role values the product actually recognises:
+     52:  targetRoles: UserRole[];
+     124:  targetRoles?: UserRole[];
+     342:  targetRole?: UserRole;
+   rows after : compliance=5 notif=5
+   probe rows surviving anywhere: NONE
+
+================ P-49 the id-ordering claim, re-tested and corrected ================
+audit.ts:30   id = LOG-${Date.now().toString(36)}-${3 random bytes hex}
+data.ts:499   orderBy: { id: "desc" }, take: 200
+-- is the base36 prefix monotonic with wall clock? decode every machine id --
+  machine-written ids: 89 | prefix monotonic ascending: YES
+  decoded span: 2880.2s  from 2026-11-01T17:44:38.178Z to 2026-11-01T18:32:38.346Z
+  ids sharing the same millisecond prefix: 0 (tie-broken by the random suffix only)
+-- the seed block uses a different id family entirely --
+    id    |       timestamp       |           action            
+----------+-----------------------+-----------------------------
+ LOG-1005 | 28 Oct 2026, 02:15 PM | UNDERTAKING_SUBMITTED
+ LOG-1004 | 29 Oct 2026, 04:30 PM | INSPECTION_REPORT_SUBMITTED
+ LOG-1003 | 30 Oct 2026, 10:15 AM | DOCUMENT_VERIFIED
+ LOG-1002 | 30 Oct 2026, 11:05 AM | SYSTEM_CONFIG_UPDATED
+ LOG-1001 | 30 Oct 2026, 11:24 AM | APPLICATION_FORWARDED
+(5 rows)
+
+-- order the feed really returns (id desc), showing the seam where the families meet --
+         id          |       timestamp       |           action            
+---------------------+-----------------------+-----------------------------
+ LOG-MVY4DWIK-7166F8 | 01 Nov 2026, 05:44 PM | USER_LOGIN_SUCCESS
+ LOG-MVY4DVLN-E0D51C | 01 Nov 2026, 05:44 PM | USER_LOGIN_SUCCESS
+ LOG-MVY4DVDU-CFA3E1 | 01 Nov 2026, 05:44 PM | FAILED_LOGIN_BAD_PASSWORD
+ LOG-1005            | 28 Oct 2026, 02:15 PM | UNDERTAKING_SUBMITTED
+ LOG-1004            | 29 Oct 2026, 04:30 PM | INSPECTION_REPORT_SUBMITTED
+ LOG-1003            | 30 Oct 2026, 10:15 AM | DOCUMENT_VERIFIED
+ LOG-1002            | 30 Oct 2026, 11:05 AM | SYSTEM_CONFIG_UPDATED
+ LOG-1001            | 30 Oct 2026, 11:24 AM | APPLICATION_FORWARDED
+(8 rows)
+
+-- how many adjacent pairs in that feed are out of chronological order? --
+  out-of-order adjacent pairs: 11
+-- and how many are inside the same display minute (so the display string cannot order them at all) --
+  rows sharing a minute: 10 across 10 minutes
+
+================ P-97 residue check after round 9 (this round writes nothing that persists) ================
+  apps=10 docs=10 und=7 cmp=5 evc=6 alerts=0 notifs=5 escl=0 users=5 files=0 audit=94
+  probe ids anywhere: NONE
+-- seed equality re-verified with the round-8 comparator --
+ROUND 9 COMPLETE 2026-11-01T18:32:50Z

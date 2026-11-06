@@ -1,0 +1,12 @@
+=== sortNotifications / sort by timestamp in client ===
+src/workflow/selectors.ts:273:  return [...map.values()].sort((a, b) => b.count - a.count || b.breached - a.breached);
+src/workflow/selectors.ts:287:    .sort((a, b) => b.score - a.score || b.count - a.count);
+src/workflow/selectors.ts:319:    .sort((a, b) => {
+src/workflow/selectors.ts:348:    .sort((a, b) => {
+src/workflow/selectors.ts:418:    .sort((a, b) => {
+=== formatDisplayDate impl ===
+export function formatDisplayDate(value: string | Date = getNow()): string {
+  const date = value instanceof Date ? value : parseDate(value);
+  if (!date) return String(value);
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}

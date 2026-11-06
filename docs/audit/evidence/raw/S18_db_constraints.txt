@@ -1,0 +1,12 @@
+=== FK constraints in init migration ===
+481:ALTER TABLE "sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+=== unique constraints ===
+3
+421:CREATE UNIQUE INDEX "system_alerts_dedupeKey_key" ON "system_alerts"("dedupeKey");
+454:CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+463:CREATE UNIQUE INDEX "sessions_tokenHash_key" ON "sessions"("tokenHash");
+481:ALTER TABLE "sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+=== CHECK constraints ===
+0
+=== TIMESTAMP(3) columns vs TEXT date columns ===
+5

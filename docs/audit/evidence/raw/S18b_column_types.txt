@@ -1,0 +1,40 @@
+=== TIMESTAMP(3) columns ===
+prisma/migrations/20261101000000_init/migration.sql:300:    "expiresAt" TIMESTAMP(3) NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql:302:    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+prisma/migrations/20261101000000_init/migration.sql:303:    "lastUsedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+prisma/migrations/20261101000000_init/migration.sql:304:    "revokedAt" TIMESTAMP(3),
+prisma/migrations/20261101000000_init/migration.sql:331:    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+prisma/migrations/20261101134635_assistant_message_created_at/migration.sql:5:ALTER TABLE "assistant_messages" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+=== date-ish TEXT columns in schema ===
+21:  lastUpdated       String
+22:  appliedDate       String
+32:  stageEnteredAt    String?
+33:  stageDueAt        String?
+89:  scheduledAt       String?
+90:  reportDueAt       String?
+113:  dueDate         String
+118:  verifiedAt      String?
+119:  verifiedBy      String?
+136:  uploadDate       String
+137:  expiryDate       String
+145:  verifiedBy       String?
+164:  dueDate             String
+166:  submittedAt         String?
+168:  verifiedAt          String?
+169:  verifiedBy          String?
+187:  timestamp         String
+214:  createdAt   String
+235:  raisedDate     String
+245:  acknowledgedAt String?
+246:  resolvedAt     String?
+257:  timestamp     String
+321:  createdAt     String
+354:  timestamp   String
+
+=== dedupeKey declarations ===
+195:  dedupeKey         String?
+198:  @@index([dedupeKey])
+213:  dedupeKey   String   @unique
+241:  dedupeKey      String?
+249:  @@index([dedupeKey])

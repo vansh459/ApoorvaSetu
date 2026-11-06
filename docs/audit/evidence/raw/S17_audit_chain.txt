@@ -1,0 +1,22 @@
+=== S-17 hash-chain presence ===
+server/mappers/mappers.test.ts:214:    const row = stored<UserRow>(toUserData(domain, 'scrypt$salt$digest'));
+server/mappers/mappers.test.ts:215:    expect(row.passwordHash).toBe('scrypt$salt$digest');
+server/password.ts:10:  const digest = scryptSync(password, salt, KEY_LENGTH).toString('hex');
+server/password.ts:11:  return `scrypt$${salt}$${digest}`;
+server/password.ts:16:  const [scheme, salt, digest] = stored.split('$');
+server/password.ts:17:  if (scheme !== 'scrypt' || !salt || !digest) return false;
+server/password.ts:19:  const expected = Buffer.from(digest, 'hex');
+server/session.ts:1:import { createHash, randomBytes } from 'node:crypto';
+server/session.ts:33:  return createHash('sha256').update(token).digest('hex');
+=== append-only/immutable ===
+supabase/migrations/20261101090000_production_hardening.sql:5:-- audit trail append-only. Idempotent: safe to re-run.
+supabase/migrations/20261101090000_production_hardening.sql:707:-- The audit trail is append-only for every role, including the service role.
+supabase/migrations/20261101090000_production_hardening.sql:713:  raise exception 'Audit records are append-only and cannot be changed.';
+supabase/tests/rls.sql:196:      if position('append-only' in sqlerrm) = 0 then
+supabase/tests/rls.sql:208:      if position('append-only' in sqlerrm) = 0 then
+docs/AICTE-26262-IMPLEMENTATION.md:23:| Audit trail | Append-only audit with before/after state, correlation IDs, production persistence | P3, P10 | Done; production is insert-only, UPDATE/DELETE revoked |
+docs/AICTE-26262-IMPLEMENTATION.md:181:`audit_logs` is insert-only: UPDATE/DELETE are revoked and a trigger rejects mutation. Documents
+docs/AICTE-26262-IMPLEMENTATION.md:263:      detail drawer rendering the previous/new state JSON and an append-only footer note.
+docs/AICTE-26262-IMPLEMENTATION.md:749:| Audit | Append-only by convention, capped | Insert-only, UPDATE/DELETE revoked, trigger-enforced |
+docs/audit/00-baseline.md:213:`escalations` naming used by `api/cron/sweep.ts`, RLS policies and an insert-only trigger on the
+docs/POSTGRES-DATA-LAYER.md:56:| `POST /api/audit` | session | Append-only audit; id/timestamp/actor/IP stamped server-side |

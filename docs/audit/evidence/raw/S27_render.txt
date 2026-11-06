@@ -1,0 +1,21 @@
+=== S-27 render-cost signals ===
+2355 src/context/AppContext.tsx
+34
+useMemo count:
+0
+useState count:
+19
+=== largest source files ===
+   2355 src/context/AppContext.tsx
+   1158 src/data/initialData.ts
+   1038 src/pages/Documents.tsx
+    881 src/services/authService.ts
+    838 src/pages/Compliance.tsx
+    648 server/routes/data.ts
+    611 src/services/repositories/supabaseRepository.ts
+    607 src/workflow/engine.ts
+    522 src/components/common/Header.tsx
+    482 src/pages/Applications.tsx
+    469 src/components/modals/ApplicationDetailModal.tsx
+=== memo() wrappers ===
+0

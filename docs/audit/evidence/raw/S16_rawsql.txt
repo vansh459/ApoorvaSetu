@@ -1,0 +1,6 @@
+=== S-16 raw SQL surface ===
+server/index.ts:72:      await getPrisma().$queryRaw`SELECT 1`;
+server/index.ts:102:    await getPrisma().$queryRaw`SELECT 1`;
+=== tagged-template only? ===
+0
+=== supabase-js .from() raw-ish filters with user text ===

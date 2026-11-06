@@ -1,0 +1,265 @@
+PROBE D-21 — accessibility census (contrast, semantics, keyboard), demo build :8080,
+viewport 632 x 570 CSS px, dpr 1.25, session SUPER_ADMIN. Lens L7. Confidence: confirmed
+unless a line says otherwise.
+
+All numbers below are computed-style measurements taken live in the page (no screenshots are
+possible — `take_screenshot` fails with NATIVE_BROWSER_VIEWPORT_UNAVAILABLE; see the not-run
+ledger). Colour math is WCAG 2.x relative luminance with the sRGB coefficients, and the
+contrast requirement applied is 4.5:1 for normal text and 3:1 for large text (>=24 px, or
+>=18.66 px bold). Background for each text node is the first non-transparent ancestor
+background found by walking up the tree.
+
+====================================================================
+1. CONTRAST CENSUS — per page, all rendered text nodes
+====================================================================
+Method: TreeWalker over text nodes, filtered to those whose element has a layout box, is not
+inside an aria-hidden subtree, visibility hidden / opacity < 0.9 excluded.
+
+page                     visible text nodes   AA failures   the failing rows
+/login (not measured)              —                 —                 —
+/demo-scenarios                       136              3   #9a958a on #f7f5f1 @12/500 = 2.74 x3
+/documents                            214              3   "  (same 3)
+/applications                         111              3   "
+/reports                               81              3   "
+/notifications                        197              3   "
+/alerts                               158              3   "
+/admin/audit-logs                     229              3   "
+/evc/checklist                         81              3   "
+/evc/evidence                          32              3   "
+/pendency                             147              3   "
+/institutes                           162              3   "
+/admin/users                           75              3   "
+/compliance                           140              3   "
+/institution/apply                     49              3   "
+/ (dashboard)                         119              3   "
+/admin/roles                          102              3   "
+/regions-officials                    139              3   "
+/workflow                              93              3   "
+/admin/system-config                   69              3   "
+
+The three failing rows are the same on every page — the sidebar group headings:
+  fg #9a958a (--color-ink-3)  bg #f7f5f1 (--color-paper, from the <aside>)  12 px / 500
+  ratio 2.74:1  (needs 4.5:1)  sample text "Workspace", "Oversight", "System"
+  source: src/components/common/Sidebar.tsx:280
+          <p className="px-3 pb-1 pt-4 text-xs font-medium text-ink-3">{group.title}</p>
+
+Token-level ratios, computed once and reused (same maths as above):
+  #9a958a on #ffffff  = 2.98:1      (surface cards — placeholders, Pendency "0" cells)
+  #9a958a on #f7f5f1  = 2.74:1      (paper — sidebar headings)
+  #9a958a on #fbfaf7  = 2.86:1      (surface-2 — chips, filter bar)
+  #6b6862 on #ffffff  = 5.55:1      (--color-ink-2 passes everywhere measured: 5.10 on paper,
+                                     5.32 on surface-2, 5.55 on white)
+The lowest PASSING row on any page was 5.10:1, i.e. ink-3 is the only colour token that fails.
+
+Placeholder text is not a text node, so it needs its own measurement:
+  document.querySelectorAll('input,textarea') -> getComputedStyle(el,'::placeholder').color
+  /institutes search box: fg rgb(154,149,138) = #9a958a, bg #ffffff, 14 px -> 2.98:1  FAILS
+  (rule: src/index.css:151-153 `input::placeholder, textarea::placeholder { color: var(--color-ink-3) }`)
+  Placeholders measured carry real information, e.g. Header.tsx:204
+  "Search applications, institutes, regions".
+
+How many ink-3 text nodes actually render (targeted probe, colour === rgb(154,149,138) and the
+element owns non-empty text):
+  /applications, /reports, /compliance, /institutes, /documents, /alerts, /admin/roles  -> 3 each
+  (the sidebar headings only)
+  /pendency -> 46: 3 sidebar headings + 43 single-character "0" cells at 2.98:1 on #ffffff
+  source of those cells: src/pages/Pendency.tsx:84, :91, :142, :162
+      row.breached > 0 ? <Badge>{row.breached}</Badge> : <span className="text-ink-3">0</span>
+  So the failing ink is not decorative: it is the value of a data cell.
+  Two further text consumers exist in source and were not rendered during this run (state-
+  dependent, so recorded as source-only, confidence: suspected):
+      src/components/modals/ApplicationDetailModal.tsx:141 ("Terminal cases are immutable…")
+      src/pages/admin/RolePermissions.tsx:210 (unselected permission chip label)
+
+Source footprint of the token (grep src --include=*.tsx): 43 occurrences across 25 files, of
+which 4 are `placeholder:text-ink-3` (ChatInput.tsx:58, Header.tsx:206, Header.tsx:250,
+ui/Field.tsx:6) and the bulk are `aria-hidden="true"` lucide icons (exempt from 1.4.3 but not
+from 1.4.11 non-text contrast, which is also failed by 2.74:1 < 3:1 for the meaningful ones —
+e.g. the "no data" zero and the select chevron are not meaningful, the EmptyState glyph is not
+either). One global rule (index.css:153) plus the token definition (index.css:57) is the whole
+fix surface.
+
+====================================================================
+2. KEYBOARD / FOCUS — mobile drawer (closed and open states)
+====================================================================
+Closed state at 632 px: already transcribed in D-20 (14 of 35 tab stops sit off-canvas at
+x = -256; the panel has no aria-hidden and no inert).
+
+Open state (measured in the same call as the activating click, because the drawer state was
+observed to reset between calls — see artefacts §8):
+  aside after click: x = 0, class contains translate-x-0, backdrop div present
+    (src/components/common/Sidebar.tsx:241-247, aria-hidden="true" — correct)
+  tabbable while open: total 36 -> inside aside 14, outside 22
+  document.querySelector('main'): aria-hidden = null, inert = false
+  aside attributes: role = null, aria-hidden = null, aria-label = "Sidebar"
+  document.activeElement immediately after the toggle click = BODY
+Consequences:
+  - the open drawer is not exposed as a dialog and does not remove the page behind it from the
+    tab order (22 live stops behind a full-screen overlay);
+  - opening it moves no focus, so the user stays wherever they were;
+  - a synthetic `keydown Escape` dispatched on `document`, and one dispatched as `keyup`, left
+    the drawer open (x stayed 0). No Escape handling exists for the drawer
+    (grep: the only Escape handler in the shell is Header.tsx:374 for the profile popover).
+  - clicking a nav item does close it on small screens (`closeOnMobile`, Sidebar.tsx:235-237) —
+    correct, recorded so the fix does not break it.
+
+====================================================================
+3. DIALOG SEMANTICS AND FOCUS MANAGEMENT — this part is genuinely good
+====================================================================
+Case file opened from /applications ("Inspect" on a mobile card). Measured on the live node:
+  role="dialog", aria-modal="true", aria-labelledby="modal-title-21" -> resolves to the <h2>
+  whose text is "Application AICTE/2026/12870"; aria-describedby="modal-description-21" ->
+  resolves; tabIndex="-1"; headings inside start at H2 (no second h1); body overflow set to
+  hidden by the hook; focus lands on BUTTON "Close dialog" inside the panel.
+  After a trusted Escape (browser-use press_key): dialogs = 0, body overflow restored
+  ("clip visible"), and document.activeElement = BUTTON "Inspect" — focus returned to the
+  opener. That is WCAG 2.4.3 + 2.1.2 done properly.
+  Implementation: src/components/ui/Modal.tsx:44-77 + src/components/ui/useDialogFocus.ts
+  (trap on Tab/Shift-Tab with wrap, Escape -> onClose, focus restore, overflow restore).
+  src/components/ui/Drawer.tsx:45-51 is the same contract for the case-summary panel
+  (role=dialog, aria-modal, aria-label when there is no title).
+  src/components/assistant/AIChatPanel.tsx:129-132 uses role="dialog" + aria-label
+  "ApoorvaSetu assistant" and deliberately no aria-modal (non-modal panel) — correct, and the
+  input is labelled (ChatInput.tsx:57) and re-focused after send (:15).
+
+====================================================================
+4. FORMS, TABLES, LANDMARKS, STATUS MESSAGES
+====================================================================
+Per page (/dashboard, /applications, /reports, /notifications, /alerts, /admin/audit-logs,
+/evc/checklist, /evc/evidence, /pendency, /institutes, /admin/users, /compliance,
+/institution/apply, /workflow, /admin/roles, /regions-officials, /admin/system-config):
+  <main> present, but main.id === "" and no tabindex -> nothing to skip to (all 7 pages probed)
+  zero <a> matching /skip/ (D-20 §2)
+  inputs/selects/textareas with no <label for>, no wrapping label, no aria-label/labelledby:
+    NONE on every page measured (0 unlabelled controls) — the Field primitive wires
+    htmlFor/htmlFor (src/components/ui/Field.tsx:28) and every consumer passes it
+  fieldset/legend: 0 on every page (radio groups use role="group" only on
+    src/pages/evc/MyAssignedVisits.tsx:284 via aria-labelledby)
+  aria-required anywhere in src/**/*.tsx: 0 occurrences; native `required` is used instead
+    (correct for screen readers), so this is NOT filed as a 1.3.1/3.3.1 name defect
+  aria-describedby / aria-invalid anywhere in src/**/*.tsx: 0 occurrences (grep), while
+    Field.tsx:34 renders `<p id="{htmlFor}-error" role="alert">` and Field.tsx:39 an id'd hint,
+    and Field.tsx:6 styles `aria-[invalid=true]:border-danger` — a selector nothing ever sets.
+    Measured consequence: a focused invalid input announces its label and "required" but the
+    error text is associated with nothing, and the red border is the only error signal (1.4.1
+    Use of Color + 3.3.1 Error Identification via association).
+  tables: every table has a caption (sr-only is fine, DataTable.tsx:52) and every <th> carries
+    scope="col" (measured 5-7 of 5-7 per table on /applications, /reports, /workflow,
+    /pendency, /admin/users, /admin/roles, /regions-officials). Clickable rows get
+    tabIndex=0 + Enter/Space (DataTable.tsx:87-98).
+  empty <th> rendered (zero-length header text): /pendency table 1 (8 columns) and /workflow
+    (6 columns) — the last header cell is blank. Column headers must be non-empty (1.3.1).
+  heading order: h1 count === 1 on every page measured; skips found on /regions-officials
+    (h1 -> h3, first at "Dr. R. K. Sharma") and /institutes (h1 -> h3, "ABC Institute of Tech").
+    No other page skipped a level.
+  duplicate ids: none measured on the 7 pages probed (dupIds = []).
+  images: 1 <img> in the shell (Sidebar.tsx:258-262) with alt="" — correct decorative usage;
+    missingAlt = 0 everywhere.
+  buttons with a visible box and no accessible name: 0 on every page measured (IconButton
+    forces a label prop).
+  aria-current: NavLink emits aria-current="page" (measured "A:User management=page") — good.
+  live regions at rest: [role=status]=0, [role=alert]=0, [aria-live]=0 on all 17 pages probed.
+    Toasts do use role="status" aria-live="polite" (src/components/common/Toast.tsx:20-21) and
+    Dashboard's skeleton uses aria-busy (src/pages/Dashboard.tsx:15), but there is no
+    persistent live region, so these UI changes are silent:
+      - global search results popup (Header.tsx:219-227) announces "N matches" only visually;
+        the input has no aria-expanded/aria-controls and the popup is not a listbox/combobox;
+      - list filters and "Sort by date" (/applications) change the row set with no announcement;
+      - the assistant chat log (AIChatPanel.tsx:150-156) has no role="log"/aria-live, so an
+        streamed reply is never announced — the user can only tell by watching.
+    (4.1.3 Status Messages is AA in WCAG 2.2, A in 2.0 — filed as a finding regardless because
+    these are the three highest-traffic dynamic surfaces.)
+
+====================================================================
+5. HORIZONTAL SCROLL CONTAINERS AT 632 px — 2.1.1 measured
+====================================================================
+DataTable always renders a `div.overflow-x-auto` around a table with an inline min-width
+(src/components/ui/DataTable.tsx:45-51). At this viewport the container is ~588-590 px wide:
+
+page / box                     client  scrollW  clipped  container tabindex  focusables inside
+/admin/users  users table        588      920      332 px  null               5 (all clipped)
+/reports      SLA report         590      976      388 px  null               0 (13 cells clipped)
+/pendency     region workload    590      880      292 px  null               4 (all clipped)
+/pendency     stage matrix       590      860      272 px  null              13 (1 clipped)
+/pendency     third table        590      640       52 px  null               0 (9 cells clipped)
+/workflow     stage notes        590      840      252 px  null               4 (all clipped)
+/compliance   table 1            588     1113      525 px  null               — (Action column)
+/compliance   table 2            588      940      352 px  null               —
+
+Measured, not assumed: focusing the last clipped "Deactivate" button on /admin/users moved the
+container from scrollLeft 0 -> 332 and the button's box ended fully inside the container
+(right edge 589 vs container right 606). So where a clipped cell contains a control, Tab does
+reach it and the browser scrolls for us — keyboard access to ACTIONS is intact.
+
+Where a clipped cell contains only text there is no way to bring it into view without a mouse,
+trackpad or touch:
+  /reports SLA report — 0 focusable elements, 13 clipped cells including the numeric columns
+    "SLA breached", "Due soon", "Average age (days)", "Target days";
+  /pendency third table — 0 focusable, 9 clipped cells ("Stages held", "EVC", "Approval",
+    "Scrutiny").
+That is a real 2.1.1 Keyboard failure on the report tables (not on the action tables), and the
+fix is one attribute per container (`tabIndex={0}` + `role="region"` + `aria-label`) in the
+shared DataTable component. Confidence: confirmed.
+
+Also recorded so it is not re-litigated: the "actions column disappears below md" hypothesis is
+FALSE. /applications renders its desktop table as `hidden md:block` and its mobile card list
+as `space-y-2 md:hidden` (measured: ul visible with 8 items, table display:none) and every
+mobile card carries its own "Inspect" button (measured 8 Inspect buttons in the visible tab
+order). Nothing was lost at 632 px.
+
+====================================================================
+7. FOCUS INDICATOR — the one place the global ring is switched off
+====================================================================
+Global rule: src/index.css:146-148 inside `@layer base`
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+There is exactly one `outline` declaration in the stylesheet (grep), so every control inherits it.
+
+A control button focused programmatically (control case) does show a ring:
+  outline: solid 1.6px rgb(107,104,98), outline-offset 1.6px, :focus-visible matches.
+
+src/components/assistant/ChatInput.tsx:58 adds Tailwind `outline-none` to the assistant
+textarea. Utilities layer > base layer, so the global ring loses. Measured with the assistant
+panel open (role="dialog" present, textarea found):
+  document.activeElement === textarea            true
+  textarea.matches(':focus-visible')             true
+  computed outlineStyle                          "none"
+  computed boxShadow                             "none"
+  wrapper (div.rounded-card, which declares focus-within:shadow-raise at ChatInput.tsx:52)
+    box-shadow unfocused  rgba(23,24,27,.05) 0 1 2 0, rgba(23,24,27,.03) 0 1 1 0
+    box-shadow focused    identical (shadowSame === true)
+    border-color          rgb(23,24,27) unchanged (borderSame === true)
+So neither the textarea nor its container changes appearance when focused: 2.4.7 Focus Visible
+(AA) fails for the assistant input, and it is the only such case in the app.
+
+src/components/dashboard/RegionalDonutChart.tsx:80 also carries `outline-none`, but on recharts
+<Cell> SVG paths that are not focusable (no tabindex), so 2.4.7 is not engaged. Its onClick
+(:66-70, navigates to /applications?region=<name>) is mouse-only; the same filter is available
+as a keyboard-reachable <select> on /applications (measured "All regions / Northern / …"), so
+this is a redundant-interaction nit, not a 2.1.1 trap.
+
+====================================================================
+8. PROBE ARTEFACTS (mine, corrected — kept so the numbers are not re-derived wrongly)
+====================================================================
+  (a) My first per-page census run recorded the label of the page it was about to visit, so the
+      `p` field lagged the DOM by one; the rows above were re-keyed on `location.pathname`, and
+      the h1 recorded with each row always matched that url.
+  (b) The generic census filtered text nodes with `text.length < 2`, which silently excluded the
+      43 single-character "0" cells on /pendency. The targeted colour-equality probe in §1 is
+      the corrected instrument; it is also why §1 says "3 failures per page" and §1's ink-3
+      count then says 46 on /pendency.
+  (c) A synthetic `KeyboardEvent('keydown')` dispatched from evaluate_script did NOT close the
+      case-file modal (dialogs stayed 1) although a trusted key from the browser driver did
+      (dialogs -> 0). Escape results in §2 for the drawer use the synthetic path only, so the
+      strict claim is "no handler observed for a synthetic Escape keydown/keyup"; the drawer has
+      no keydown listener at all in source (no Escape branch in Sidebar.tsx / Header.tsx for the
+      sidebar), which is the corroborating static evidence.
+  (d) Programmatic `.click()` does not move focus, so an earlier "focus was not restored"
+      reading was my artefact; §3 re-tests it with the opener focused first and focus restore
+      confirmed.
+  (e) The drawer was observed closed (x = -256) when measured in a later call than the one that
+      opened it; every §2 number therefore comes from a call that opens and measures together.
+      This is a harness note, not an app defect claim — no auto-close behaviour was asserted.
+  (f) Route changes were driven by `history.pushState` + a dispatched `popstate` (React Router
+      picks it up one tick later), because several routes are not in the SUPER_ADMIN sidebar
+      list at this width. Each census re-read `location.pathname` to prove the route actually
+      changed before recording numbers.

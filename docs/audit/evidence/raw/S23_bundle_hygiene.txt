@@ -1,0 +1,12 @@
+=== S-23 bundle: lazy routes? ===
+0
+=== static page imports in App.tsx ===
+32
+=== heavy deps ===
+1
+55
+=== docs list ===
+docs/AICTE-26262-IMPLEMENTATION.md
+docs/POSTGRES-DATA-LAYER.md
+=== README size ===
+241 README.md

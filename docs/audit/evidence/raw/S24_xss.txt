@@ -1,0 +1,25 @@
+=== S-24 XSS surface ===
+=== assistant render path ===
+src/components/assistant/ChatMessage.tsx:21:  // Clean markdown-like formatter for bolding, bullet points, and paragraphs
+=== csv export injection ===
+8:export function escapeCsvValue(value: string | number | boolean | null | undefined): string {
+9-  if (value === null || value === undefined) return '""';
+10-  return `"${String(value).replace(/"/g, '""')}"`;
+11-}
+12-
+13-export function buildCsv(columns: CsvColumn[], rows: CsvRow[]): string {
+14:  const header = columns.map((column) => escapeCsvValue(column.label)).join(',');
+15-  const body = rows.map((row) =>
+16:    columns.map((column) => escapeCsvValue(row[column.key])).join(',')
+17-  );
+18-  return `\uFEFF${[header, ...body].join('\r\n')}\r\n`;
+19-}
+20-
+21-export function downloadCsv(filename: string, content: string): void {
+22-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+23-  const url = URL.createObjectURL(blob);
+24-  const link = document.createElement('a');
+25-  link.href = url;
+26-  link.download = filename;
+27-  document.body.appendChild(link);
+28-  link.click();

@@ -1,0 +1,91 @@
+PROBE D-16 — /documents: the label "Valid" is computed twice on the same screen and
+returns two different numbers. Demo mode :8080, SUPER_ADMIN session, demo clock = Today.
+Lens: L5 (functional QA) / L9 (demo credibility). Severity: P2. Confidence: confirmed.
+
+Measured state (page as rendered, before any interaction)
+  KPI strip (src/pages/Documents.tsx:440-479)
+    Documents on record  10
+    Valid                 6   <- "No action required"
+    Expiring soon         1   <- "31 to 60 days"
+    Critical              1   <- "30 days or less"
+    Expired               1
+    -> 6 + 1 + 1 + 1 = 9, which does not equal the "on record" 10. No tile explains the gap.
+  Filter chip row (src/pages/Documents.tsx:420-424 -> countFor())
+    Valid 4
+
+The two numbers come from two different predicates over the same array:
+
+1) KPI value = summary.valid
+   src/pages/Documents.tsx:139-142 -> summariseDocuments()
+   src/workflow/documents.ts:230-261, bucket loop at :245-251
+   Membership test: isActiveDocument(document)  (src/workflow/documents.ts:170-173)
+     = status !== 'Superseded' AND NOT (renewalOfId && status === 'Rejected')
+   i.e. renewal *successor* records ARE counted.
+
+2) Chip / list filter = countFor('Valid')
+   src/pages/Documents.tsx:177-193 (matchesFilter) and the duplicated copy at :198-214
+   Membership test at :186: `if (isRenewalRecord(doc) || doc.status === 'Superseded') return false;`
+   i.e. renewal *successor* records are EXCLUDED.
+
+Live in-page recomputation of both predicates against the persisted store
+(aicte_approval_system_data_v4_docs, 10 rows, at=2026-11-01T16:59:53Z, warningDays [60,30,7]):
+
+  KPI-valid set  (6): DOC-502, DOC-503, DOC-504, DOC-505, DOC-508, DOC-509
+  chip-valid set (4): DOC-502, DOC-503, DOC-504, DOC-505
+  only in KPI       : DOC-508 { status: 'Pending',  renewalOfId: 'DOC-504', expiry: '2028-03-15' }
+                      DOC-509 { status: 'Verified', renewalOfId: 'DOC-510', expiry: '2029-04-19' }
+  status histogram  : Verified 6, Pending 2, Expired 1, Superseded 1
+  DOC-510 (Superseded, expiry 2025-09-27) is inside `total` but outside every tier bucket,
+  which is the whole 9-vs-10 gap.
+
+Raw store rows (id | status | expiry | tier | renewalOfId | renewalStatus)
+  DOC-501 Expired    2026-09-17  Expired       -         -
+  DOC-502 Verified   2028-10-01  Valid         -         -
+  DOC-503 Verified   2031-03-20  Valid         -         -
+  DOC-504 Verified   2028-03-15  Valid         -         Submitted
+  DOC-505 Verified   2027-06-29  Valid         -         -
+  DOC-506 Pending    2026-12-16  Expiring Soon -         -
+  DOC-507 Verified   2026-11-08  Critical      -         -
+  DOC-508 Pending    2028-03-15  Valid         DOC-504   Submitted
+  DOC-509 Verified   2029-04-19  Valid         DOC-510   Verified
+  DOC-510 Superseded 2025-09-27  Expired       -         -
+
+Why this is a defect and not a rounding artefact
+a) It is self-triggering: the "Valid" KPI tile is itself the button that switches the list to
+   the chip predicate — `onClick={() => setValidityFilter('Valid')}`
+   (src/pages/Documents.tsx:454). A user clicks the tile that says 6 and the table renders 4
+   rows, with no "showing 4 of 6" cue. The page contradicts itself on demand.
+b) One instrument is counted twice. DOC-504 and DOC-508 carry the same expiry (2028-03-15)
+   and DOC-508 is DOC-504's renewal successor; the KPI reports both as separately valid
+   records, so "Valid 6" overstates the number of distinct valid instruments by up to 2
+   (DOC-504/508 pair and DOC-509/510 pair).
+c) DOC-508 is status 'Pending' — never verified by an officer — yet is bucketed under
+   "Valid / No action required". Verification state is not part of the tier predicate at all
+   (src/workflow/documents.ts:245-251), so unverified and rejected originals share the
+   "no action required" tile.
+d) The rest of the codebase follows the chip rule, not the KPI rule:
+   src/workflow/alerts.ts:232-236 skips `document.renewalOfId` rows when generating expiry
+   alerts. So the KPI tile is the only consumer that counts successors, which makes the
+   mismatch a summariseDocuments() bug rather than a design choice.
+e) The same skewed summary is exported: src/pages/Reports.tsx:112 calls
+   summariseDocuments(appDocuments, ...) and src/workflow/reports.ts:247-248 builds the
+   document register with .filter(isActiveDocument), so the "Valid" figure that leaves the
+   product in CSV carries the double count.
+
+Latent sibling (suspected, not reproduced this pass)
+   src/workflow/sla.ts:147-148 — `documentExpiry()` returns `{ tier: 'Valid', daysLeft: +Infinity }`
+   when `parseDate(expiryDate)` fails, i.e. a missing or malformed expiry date is reported as
+   "Valid — No action required" rather than "unknown". All 10 seeded rows parse cleanly, so no
+   live misclassification was observed; the confirming probe is to clear the expiry field on
+   upload (see D-17) and check the tile. Marked suspected.
+
+Recommended fix
+   Make `summariseDocuments` take the same membership predicate as the list filter — skip
+   `isRenewalRecord(doc)` rows (or count them only in a dedicated "renewals" bucket), and drop
+   `status === 'Rejected'`/'Pending' from the "No action required" caption. Then make the total
+   tile's caption state what it includes (e.g. "10 records incl. 1 superseded, 2 renewal
+   copies") so the tier buckets no longer look like they should sum to it.
+   Effort: S. Touches src/workflow/documents.ts:230-261 plus the tile captions at
+   src/pages/Documents.tsx:440-479. Regression test: assert
+   summariseDocuments(seed).valid === seed.filter(matchesFilter(doc,'Valid')).length for the
+   shipped demo data.

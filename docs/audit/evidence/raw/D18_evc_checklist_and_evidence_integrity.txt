@@ -1,0 +1,89 @@
+PROBE D-18 — /evc/checklist and /evc/evidence: findings persistence is fine, but inspection
+evidence can be rewritten by a role that is not allowed to submit a report, and the screen
+claims "Tamper-proof attachments".
+Demo mode :8080, SUPER_ADMIN session. Lens: L5 + L4 (integrity) + L9 (claims).
+
+State mutations made by this probe (recorded for cleanliness)
+  - EVC-8801 checklist now holds [{id:'1.1', passed:true}] (1/12 assessed).
+  - Audit rows added: SAVE_EVC_CHECKLIST (AUD-1793552763809-ph9lw,
+    "Checklist saved for NIT Rourkela: 1/12 assessed, 0 deficient.").
+  These are synthetic demo rows only; no application code was changed.
+
+(1) WORKS — checklist persists and is re-rendered after reload (checked, non-finding)
+    Clicked criterion 1.1 "Compliant" -> aria-pressed true, save button flips from the disabled
+    label "Checklist saved" to the enabled "Save checklist" (src/pages/evc/EvidenceUpload.tsx /
+    InspectionChecklist.tsx pattern; audit at src/context/AppContext.tsx:1154-1163).
+    After location.reload(): store EVC-8801 gained `checklist: [{id:'1.1',passed:true}]` and the
+    screen still reads "1/12 assessed". Progress bar exposes role=progressbar
+    aria-valuemin=0 aria-valuemax=100 aria-valuenow=8 aria-label="Checklist progress"
+    -> 8 = round(1/12*100). Correct, not a mis-scaled bar.
+
+(2) P1 — evidence removal is the one EVC mutation with no authorization check (demo mode).
+    src/context/AppContext.tsx
+      :1008 completeEVC          -> authorizeAction('evc.report.submit')
+      :1145 saveVisitChecklist   -> authorizeAction('evc.report.submit')
+      :1169 addVisitEvidence     -> authorizeAction('evc.report.submit')
+      :1188 removeVisitEvidence  -> NO authorizeAction call at all
+    The delete affordance itself is gated only by the report-submitted lock:
+      src/pages/evc/EvidenceUpload.tsx:160-168  <IconButton label={`Remove ${…}`}
+                                                  disabled={locked} … />
+    So before the report is filed, any session that can render the list can drop attachments;
+    the only trace is an audit row written after the fact (:1195-1202 REMOVE_EVC_EVIDENCE).
+
+(3) P1 — server-side, the whole inspection record (checklist + evidenceFiles) is writable by a
+    role that is explicitly *not* allowed to submit a report.
+    server/routes/data.ts:207-213
+      const evcSpec: SaveSpec<EVCVisit> = {
+        table: 'evcVisits',
+        permissions: ['evc.schedule', 'evc.report.submit'],   // any-of (see :116-119 saveHandler)
+        parse: parseEVCVisit, …
+      }
+    server/routes/data.ts:116-147 saveHandler -> assertAnyPermission(...) then a whole-row
+      update (:221-223 `prisma().eVCVisit.update({ data: toEVCVisitData(visit) })`). evcSpec
+      defines no `guard`, unlike the regulated application/document paths, so `checklist` and
+      `evidenceFiles` are overwritten verbatim from the request body.
+    Permission matrix (src/services/rbacService.ts:69-82): REGIONAL_OFFICER holds evc.read +
+      evc.schedule but NOT evc.report.submit; AICTE_ADMIN (:48-67) likewise lacks it.
+    Consequence: PUT /api/evc-visits/EVC-8801 with `evidenceFiles: []` and an edited `checklist`
+    from a Regional Officer session satisfies the any-of rule (evc.schedule) and rewrites the
+    committee's findings. The UI hides the screen (route guard src/App.tsx:144-151 allows only
+    EVC_MEMBER/SUPER_ADMIN), which is a view restriction, not an authorization boundary.
+    LIVE CONFIRMATION PENDING: this becomes Pass C probe P-17 (Regional Officer session on
+    :8081, PUT a visit with evidenceFiles stripped, expect 200 + audit row). Marked code-confirmed,
+    runtime-suspected until P-17 runs.
+
+(4) P2 — the claim on the screen is stronger than the mechanism.
+    src/pages/evc/EvidenceUpload.tsx:66
+      <span className="text-xs text-ink-2">Tamper-proof attachments</span>
+    and :140 "Records added here are listed in the signed report."
+    What actually exists: an array of strings on the visit row. In demo mode the entry is only the
+    file name — src/pages/evc/EvidenceUpload.tsx:38-41
+      if (!isFileUploadEnabled()) { addVisitEvidence(visit.id, file.name); return; }
+    no bytes, no size, no hash, no uploader identity, no timestamp, and no success toast (the
+    toast is only on the remote branch at :47). In Postgres mode the value is the storage key
+    (:46 uploaded.key), which is content-addressed only if the bucket versioning/ACL does it —
+    nothing in this repo signs or digests the object. A deletable, unhashed string list is
+    tamper-*evident* at best through the audit row, never tamper-proof.
+    Same category as the knowledge-base claim already filed in L9:
+    src/data/platformKnowledgeBase.ts:45 "Cryptographically signed audit trail recording every
+    approval decision" — see evidence/raw/S17_audit_chain.txt (append-only API but no chain
+    digest) — so the product states a guarantee in two places that the data model does not hold.
+    Fix: either implement it (store digest + uploader + attach time per evidence item and add an
+    `guard` on evcSpec that rejects shrinking evidenceFiles/checklist outside
+    evc.report.submit) or reword the two captions to what the system does
+    ("attachments are recorded in the audit trail; removal requires report unlock"). Effort M for
+    the implementation, S for the reword.
+
+(5) P3 — demo-mode attach gives no feedback.
+    src/pages/evc/EvidenceUpload.tsx:38-41 returns before the showToast at :47, so in the demo
+    build the officer clicks "Attach inspection photographs and evidence", picks a file and gets
+    no confirmation toast — only the row appearing in the list below (and the list heading
+    "N records held against EVC-8801", :135). Confirmed by reading the branch; no toast was
+    emitted during this probe's save either (the checklist save path does toast,
+    AppContext.tsx:1163, so the asymmetry is specific to the demo evidence branch).
+
+Checked, consistent (non-findings)
+    - /evc/queue KPIs: Awaiting scheduling 0, Scheduled 3, Report overdue 1, Completed 0 = 4,
+      which equals the EVC-stage application count from /workflow (4) and the store.
+    - EVC-8801 shows status 'Scheduled' with a past visit date (2026-10-19) and reportDueAt
+      2026-10-26; the queue labels it "6 days overdue" — consistent with today = 01 Nov 2026.

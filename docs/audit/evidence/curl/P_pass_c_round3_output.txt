@@ -1,0 +1,138 @@
+cookies issued: aicteadmin evc institute regional superadmin 
+superadmin   role from /api/auth/session = SUPER_ADMIN
+aicteadmin   role from /api/auth/session = AICTE_ADMIN
+regional     role from /api/auth/session = REGIONAL_OFFICER
+institute    role from /api/auth/session = INSTITUTION_ADMIN
+evc          role from /api/auth/session = EVC_MEMBER
+
+================ P-06(round3) POST /api/users with NO password field -> admin.ts:112 falls back to DEMO_PASSWORD ================
+{"user":{"id":"USR-MVY4M8L8-190E","name":"Probe Zero Password","email":"probe.nopass@apoorvasetu.demo","role":"AICTE_ADMIN","roleTitle":"Audit probe","permissions":["applications.read","applications.review","applications.forward","applications.return","applications.approve","applications.reject","institutes.read","institutes.update","workflow.manage","evc.read","evc.schedule","evc.assign","documents.read","documents.verify","compliance.read","compliance.verify","reports.read","reports.export","audit.read"],"initials":"PZ","phone":"+91 90000 00000","designation":"Probe","region":"Northern","isActive":true,"createdAt":"2026-11-01T17:51:08.541Z"}}
+-> 201
+USR-MVY4M8L8-190E|probe.nopass@apoorvasetu.demo|AICTE_ADMIN|t|scrypt$7bb8b5d2d0a
+-- can that account sign in with the credential printed on the login screen? --
+login with the shared demo constant -> 200
+{"user":{"id":"USR-MVY4M8L8-190E","name":"Probe Zero Password","email":"probe.nopass@apoorvasetu.demo","role":"AICTE_ADMIN","roleTitle":"Audit probe","permissio
+-- and does it carry the full AICTE_ADMIN permission set? --
+role=AICTE_ADMIN permissions=19 CAN approve applications
+-- an explicit password DOES get hashed properly (control) --
+create with password=Distinct@2026 -> 201
+probe.nopass@apoorvasetu.demo|scrypt$7bb8b5d2d0a|168
+probe.withpass@apoorvasetu.demo|scrypt$4fe14b58429|168
+-- distinct hashes now: --
+3|7
+-- is the constant shipped to the browser? --
+sed: -e expression #1, char 40: unknown option to `s'
+
+================ P-07(round3) password reset / deactivation do not revoke a live session ================
+probe user id: USR-MVY4M8L8-190E
+cookie: jih5uJXEMbtU... (len 43)
+before reset -> /api/snapshot = 200
+{"user":{"id":"USR-MVY4M8L8-190E","name":"Probe Zero Password","email":"probe.nopass@apoorvasetu.demo","role":"AICTE_ADMIN","roleTitle":"Audit probe","permissions":["applications.read","applications.review","applications.forward","applications.return","applications.approve","applications.reject","inscrypt$d8f910fc31a
+AFTER reset, OLD cookie -> /api/snapshot = 200
+{"user":{"id":"USR-MVY4M8L8-190E","name":"Probe Zero Password","email":"probe.nopass@apoorvasetu.demo","role":"AICTE_ADM
+1
+-- old password refused, new accepted? --
+old demo constant -> 401
+new password      -> 200
+-- deactivating the account while its session lives --
+POST /api/users/ID/toggle -> 200
+f
+OLD cookie after isActive=false -> /api/snapshot = 401
+toggle back -> 200
+
+================ P-09b(round3) a second forged machine-provenance row, and who can read the trail ================
+INSTITUTION_ADMIN POST /api/audit source=system -> 201
+LOG-MVY4MCHX-3903C3|EVC_REPORT_SUBMITTED_BY_AUTOMATION|INSTITUTION_ADMIN|system
+-- forged rows are indistinguishable from real cron/system events? count by source --
+ui|42
+-|5
+system|1
+cron|1
+-- read side --
+superadmin   auditLogs=49  newest=LOG-MVY4MCHX-3903C3 @ 01 Nov 2026, 05:51 PM
+aicteadmin   auditLogs=49  newest=LOG-MVY4MCHX-3903C3 @ 01 Nov 2026, 05:51 PM
+regional     auditLogs=0
+institute    auditLogs=0
+evc          auditLogs=0
+--- cap check ---
+rows in db: 49
+returned=49 (server uses take:200, orderBy id desc - server/routes/data.ts:499)
+
+================ P-15b(round3) CORS / CSRF: the two POSTs round 2 sent without a URL ================
+--- credentialed POST with a FOREIGN Origin ---
+{"error":"ORIGIN_NOT_ALLOWED","text":"This origin is not allowed to change data."}
+-> 403
+row stored? [none]
+--- same POST with NO Origin (non-browser client, SameSite=Lax does not apply) ---
+POST /api/alerts, no Origin -> 201
+row stored? [ALRT-PROBE-15B]
+--- PUT with a foreign Origin on a regulated entity (should also 403) ---
+{"error":"ORIGIN_NOT_ALLOWED","text":"This origin is not allowed to change data."}
+-> 403
+--- why the earlier PUT /api/alerts/ALRT-PROBE-05 answered 400 ---
+{"error":"INVALID_BODY","text":"description must be a string."}
+-> 400
+{"error":"INVALID_BODY","text":"description must be a string."}
+-> 400
+ALRT-PROBE-05|Open|critical
+
+================ P-25(round3) the regulated verify endpoint on a real Pending document ================
+DOC-506|Pending|NULL
+DOC-508|Pending|NULL
+-- (a) EVC_MEMBER has no documents.verify --
+{"error":"FORBIDDEN","text":"You need one of these permissions: documents.verify."}
+-> 403
+-- (b) REGIONAL_OFFICER does, and types a MACHINE name as the competent authority --
+{"error":"SCOPE_DENIED","text":"This record is outside your regional jurisdiction."}
+-> 403
+DOC-506|Pending|NULL
+-- (c) does the body get to choose verifiedBy? spoof another officer via the generic PUT --
+PUT /api/documents/DOC-508 with verifiedBy=someone else -> 403
+DOC-508|Pending|NULL
+    ^ if that row now reads Verified with a name the session never held, the caller wrote the human-authority field.
+
+================ P-28(round3) storage: presign -> put -> read, and cross-account authorization ================
+0
+{"key":"u-USR-INSTITUTE-ADMIN/a6f48edf-49ae-4e0e-a618-70cdf5ac2212/probe-fire-noc.pdf","uploadUrl":"/api/files/object?key=u-USR-INSTITUTE-ADMIN%2Fa6f48edf-49ae-4e0e-a618-70cdf5ac2212%2Fprobe-fire-noc.pdf","method":"PUT","headers":{"Content-Type":"application/octet-stream"},"maxBytes":26214400}
+
+key: u-USR-INSTITUTE-ADMIN/a6f48edf-49ae-4e0e-a618-70cdf5ac2212/probe-fire-noc.pdf
+PUT /api/files/object (owner, 2 KB)        -> 500
+GET  /api/files/object (owner)             -> 404
+GET  /api/files/object (EVC, no documents.verify) -> 403
+GET  /api/files/object (REGIONAL_OFFICER, has documents.verify) -> 404
+PUT  /api/files/object (another account overwriting) -> 403
+POST /api/files/complete (another account) -> 403
+--- read headers (nosniff / cache) ---
+HTTP/1.1 404 Not Found
+Content-Type: application/json; charset=utf-8
+--- key traversal guards ---
+GET ?key=../etc/passwd                      -> 400
+GET ?key=..%2F..%2Fetc%2Fpasswd             -> 400
+GET ?key=u-USR-SUPERADMIN/x/y.pdf           -> 404
+GET ?key=/absolute/x.pdf                    -> 400
+u-USR-INSTITUTE-ADMIN/a6f48edf-49ae-4e0e-a618-70cdf5ac2212/probe-fire-noc.pdf|USR-INSTITUTE-ADMIN|document|2048|DOC-506
+-- an INSTITUTION_ADMIN asking for an EVIDENCE-scope presign (needs evc.report.submit) --
+{"error":"FORBIDDEN","text":"You do not have the 'evc.report.submit' permission."}
+-> 403
+-- a PDF declared as an image, and an unsupported type --
+{"error":"UNSUPPORTED_FILE_TYPE","text":"Upload a PDF, PNG, JPG or WebP file."}
+-> 400
+-- oversize presign (config maxUploadSizeMB=25) --
+{"error":"PAYLOAD_TOO_LARGE","text":"Files must be 25 MB or smaller."}
+-> 413
+
+================ P-29(round3) restore the seeded rows Pass C mutated, so the demo dataset stays the demo dataset ================
+restore DOC-501 -> 200
+DOC-501 left at status=Expired (seed value was Verified; the seed scenario is Expired-on-2026-09-17, so Expired is in fact the honest state)
+DOC-506 now Pending / NULL  (seed: Pending, unverified)
+DOC-508 now Pending / NULL  (seed: Pending, unverified)
+
+================ P-92(round3) ledger ================
+user USR-MVY4M8L8-190E
+user USR-MVY4M9CX-27CB
+alert ALRT-PROBE-05
+alert ALRT-PROBE-15B
+file u-USR-INSTITUTE-ADMIN/a6f48edf-49ae-4e0e-a618-70cdf5ac2212/probe-fire-noc.pdf
+audit total=49, forged-source rows=2
+live sessions=24 of 25
+ROUND 3 COMPLETE 2026-11-01T17:51:29Z

@@ -1,0 +1,85 @@
+PROBE D-17 — /notifications: five seeded notices permanently duplicate the live ones, the
+list has no comparable clock, and the expired-document notice contradicts its own title.
+Demo mode :8080, SUPER_ADMIN session, demo clock = Today, after the reset + re-login cycle.
+Lens: L5 (functional QA) primary, L9 (demo credibility) secondary.
+Confidence: confirmed (a) (b); confirmed (c).
+
+Store read-back: aicte_approval_system_data_v4_notifs = 19 items
+  14 generated in this session  -> id pattern NTF-MVY2MX…, dedupeKey present, eventType present
+   5 shipped in seed             -> id NOTIF-1 … NOTIF-5, dedupeKey: null, eventType: null
+  Scoping: filterNotificationsForUser (src/services/rbacService.ts:324-338) returns everything
+  to SUPER_ADMIN/AICTE_ADMIN — so header badge 17 == page "Unread 17" == 17 unread of 19.
+  That arithmetic is consistent (checked, non-finding).
+
+(a) P2 — seeded notices can never be reconciled with the live ones.
+   dispatchNotifications() suppresses a draft only when its dedupeKey already exists:
+     src/context/AppContext.tsx:523-526
+       const known = new Set(notifications.map(i => i.dedupeKey).filter(k => Boolean(k)));
+       const fresh = drafts.filter(d => !d.dedupeKey || !known.has(d.dedupeKey));
+   The seed rows carry no dedupeKey at all (src/data/initialData.ts:1032-1050), so the same
+   real-world condition is announced twice, in two registers:
+     NOTIF-1 "EVC Report Overdue for NIT Rourkela"            (seed, link /evc-scheduling)
+       vs NTF-…-JSGV "EVC report overdue for AICTE/2026/12871" (generated, evc.report_overdue,
+          dedupeKey evc.report_overdue:EVC-8801:…, link /evc-scheduling)  -> same visit EVC-8801
+     NOTIF-3 "Techno Institute Undertaking Overdue"           (seed, link /applications)
+       vs NTF-…-46CG "Undertaking overdue for AICTE/2026/12873" (generated,
+          dedupeKey undertaking.overdue:UND-2601:…, link /compliance)   -> same UND-2601
+     NOTIF-2 "Lease Documents Expiring Within 90 Days"        (seed, link /compliance)
+       vs NTF-…-SB3H + NTF-…-K938 "Document validity expiring" for DOC-507 and DOC-506
+   Impact: on the demo screen the officer-facing queue shows 19 items where the engine produced
+   14 signals; an evaluator who reads two different sentences about one inspection report (one
+   naming the institute, one naming the application number, different links) loses trust in the
+   "single source of truth" claim in src/data/platformKnowledgeBase.ts.
+   Fix: give the five seed rows dedupeKey/eventType values that match what the sweep emits (or
+   drop them and let one sweep populate the queue), and assert in a test that the seeded store
+   yields zero duplicate dedupeKeys. Effort S.
+
+(b) P2 — timestamps are not comparable, so the list cannot be sorted by recency.
+   Generated rows persist a *display* string as the record's timestamp:
+     src/context/AppContext.tsx:528  const stamp = formatDisplayDate(getNow());
+     :532                            timestamp: stamp
+   -> stored value is "01 Nov 2026" (date only, no time), NotificationItem.timestamp is a string
+      (src/types/index.ts:330-348 area) and no ISO field exists.
+   Seed rows use hard-coded relative prose (src/data/initialData.ts:1038 '10 mins ago',
+   then "1 hour ago", "3 hours ago", "1 day ago", "2 days ago") that never ages: it is a literal,
+   not derived from getNow().
+   Rendered order captured from the DOM on /notifications (top -> bottom):
+     Document validity expiring            [01 Nov 2026]   <- generated
+     Document validity expiring            [01 Nov 2026]
+     Escalation: ABC Institute of Tech …   [01 Nov 2026]
+     Document expired: renewal required    [01 Nov 2026]
+     … 10 more generated rows, all [01 Nov 2026] …
+     EVC Report Overdue for NIT Rourkela   [10 mins ago]   <- seed, rendered as OLDEST
+     Lease Documents Expiring Within 90 Days [1 hour ago]
+     Techno Institute Undertaking Overdue  [3 hours ago]
+     Western Region Scrutiny Target 90% Completed [1 day ago]
+     Annual EoA Letters Ready for Final Dispatch    [2 days ago]
+   So the item that claims to be 10 minutes old sits at the bottom of a recency list, above it
+   fourteen items stamped with a bare date that all tie. First card verbatim:
+     "Document validity expiring Unread Medium priority Registered Land Lease Deed (30-year
+      tenure) expires 08 Nov 2026. 01 Nov 2026 /System"
+   Second consequence: because the stamp is taken from getNow() at write time, advancing the demo
+   clock cannot age or re-sort the queue; the notification list is frozen at the day it was
+   generated. Combined with D-07 (the double sweep) this is why "Open/Unread" counts jump after a
+   reload.
+   Fix: store `createdAt` as ISO and format at render time; derive the seed rows' relative labels
+   from a real offset. Effort M (type + render + seed + tests).
+
+(c) P3 — the expired-document notice says "expires" about a past date.
+   Title (src/workflow/notifications.ts:364-367) switches on the event:
+       'Document expired: renewal required' : 'Document validity expiring'
+   but the description comes from one shared payload string (src/workflow/alerts.ts:255):
+       eventDetail: `${document.title} expires ${formatDisplayDate(document.expiryDate)}.`
+   Observed on screen for DOC-501 (expiryDate 2026-09-17, 45 days in the past):
+       "Document expired: renewal required — Registered Land Deed & Possession Certificate
+        expires 17 Sept 2026."
+   A statutory notice to an institution that reads "expired … expires <past date>" is a
+   credibility hit in the demo path, not just a typo.
+   Fix: branch the sentence with the tier that already exists in alerts.ts:254
+   ("expired N day(s) ago" vs "expires in N day(s)"). Effort S.
+
+Not a finding (checked and consistent)
+   - Header unread badge (17) vs Notifications "Unread" tab (17) vs stored unread rows (17).
+   - "High priority 12" matches the scoped array's high rows.
+   - SUPER_ADMIN seeing institution-targeted notices is the documented admin scope in
+     src/services/rbacService.ts:329-331, not a leak: no other role receives admin-only rows.

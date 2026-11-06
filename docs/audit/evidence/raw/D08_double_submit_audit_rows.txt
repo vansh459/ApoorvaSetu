@@ -1,0 +1,87 @@
+# D-08 — Re-entrancy of the regulated "Return for correction" transition
+
+Mode: demo build served by the container at `http://localhost:8080`.
+Persona: `REGIONAL_OFFICER` Dr. R. K. Sharma (Northern), later `SUPER_ADMIN` to read the trail.
+Live viewport: 632 x 570 CSS px, dpr 1.25 (no viewport emulation in the in-app browser surface).
+
+## Two probes, run against two different cases
+
+### D-08a — three clicks dispatched inside ONE JS task (APP2026-1225)
+
+Open Inspect -> **Return for correction** -> `Reason code* = DOC_MISSING`,
+`Officer note* = "Audit probe: illegible fire NOC."` -> `confirm.click()` x3 in the same task.
+
+Measured in the same call:
+
+```json
+{ "returns": 1, "auditRows": 4,
+  "actions": ["RETURN", "RETURN", "RETURN", "SUBMIT_APPLICATION"],
+  "version": 2, "stage": "Submitted", "status": "Returned" }
+```
+
+Three RETURN rows, one `returns[]` entry, `version` still 2.
+
+As rendered by `/admin/audit-logs` (verbatim `tr.innerText`, 14 entries visible to Super Admin):
+
+```text
+01 Nov 2026, 10:04 PM  Dr. R. K. Sharma  Regional Officer  RETURN  application.returned
+  Application  APP2026-1225  Application APP2026-1225 returned at Submitted with DOC_MISSING.
+  COR-1793550870739-4x23
+... COR-1793550870737-eifj
+... COR-1793550870727-rvz7
+```
+
+Identical actor, identical second, identical decision text; the embedded epoch-ms
+(`…870727`, `…870737`, `…870739`) show the writes 12 ms apart. All three carry `source: 'ui'`.
+The case file stores only
+`{fromStage:'Submitted',toStage:'Submitted',code:'DOC_MISSING',note:'Audit probe: illegible fire NOC.',by:'Dr. R. K. Sharma',at:'2026-11-01'}`.
+
+### D-08b — the same two clicks 40 ms apart, i.e. a real double-click (AICTE/2026/12875)
+
+Same form, `FIRE_SAFETY`, note "Audit probe D-08b: two clicks 40ms apart."; the second click was
+dispatched from a `setTimeout(…, 40)` so it is a separate task and React has committed in between:
+
+```json
+{ "probe": { "clicks": [
+    { "at": 0,  "disabledNow": false, "label": "Confirm return" },
+    { "at": 40, "existed": false, "disabledNow": null, "stillOpen": false } ] },
+  "audit12875": [ { "action": "RETURN", "ts": "01 Nov 2026, 10:15 PM", "corr": "7-6aht" } ],
+  "returns": 1, "version": 2, "status": "Returned", "totalAudit": 16 }
+```
+
+**Exactly one audit row.** The modal had already closed, so the second click had nothing to hit.
+
+## Verdict — what is and is not proven
+
+* NOT proven: a human double-click duplicating the transition. The
+  `isSubmitting` state guard + `disabled={isSubmitting || …}`
+  (`src/components/modals/ApplicationDetailModal.tsx:82-85`, `:215`, `:218`) holds for any two
+  clicks separated by a task boundary, which is what a real double-click is. Recording this
+  openly: D-08a needed three synthetic same-task dispatches.
+* PROVEN (D-08a): the guard is render-state only — there is no synchronous re-entrancy flag
+  (`useRef`) and no idempotency key on the write. Any caller that reaches `runTransition` twice
+  before React commits appends two audit rows while the case file records one transition. The two
+  representations of the same statutory decision are written by different mechanisms and diverge
+  by construction; nothing reconciles them.
+* PROVEN (D-08a): the duplication is user-visible in the trail a Super Admin reads, and the page
+  caption advertises `evidence/raw/D08_double_submit_audit_rows.txt` ->
+  `src/data/platformKnowledgeBase.ts:45` "Cryptographically signed audit trail recording every
+  approval decision".
+* SUSPECTED, must be confirmed in Pass C (probe **P-04**): the realistic trigger in `postgres`
+  mode is a *retried request*, not a retried click — `POST /api/applications/:id/transition`
+  carries `expectedVersion` (`ApplicationDetailModal.tsx:98`) but no idempotency key, so a client
+  or proxy retry after a lost response writes a second audit row for one decision. Confirm by
+  replaying the same transition POST twice and reading `auditLogs`.
+
+Severity intent for the report: **P2** (integrity/design, real trigger unproven in demo mode),
+upgradable to P1 if P-04 shows the server appends the audit row before or independently of the
+version check.
+
+## Probe limitations recorded
+
+* Clicks were dispatched programmatically; see the spacing above.
+* `/admin/audit-logs` **Export CSV** was not executed (L4-06 covers the exporter statically:
+  `evidence/raw/S31_csv_and_limiter.txt`).
+* Screenshots after `L06_apply_03_…` are blocked — the in-app browser surface reports
+  `visibilityState=hidden` and `take_screenshot` returns `NATIVE_BROWSER_VIEWPORT_UNAVAILABLE`;
+  DOM transcripts are used instead (see the not-run ledger).

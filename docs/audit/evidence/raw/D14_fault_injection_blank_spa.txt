@@ -1,0 +1,95 @@
+# D-14 — Fault injection: one bad localStorage value bricks the SPA, silently and permanently
+
+Mode: demo build at `http://localhost:8080` (container), persona Super Admin.
+
+## Probe 1 — wrong JSON type in a collection key
+
+```js
+localStorage.setItem('aicte_approval_system_data_v4_apps', '{"not":"an array"}')   // valid JSON, not an array
+// hard reload of /applications
+```
+
+Measured after the reload:
+
+```json
+{ "url": "/applications", "rootChildren": 0, "bodyLen": 0, "main": null,
+  "appsNow": "{\"not\":\"an array\"}" }
+```
+
+`#root` has **zero children**, `document.body.innerText` is **empty** — a white page. The URL stays
+`/applications`, the header, sidebar, login form and every recovery affordance are gone. The
+corrupt value is still there, so every subsequent reload reproduces it. No route, no button, no
+error text can be offered to the user.
+
+Console buffer for that load (`list_console_messages`) contained only the font-preload warning;
+whatever the render throw logs is not surfaced to the user in any UI.
+
+## Probe 2 — valid array, incomplete record shape
+
+```js
+localStorage.setItem('aicte_approval_system_data_v4_apps',
+  '[{"id":"AICTE/2026/12876","instituteName":"Probe restore"}]')   // parses, is an array, has no stage
+// hard reload of /applications
+```
+
+Same result: `{ "rootChildren": 0, "bodyLen": 0, "main": null }`. A record that lacks the fields the
+SLA/workflow pass expects is enough to stop the app from mounting.
+
+## Probe 3 — control: storage cleared
+
+```js
+localStorage.clear();            // 17 keys removed
+// hard reload of /applications
+```
+
+```json
+{ "url": "/login", "rootChildren": 1, "bodyLen": 867, "keys": 15 }
+```
+
+The app re-seeds from the built-in demo seed and boots normally (redirected to `/login` because the
+session key went with it). So the white screen is caused by the stored shape, not by the build, and
+the only recovery path is "clear storage in DevTools".
+
+## Why there is no error UI
+
+* `src/main.tsx` (whole file, 12 lines) renders
+  `createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)`.
+  There is **no error boundary anywhere in `src/`** — `grep -rn "ErrorBoundary|componentDidCatch" src`
+  has no hits, and `App.tsx`/`main.tsx` contain no `onError`. Any throw during render replaces the
+  entire product with a blank document.
+* `src/services/repositories/localRepository.ts:49-75` `readLocal<T>` guards only against a *parse*
+  failure (`catch { return fallback; }`). It returns `JSON.parse(current) as T` with no runtime
+  shape check, so `{"not":"an array"}` is handed to `useState` as if it were `Application[]`.
+* The first thing that touches it is the SLA/workflow pass
+  (`src/context/AppContext.tsx:2243` `prev.map((app) => refreshApplicationSla(app, config, now))` and
+  the sweep at `:2017`), which calls `.map`/`.filter` on the value → `TypeError` during mount.
+
+## Realistic triggers (why this is not a theoretical probe)
+
+1. **`writeLocal` swallows failures.** `src/services/repositories/localRepository.ts:77-84` wraps
+   `setItem` in `try { … } catch (error) { console.warn('Unable to persist local data:', error); }`.
+   A `QuotaExceededError` — likely on the 8 GB host with this store (the entity keys measured
+   16.9 KB apps + 9.8 KB notifications + 5.4 KB alerts) — leaves the last write missing, so the next
+   load can read a value written by an older build shape. The user is told nothing; the UI keeps
+   showing the optimistic state.
+2. **Build/schema drift.** Legacy migration at `localRepository.ts:60-72` copies
+   `aicte_approval_system_data_v3_*`-era values verbatim into the v4 key and returns them unvalidated.
+   A v3 payload (different record shape) is a Probe-2 case with no probe needed.
+3. **Partial write.** Any `setItem` interrupted (tab killed mid-write on a low-memory host) yields a
+   truncated string. That specific case *is* handled (parse throws → fallback), which is exactly why
+   the type/shape cases are the dangerous residue.
+
+## Impact
+
+Demo-path crash: a judge or presenter who ends up in this state cannot recover without DevTools,
+and there is no in-app reset reachable from a blank page (the "Reset demo data" button lives on
+`/demo-scenarios`). The product's headline promise on the login screen is "Every action written to
+the audit trail"; the failure mode discards the whole session instead of the bad record.
+
+## Fix sketch (for the FIX_PLAN, not applied here)
+
+* Add a top-level `ErrorBoundary` in `src/main.tsx` rendering a recovery card ("Reload", "Reset demo
+  data" via `clearLocal()`), so a render throw can never produce a blank document.
+* Validate shape in `readLocal` (`Array.isArray(parsed)` per-collection, plus a minimal record guard)
+  and fall back + quarantine the key on mismatch.
+* Surface `writeLocal` failures: one toast + a persisted-write flag, instead of `console.warn`.

@@ -1,0 +1,116 @@
+=== SPA routes (src/App.tsx) ===
+54:              path="/login"
+71:              <Route path="/" element={<Dashboard />} />
+75:                path="/admin/users"
+83:                path="/admin/roles"
+91:                path="/admin/system-config"
+99:                path="/admin/audit-logs"
+109:                path="/regional/escalations"
+119:                path="/evc/queue"
+129:                path="/evc/my-visits"
+137:                path="/evc/checklist"
+145:                path="/evc/evidence"
+155:                path="/institution/profile"
+163:                path="/institution/apply"
+171:                path="/institution/tracking"
+181:                path="/applications"
+189:                path="/institutes"
+197:                path="/workflow"
+205:                path="/evc-scheduling"
+213:                path="/compliance"
+221:                path="/documents"
+229:                path="/regions-officials"
+237:                path="/pendency"
+247:                path="/reports"
+254:              <Route path="/alerts" element={<AlertCenter />} />
+255:              <Route path="/notifications" element={<Notifications />} />
+257:                path="/demo-scenarios"
+266:              <Route path="*" element={<Navigate to="/" replace />} />
+
+=== API handlers ===
+server/index.ts:68:app.get('/api/health', async (_req, res) => {
+server/index.ts:96:app.get('/api/ready', async (_req, res) => {
+server/index.ts:112:app.get('/api/assistant/status', (_req, res) => {
+server/index.ts:122:app.post('/api/assistant/chat', async (req, res) => {
+server/index.ts:182:app.get('/api/events', requireSession, (req, res) => {
+server/index.ts:217: // Express 5 / path-to-regexp v8: app.get('*') is invalid. Pathless middleware is safe.
+server/routes/admin.ts:21:export const adminRouter = Router();
+server/routes/admin.ts:95:adminRouter.get(
+server/routes/admin.ts:104:adminRouter.post(
+server/routes/admin.ts:157:adminRouter.put(
+server/routes/admin.ts:216:adminRouter.post(
+server/routes/admin.ts:251:adminRouter.put(
+server/routes/assistant.ts:38:export const assistantRouter = Router();
+server/routes/assistant.ts:42:assistantRouter.get(
+server/routes/assistant.ts:62:assistantRouter.put(
+server/routes/assistant.ts:92:assistantRouter.delete(
+server/routes/auth.ts:40:export const authRouter = Router();
+server/routes/auth.ts:42:authRouter.post(
+server/routes/auth.ts:131:authRouter.get(
+server/routes/auth.ts:149:authRouter.post(
+server/routes/data.ts:80:export const dataRouter = Router();
+server/routes/data.ts:448:dataRouter.post('/applications', saveHandler(applicationSpec));
+server/routes/data.ts:449:dataRouter.put('/applications/:id', saveHandler(applicationSpec));
+server/routes/data.ts:450:dataRouter.post('/evc-visits', saveHandler(evcSpec));
+server/routes/data.ts:451:dataRouter.put('/evc-visits/:id', saveHandler(evcSpec));
+server/routes/data.ts:452:dataRouter.post('/compliance', saveHandler(complianceSpec));
+server/routes/data.ts:453:dataRouter.put('/compliance/:id', saveHandler(complianceSpec));
+server/routes/data.ts:454:dataRouter.post('/documents', saveHandler(documentSpec));
+server/routes/data.ts:455:dataRouter.put('/documents/:id', saveHandler(documentSpec));
+server/routes/data.ts:456:dataRouter.post('/undertakings', saveHandler(undertakingSpec));
+server/routes/data.ts:457:dataRouter.put('/undertakings/:id', saveHandler(undertakingSpec));
+server/routes/data.ts:458:dataRouter.post('/notifications', saveHandler(notificationSpec));
+server/routes/data.ts:459:dataRouter.put('/notifications/:id', saveHandler(notificationSpec));
+server/routes/data.ts:460:dataRouter.post('/alerts', saveHandler(alertSpec));
+server/routes/data.ts:461:dataRouter.put('/alerts/:id', saveHandler(alertSpec));
+server/routes/data.ts:462:dataRouter.post('/escalations', saveHandler(escalationSpec));
+server/routes/data.ts:463:dataRouter.put('/escalations/:id', saveHandler(escalationSpec));
+server/routes/data.ts:465:dataRouter.get(
+server/routes/data.ts:566:dataRouter.post(
+server/routes/data.ts:594:dataRouter.put(
+server/routes/data.ts:610:dataRouter.post(
+server/routes/files.ts:52:export const filesRouter = Router();
+server/routes/files.ts:56:filesRouter.post(
+server/routes/files.ts:110:filesRouter.post(
+server/routes/files.ts:137:filesRouter.post(
+server/routes/files.ts:159:filesRouter.put(
+server/routes/files.ts:191:filesRouter.get(
+server/routes/workflow.ts:29:export const workflowRouter = Router();
+server/routes/workflow.ts:65:workflowRouter.post(
+server/routes/workflow.ts:157:workflowRouter.post(
+server/routes/workflow.ts:201:workflowRouter.post(
+server/routes/workflow.ts:271:workflowRouter.post(
+
+=== Prisma models ===
+12:model Application {
+48:  @@map("applications")
+51:model Institute {
+72:  @@map("institutes")
+75:model EVCVisit {
+102:  @@map("evc_visits")
+105:model ComplianceRecord {
+126:  @@map("compliance_records")
+129:model DocumentItem {
+153:  @@map("document_items")
+156:model Undertaking {
+179:  @@map("undertakings")
+182:model NotificationItem {
+203:  @@map("notification_items")
+206:model SystemAlert {
+226:  @@map("system_alerts")
+229:model EscalationItem {
+252:  @@map("escalation_items")
+255:model AuditLog {
+275:  @@map("audit_logs")
+278:model SystemConfig {
+295:  @@map("system_config")
+298:model RolePermission {
+302:  @@map("role_permissions")
+305:model User {
+328:  @@map("users")
+331:model Session {
+346:  @@map("sessions")
+349:model AssistantMessage {
+359:  @@map("assistant_messages")
+362:model FileObject {
+374:  @@map("file_objects")

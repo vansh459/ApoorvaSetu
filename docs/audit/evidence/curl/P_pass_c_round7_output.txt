@@ -1,0 +1,254 @@
+signed in: ok ok ok ok ok 
+
+================ P-42 the 200-row audit cap, and whether any other path can reach past it ================
+data.ts:498-499  audit.read ? auditLog.findMany({orderBy:{id:"desc"},take:200}) : []
+rows in db: 76
+-- is there any GET for audit besides the snapshot? --
+  GET /api/audit                         -> 404
+  GET /api/audit-logs                    -> 404
+  GET /api/auditLogs                     -> 404
+  GET /api/logs                          -> 404
+  GET /api/snapshot?table=auditLogs      -> 200
+  GET /api/snapshot?auditTake=1000       -> 200
+  undefined: bytes 69.3KB | auditLogs 76 | synthetic in feed 0 | real in feed 76 | tables 13
+-- the least-privileged persona writes 210 filler rows through POST /api/audit (requireUser only) --
+  210 POSTs in 28s; rows in db now: 286
+  undefined: bytes 101.9KB | auditLogs 200 | synthetic in feed 200 | real in feed 0 | tables 13
+  real events in the database now: 76
+  newest real: LOG-MVY5DSAX-74B209 | USER_LOGIN_SUCCESS | 01 Nov 2026, 06:12 PM
+  oldest real: LOG-1001 | APPLICATION_FORWARDED
+  real actions still visible in the feed: 0
+    
+  cleanup: DELETE 210
+  undefined: bytes 69.3KB | auditLogs 76 | synthetic in feed 0 | real in feed 76 | tables 13
+
+================ P-43 index inventory (strength) then EXPLAIN of the twelve snapshot reads at seed volume ================
+  applications -> applications_stage_idx, applications_region_idx, applications_pkey, applications_instituteId_idx, applications_status_idx
+  assistant_messages -> assistant_messages_userId_createdAt_idx, assistant_messages_pkey
+  audit_logs -> audit_logs_timestamp_idx, audit_logs_pkey, audit_logs_entityType_entityId_idx, audit_logs_userId_idx
+  compliance_records -> compliance_records_instituteId_idx, compliance_records_region_idx, compliance_records_dueDate_idx, compliance_records_pkey, compliance_records_status_idx
+  document_items -> document_items_instituteId_idx, document_items_pkey, document_items_expiryDate_idx, document_items_status_idx, document_items_region_idx
+  escalation_items -> escalation_items_pkey, escalation_items_region_idx, escalation_items_status_idx, escalation_items_applicationId_idx, escalation_items_dedupeKey_idx
+  evc_visits -> evc_visits_pkey, evc_visits_applicationId_idx, evc_visits_instituteId_idx, evc_visits_region_idx, evc_visits_status_idx
+  file_objects -> file_objects_pkey, file_objects_uploaderId_idx, file_objects_documentId_idx
+  institutes -> institutes_region_idx, institutes_status_idx, institutes_pkey
+  notification_items -> notification_items_dedupeKey_idx, notification_items_targetRole_idx, notification_items_targetUserId_idx, notification_items_targetRegion_idx, notification_items_targetInstituteId_idx, notification_items_pkey
+  role_permissions -> role_permissions_pkey
+  sessions -> sessions_pkey, sessions_tokenHash_key, sessions_userId_idx, sessions_expiresAt_idx
+  system_alerts -> system_alerts_pkey, system_alerts_dedupeKey_key, system_alerts_status_idx, system_alerts_region_idx, system_alerts_entityType_entityId_idx
+  system_config -> system_config_pkey
+  undertakings -> undertakings_applicationId_idx, undertakings_instituteId_idx, undertakings_region_idx, undertakings_status_idx, undertakings_dueDate_idx, undertakings_pkey
+  users -> users_isActive_idx, users_role_idx, users_email_key, users_pkey
+-- plans, table by table --
+  -- select * from "applications"
+       Seq Scan on applications  (cost=0.00..10.80 rows=80 width=904) (actual time=0.008..0.032 rows=10 loops=1)
+       Execution Time: 0.070 ms
+  -- select * from "institutes" order by "name" asc
+       Sort  (cost=18.54..18.99 rows=180 width=404) (actual time=0.092..0.094 rows=10 loops=1)
+         Sort Key: name
+         Sort Method: quicksort  Memory: 27kB
+         ->  Seq Scan on institutes  (cost=0.00..11.80 rows=180 width=404) (actual time=0.007..0.009 rows=10 loops=1)
+       Execution Time: 0.212 ms
+  -- select * from "evc_visits" order by "date" asc
+       Sort  (cost=15.34..15.64 rows=120 width=613) (actual time=0.086..0.088 rows=6 loops=1)
+         Sort Key: date
+         Sort Method: quicksort  Memory: 27kB
+         ->  Seq Scan on evc_visits  (cost=0.00..11.20 rows=120 width=613) (actual time=0.006..0.007 rows=6 loops=1)
+       Execution Time: 0.141 ms
+  -- select * from "compliance_records" order by "dueDate" asc
+       Sort  (cost=18.00..18.42 rows=170 width=452) (actual time=0.134..0.137 rows=5 loops=1)
+         Sort Key: "dueDate"
+         Sort Method: quicksort  Memory: 25kB
+         ->  Seq Scan on compliance_records  (cost=0.00..11.70 rows=170 width=452) (actual time=0.023..0.024 rows=5 loops=1)
+       Execution Time: 0.204 ms
+  -- select * from "document_items"
+       Seq Scan on document_items  (cost=0.00..11.30 rows=130 width=576) (actual time=0.012..0.014 rows=14 loops=1)
+       Execution Time: 0.056 ms
+  -- select * from "notification_items" order by "timestamp" desc
+       Sort  (cost=18.54..18.99 rows=180 width=417) (actual time=0.124..0.126 rows=6 loops=1)
+         Sort Key: "timestamp" DESC
+         Sort Method: quicksort  Memory: 26kB
+         ->  Seq Scan on notification_items  (cost=0.00..11.80 rows=180 width=417) (actual time=0.019..0.021 rows=6 loops=1)
+       Execution Time: 0.188 ms
+  -- select * from "undertakings"
+       Seq Scan on undertakings  (cost=0.00..11.50 rows=150 width=484) (actual time=0.013..0.015 rows=7 loops=1)
+       Execution Time: 0.067 ms
+  -- select * from "system_alerts"
+       Seq Scan on system_alerts  (cost=0.00..11.60 rows=160 width=480) (actual time=0.031..0.033 rows=2 loops=1)
+       Execution Time: 0.097 ms
+  -- select * from "escalation_items"
+       Seq Scan on escalation_items  (cost=0.00..11.50 rows=150 width=488) (actual time=0.017..0.017 rows=0 loops=1)
+       Execution Time: 0.050 ms
+  -- select * from "users" order by "name" asc
+       Sort  (cost=1.17..1.19 rows=7 width=766) (actual time=0.227..0.230 rows=7 loops=1)
+         Sort Key: name
+         Sort Method: quicksort  Memory: 29kB
+         ->  Seq Scan on users  (cost=0.00..1.07 rows=7 width=766) (actual time=0.049..0.051 rows=7 loops=1)
+       Execution Time: 0.695 ms
+  -- select * from "role_permissions"
+       Seq Scan on role_permissions  (cost=0.00..18.80 rows=880 width=64) (actual time=0.021..0.023 rows=5 loops=1)
+       Execution Time: 0.107 ms
+  -- select * from "audit_logs" order by "id" desc limit 200
+       Limit  (cost=0.27..23.49 rows=200 width=310) (actual time=0.021..0.060 rows=76 loops=1)
+         ->  Index Scan Backward using audit_logs_pkey on audit_logs  (cost=0.27..32.43 rows=277 width=310) (actual time=0.020..0.052 rows=76 loops=1)
+       Execution Time: 0.100 ms
+-- the reads the auth and escalation paths make per request --
+  sessions Index Scan using "sessions_tokenHash_key" on sessions  (cost=0.15..8.17 rows=1 width=193) (actual time=0.088..0.089 rows=0 loops=1)
+  sessions Execution Time: 0.170 ms
+  dedupe  Limit  (cost=0.14..8.16 rows=1 width=488) (actual time=0.134..0.135 rows=0 loops=1)
+  dedupe    ->  Index Scan using "escalation_items_dedupeKey_idx" on escalation_items  (cost=0.14..8.16 rows=1 width=488) (actual time=0.133..0.133 rows=0 loops=1)
+  dedupe  Execution Time: 0.184 ms
+  alert   Index Scan using "system_alerts_dedupeKey_key" on system_alerts  (cost=0.14..8.16 rows=1 width=480) (actual time=0.163..0.164 rows=0 loops=1)
+  alert   Execution Time: 0.296 ms
+
+================ P-43b the same plans with applications/documents/users/audit inflated ~200x ================
+  rows now: apps=2010 docs=2814 users=1407 audit=4636
+  -- select * from "applications"
+       Seq Scan on applications  (cost=0.00..375.10 rows=2010 width=2092) (actual time=0.012..1.067 rows=2010 loops=1)
+       Execution Time: 1.382 ms
+  -- select * from "document_items"
+       Seq Scan on document_items  (cost=0.00..115.14 rows=2814 width=319) (actual time=0.020..0.988 rows=2814 loops=1)
+       Execution Time: 1.268 ms
+  -- select * from "users" order by "name" asc
+       Sort  (cost=223.64..227.16 rows=1407 width=808) (actual time=5.075..5.274 rows=1407 loops=1)
+         Sort Key: name
+         Sort Method: quicksort  Memory: 1078kB
+         ->  Seq Scan on users  (cost=0.00..150.07 rows=1407 width=808) (actual time=0.035..0.682 rows=1407 loops=1)
+       Execution Time: 5.675 ms
+  -- select * from "audit_logs" order by "id" desc limit 200
+         ->  Index Scan Backward using audit_logs_pkey on audit_logs  (cost=0.28..1036.13 rows=4636 width=376) (actual time=0.042..0.308 rows=200 loops=1)
+       Execution Time: 0.421 ms
+-- snapshot latency and size at that volume --
+  superadmin  run1:  5018221 bytes  1193ms
+  superadmin  run2:  5018221 bytes  1285ms
+  superadmin  run3:  5018221 bytes  1132ms
+  superadmin  run4:  5018221 bytes  1024ms
+  superadmin  run5:  5018221 bytes  1221ms
+  institute   run1:   642694 bytes   980ms
+  institute   run2:   642694 bytes   641ms
+  institute   run3:   642694 bytes   518ms
+  institute   run4:   642694 bytes   607ms
+  institute   run5:   642694 bytes   811ms
+  undefined: bytes 4900.6KB | auditLogs 200 | synthetic in feed 200 | real in feed 0 | tables 13
+  (200 of these feed rows are synthetic; how many real events survive: )
+   feed: 200 | real: 0 | newest real: NONE
+-- and the same for a single role query the list pages make --
+  region-filtered Seq Scan on applications  (cost=0.00..380.12 rows=402 width=2092) (actual time=0.012..0.791 rows=402 loops=1)
+  region-filtered Execution Time: 1.085 ms
+  note: the app never issues that WHERE - data.ts:486 reads the whole table and filterApplicationsForUser runs in JS
+-- cleaning the volume rows --
+  rows after: apps=10 docs=14 users=7 audit=76
+  undefined: bytes 69.3KB | auditLogs 76 | synthetic in feed 0 | real in feed 76 | tables 13
+
+================ P-44 memory, load and a quiet soak with one live SSE listener ================
+-- baseline --
+  apoorvasetu-audit-pg | cpu 0.00% | mem 528.9MiB / 3.505GiB (14.74%) | net 87MB / 41.7MB
+  apoorvasetu-db-1 | cpu 0.04% | mem 106.2MiB / 3.505GiB (2.96%) | net 2.4MB / 60.8MB
+  container cgroup memory.current: 555057152
+-- 30 sequential superadmin snapshots --
+  30 snapshots in 4838ms -> mean 161ms each
+-- 4 waves of 5 concurrent snapshots --
+  20 concurrent requests in 1627ms
+  post-load: apoorvasetu-audit-pg | cpu 0.03% | mem 518.4MiB / 3.505GiB
+  post-load: apoorvasetu-db-1 | cpu 0.02% | mem 111.6MiB / 3.505GiB
+-- hold an SSE stream open, add 20 sessions, then 240s of silence --
+  stream lines so far: 3
+  sessions in db after 20 more logins: 65
+  soak t+0s:   apoorvasetu-audit-pg | mem 518.1MiB / 3.505GiB
+  soak t+60s: 518.3MiB / 3.505GiB | sse lines 7 | db 112.1MiB / 3.505GiB
+  soak t+120s: 518.6MiB / 3.505GiB | sse lines 13 | db 112.5MiB / 3.505GiB
+  soak t+180s: 518.5MiB / 3.505GiB | sse lines 17 | db 112.6MiB / 3.505GiB
+  soak t+240s: 518.1MiB / 3.505GiB | sse lines 23 | db 110.9MiB / 3.505GiB
+  events on the held stream: 1 total, 0 change
+    event: ready
+    data: {"rev":445}
+    
+    : keepalive
+    
+    : keepalive
+-- session housekeeping --
+  sessions total=65 | expired=0 | distinct users=6 | oldest expiry=2026-11-02 05:44:38.434 | newest=2026-12-01 17:48:29.645
+  (any DELETE FROM sessions anywhere in the server:) 2 sites
+
+================ P-45 what each persona snapshot carries now ================
+  institute: 6.9KB applications:1 institutes:1 evcVisits:1 complianceRecords:2 documents:4 notifications:5 undertakings:0 alerts:1 escalations:0 auditLogs:0 users:1 rolePermissions:0
+  evc: 7.8KB applications:1 institutes:2 evcVisits:1 complianceRecords:0 documents:7 notifications:5 undertakings:0 alerts:1 escalations:0 auditLogs:0 users:1 rolePermissions:0
+  regional: 10.0KB applications:2 institutes:2 evcVisits:1 complianceRecords:2 documents:7 notifications:5 undertakings:0 alerts:1 escalations:0 auditLogs:0 users:1 rolePermissions:0
+  aicteadmin: 72.1KB applications:10 institutes:10 evcVisits:6 complianceRecords:5 documents:14 notifications:6 undertakings:7 alerts:1 escalations:0 auditLogs:96 users:1 rolePermissions:0
+  superadmin: 77.5KB applications:10 institutes:10 evcVisits:6 complianceRecords:5 documents:14 notifications:6 undertakings:7 alerts:2 escalations:0 auditLogs:96 users:7 rolePermissions:5
+
+================ P-96(round7) cleanup: every artefact this Pass wrote, listed as it is removed ================
+  probe users : USR-MVY4M8L8-190E probe.nopass@apoorvasetu.demo | USR-MVY4M9CX-27CB probe.withpass@apoorvasetu.demo
+  users: DELETE 2
+  probe sessions: DELETE 0
+  probe alerts: ALRT-PROBE-05 | ALRT-PROBE-15B
+  alerts: DELETE 2
+  probe notifs: NOTIF-PROBE-05
+  notifs: DELETE 1
+  probe docs  : DOC-PROBE-18 | DOC-PROBE-25 | DOC-PROBE-36 | DOC-PROBE-36B
+  docs: DELETE 4
+  file rows   : u-USR-INSTITUTE-ADMIN/a6f48edf-49ae-4e0e-a618-70cdf5ac2212/probe-fire-noc.pdf | u-USR-INSTITUTE-ADMIN/73aa2b24-842f-499e-98a6-5cfac172015c/probe-fire-noc.pdf
+  file_objects: DELETE 2
+  disk: total 8
+  disk: drwxr-xr-x 2 node node 4096 Nov  1 18:18 .
+  disk: drwxr-xr-x 3 node node 4096 Nov  1 14:15 ..
+-- audit rows this Pass wrote: forged machine sources, the SSE trigger, the client-authored reject --
+  forged/probe audit: LOG-MVY4ILYX-F7CA09 | APPLICATION_APPROVED | src=cron | Written by an INSTITUTION_ADMIN but labelled source=cron.
+  forged/probe audit: LOG-MVY4MCHX-3903C3 | EVC_REPORT_SUBMITTED_BY_AUTOMATION | src=system | probe: a committee report event attributed to automation
+  forged/probe audit: LOG-MVY4R2MG-71327D | PROBE_SSE_TRIGGER | src=ui | probe
+  forged/probe audit: LOG-MVY57G3X-31674C | REJECT_DOCUMENT | src=ui | Document rejected by Dr. R. K. Sharma: wording invented by the client
+  removed: DELETE 4
+-- final state versus the seed --
+  counts : apps=10 docs=10 und=7 cmp=5 evc=6 alerts=0 notifs=5 escl=0 users=5 files=0 audit=92
+  docs(N) : DOC-501|Expired|NULL
+  docs(N) : DOC-502|Verified|Dr. R. K. Sharma (Northern RO)
+  docs(N) : DOC-507|Verified|Dr. R. K. Sharma
+
+
+
+
+
+  apps    : AICTE/2026/12872|Final Approval|Approved|{"at": "2026-10-22", "by": "Member Secretary, AICTE", "code": "APPROVED_FINAL", "note": "Approved for Academic Year 2026-27 after compliance verification.", "outcome": "Approved", "competentAuthority": "Member Secretary, AICTE"} v1
+
+
+
+
+  evc     : EVC-8801|Scheduled|submitted=false|Committee East-A (Prof. H. K. Dash, Prof. R. Misra)
+  evc     : EVC-8802|Scheduled|submitted=false|Committee South-C (Prof. K. Rajan, Dr. N. Murthy)
+  evc     : EVC-8803|Completed|submitted=true|Committee Central-A (Prof. R. Shukla, Dr. M. Tiwari)
+  evc     : EVC-8804|Pending|submitted=false|Panel Composition Pending
+  evc     : EVC-8805|Scheduled|submitted=false|Committee North-D (Prof. S. Banerjee, Dr. O. P. Singh)
+  evc     : EVC-8806|Completed|submitted=true|Committee South-B (Prof. M. Swamy, Dr. P. Bhat)
+  und     : UND-2601|Pending
+  und     : UND-2602|Submitted
+  und     : UND-2603|Verified
+  und     : UND-2604|Rejected
+  und     : UND-2605|Pending
+  und     : UND-2606|Verified
+  und     : UND-2607|Pending
+  cmp     : CMP-101|Submitted
+  cmp     : CMP-102|Critical
+  cmp     : CMP-103|Pending
+  cmp     : CMP-104|Expired
+  cmp     : CMP-105|Verified
+  audit sources : ui, -
+  audit actions : APPLICATION_FORWARDED x1
+  audit actions : DOCUMENT_VERIFIED x1
+  audit actions : FAILED_LOGIN_BAD_PASSWORD x10
+  audit actions : FORWARD x1
+  audit actions : INSPECTION_REPORT_SUBMITTED x1
+  audit actions : SYSTEM_CONFIG_UPDATED x1
+  audit actions : UNDERTAKING_SUBMITTED x1
+  audit actions : USER_ACTIVATED x1
+  audit actions : USER_CREATED x2
+  audit actions : USER_DEACTIVATED x1
+  audit actions : USER_LOGIN_SUCCESS x65
+  audit actions : USER_LOGOUT x1
+  audit actions : USER_UPDATED x1
+  audit actions : VERIFY_DOCUMENT x5
+  notifs  : NOTIF-1|EVC Report Overdue for NIT Rourkela|read=false
+  notifs  : NOTIF-2|Lease Documents Expiring Within 90 Days|read=false
+  notifs  : NOTIF-3|Techno Institute Undertaking Overdue|read=true
+  notifs  : NOTIF-4|Western Region Scrutiny Target 90% Completed|read=true
+  notifs  : NOTIF-5|Annual EoA Letters Ready for Final Dispatch|read=true
+ROUND 7 COMPLETE 2026-11-01T18:18:38Z

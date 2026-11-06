@@ -1,0 +1,135 @@
+PROBE D-19 — identity and actor attribution: the browser keeps two disagreeing identity
+stores, demo-mode admin actions sign the audit trail as a fictional "SYSTEM / Administrator",
+and the trail's timestamp column is a display string that cannot be sorted.
+Demo mode :8080, SUPER_ADMIN session (USR-SUPERADMIN / Dr. Ramesh Pokhriyal).
+Lens: L4 (integrity of the trail) + L3 (data model). Severity: mixed, itemised below.
+
+State mutations made by this probe — all restored
+  Deactivated USR-EVC-MEMBER (Prof. S. Banerjee) from /admin/users, then re-activated.
+  Net effect on the store: isActive true again; two extra audit rows
+  (USER_DEACTIVATED AUD-1793552962830-t0vm0, USER_ACTIVATED). No code changed.
+
+(1) P1 — demo-mode audit rows fabricate the actor for every user-management and
+    configuration mutation.
+    src/services/authService.ts writes these five actions with a hard-coded identity:
+      :666-673  USER_CREATED            userId 'SYSTEM', userName 'Administrator', userRole 'SUPER_ADMIN'
+      :700-710  USER_UPDATED            same
+      :736-743  USER_ACTIVATED / USER_DEACTIVATED   same
+      :811-818  SYSTEM_CONFIG_UPDATED   same
+      :869-876  ROLE_PERMISSION_CHANGED same
+    Captured from the live trail immediately after clicking Deactivate on an EVC member:
+      { action: 'USER_DEACTIVATED', userId: 'SYSTEM', userName: 'Administrator',
+        userRole: 'SUPER_ADMIN', details: 'Account for Prof. S. Banerjee
+        (evc@apoorvasetu.demo) was deactivated.', at: '01 Nov 2026, 10:39 PM',
+        id: 'AUD-1793552962830-t0vm0' }
+    and the row one action earlier, produced by the AppContext path instead, carries the real
+    actor:
+      { action: 'SAVE_EVC_CHECKLIST', userId: 'USR-SUPERADMIN',
+        userName: 'Dr. Ramesh Pokhriyal', userRole: 'SUPER_ADMIN' }
+    So one and the same trail mixes the acting officer with a synthetic "Administrator" that is
+    not a row in the user table. The /admin/audit-logs screen and its CSV (columns already
+    captured in evidence/raw/S31_csv_and_limiter.txt) export those fabricated values in the
+    User / Role columns — the exact columns a regulator reads to answer "who authorised this".
+    This also violates the project invariant that privileged/authority actions must be recorded
+    with an identified human.
+    Contrast — the server path is correct and must stay that way:
+      server/audit.ts:22-42 createAuditLog() takes the actor as a parameter, and every caller
+      derives it from the session, never from the request body:
+      server/routes/admin.ts:107/160/219 `assertAnyPermission(req, [...])` -> auditActor(actor)
+      server/routes/workflow.ts:76,183,244,322 actorFromUser(user)
+      server/routes/auth.ts:36 actorFor(user)
+      (grep for `actor` across server/routes shows no body-sourced actor — checked, strength.)
+    Fix: in demo mode, take the actor from authService.getCurrentUser() the same way
+    AppContext.getActor() does (src/context/AppContext.tsx:481-490), and keep a single audit
+    writer instead of authService.addAuditLog + AppContext.recordAudit. Effort S-M.
+
+(2) P2 — fail-open fallback identity in the audit writer.
+    src/context/AppContext.tsx:481-490
+      const getActor = (): ActorRef => {
+        const activeUser = authService.getCurrentUser();
+        return { id: activeUser?.id ?? 'USR-AICTE-001',
+                 name: activeUser?.name ?? 'Amit Sharma',
+                 role: activeUser?.role ?? 'AICTE_ADMIN', … };
+      };
+    If the session is missing or expires between actions, the code does not stop or mark the row
+    "unknown"; it attributes the change to a plausible central-admin identity — 'Amit Sharma' is
+    also the seeded AICTE_ADMIN account, so the substitution is indistinguishable in the trail.
+    Same class as (1) but reachable whenever getCurrentUser() returns null (e.g. after a refresh
+    race). Fix: throw/queue when no actor is present; a regulated write with no identified human
+    must not be recorded as if it had one. Effort S.
+
+(3) P1 — two browser identity stores disagree indefinitely; login never reconciles them.
+    Read back after the reset probe (D-12) followed by a fresh Super Administrator sign-in:
+      apoorvasetu_auth_session_v1  -> { token, expiresAt, rememberMe,
+          user: { id: 'USR-SUPERADMIN', name: 'Dr. Ramesh Pokhriyal',
+                  role: 'SUPER_ADMIN', email: 'superadmin@apoorvasetu.demo', … } }
+      apoorvasetu_server_sessions_v1 -> { SID-MVY2L2SB-BZ4W7A: { userId: 'USR-SUPERADMIN', … } }
+      aicte_approval_system_data_v4_user (AppContext.currentUser) ->
+          { name: 'Rahul Kashyap', role: 'Regional Officer',
+            email: 'rahul.kashyap@aicte-india.org', initials: 'RK' }
+      rendered header -> "17 RP Dr. Ramesh Pokhriyal Super Administrator"
+    The stale legacy slot is written by resetToInitialData (src/context/AppContext.tsx:2251-2277,
+    setCurrentUser({ name: getRandomFullName(), role: 'Regional Officer', … })) and is NOT
+    rewritten by a subsequent login, so anything that still reads currentUser (the assistant
+    persona in src/services/assistantService.ts:29-57, and any component that has not moved to
+    useAuth) shows a different person than the session for the rest of the browser's life.
+    Confidence: confirmed for the divergence; the blast radius is limited because the screens
+    probed this pass read useAuth().user. What would raise it: a grep-level audit of remaining
+    `currentUser` consumers plus one test that signs in after a reset and asserts both slots
+    agree. Effort S (write the same object on login, or delete the key).
+
+(4) P1 — the audit trail has no sortable, second-resolution timestamp in either mode.
+    prisma/schema.prisma:255-276
+      model AuditLog { timestamp String   // :257
+                       @@index([timestamp]) }   // :272
+    The value written is a display string (server/audit.ts:16-21 + :26
+      `timestamp: formatAuditTimestamp()`) -> "01 Nov 2026, 10:39 PM":
+      - minute resolution only; events in the same minute are unordered,
+      - day+month+year as text, so SQL ORDER BY / BETWEEN and the :272 index are useless
+        (lexicographic order puts "01 Nov" before "15 Oct"),
+      - no timezone, no ISO instant.
+    The server has already worked around it: server/routes/data.ts:491 sorts notifications by the
+    same text column, while :499 reads the audit trail with `orderBy: { id: 'desc' }` — i.e. the
+    trail's ordering depends on the id format, which itself differs per mode
+    (client 'AUD-<decimal-ms>-<rand>' vs server 'LOG-<base36-ms>-<hex>'). That is why the D-08
+    duplicate-row analysis had to fall back to array order instead of timestamps.
+    Related: data.ts:499 also caps the trail at `take: 200` with no total, cursor or "showing the
+    most recent 200 of N" affordance, so an officer reading a long case history sees a silent
+    truncation.
+    Fix: add `occurredAt DateTime @db.Timestamptz(3)` (+ keep the display string if the UI needs
+    it), index that, order by it, and page the trail. This is a migration — the audit prompt
+    requires stopping for approval before a destructive migration, and this one is additive,
+    so it belongs in the Wave plan with an explicit backfill step. Effort M.
+
+(5) P3 — the demo "session token" is security theatre, and one fabricated field is exported.
+    Read from the browser 2026-11-02; the three token segments are REDACTED here before commit
+    (see evidence/probe-log.md "Redactions"), the structure and the decoded payload are verbatim:
+      document.cookie =
+        apoorvasetu_session_token=<REDACTED-JWT: header>.<REDACTED-PAYLOAD>.<REDACTED-SIGNATURE>
+      plus apoorvasetu_refresh_token=<REDACTED-REFRESH-TOKEN>
+      decoded payload of the middle segment: {"sub":"USR-SUPERADMIN","sid":"SID-MVY2L2SB-BZ4W7A",
+        "exp":1793553855131}
+    - The cookie is written by JavaScript (src/services/authService.ts:31-40 setCookie) so it is
+      readable by any script on the page: no HttpOnly on the demo path (the Postgres path uses the
+      HttpOnly apoorvasetu_sid cookie — confirmed in evidence/raw/S28_live_headers_demo.txt).
+    - The third segment is a 16-hex-char string ("5d6694cf35472a02"), not a base64url HMAC of the
+      first two segments, so it is a JWT-shaped value that no verifier would accept — while the
+      "production" HMAC key that purports to sign it is embedded in the bundle (src/services/authService.ts:28, see evidence/raw/S22b_served_bundle_greps.txt).
+      Together: the demo advertises cryptography it does not perform, and ships the key for the
+      forgery it does not perform. Filed under L4 (AUD for L4-02); this probe confirms the shape.
+    - The demo session records `"ipAddress": "10.24.1.84"` — a hard-coded fiction that lands in
+      the audit CSV's IP column. Server default is '127.0.0.1' (server/audit.ts:24,47) with
+      clientIp(req) passed on workflow routes (server/routes/workflow.ts:110); a demo row that
+      invents a routable-looking client IP is worse than a blank, because the export looks
+      evidentiary.
+    Fix: for demo mode, stop minting a JWT-lookalike and the fake IP (record "demo" or omit the
+    column), and move the secret to the server (already required by L4-02). Effort S.
+
+Checked, consistent
+  - The Deactivate/Activate round-trip produced the expected paired audit rows and the table
+    status badge flipped Active -> Deactivated -> Active; no state leaked.
+  - /admin/users exposes no password field on Create user (src/pages/admin/UserManagement.tsx:59-86
+    sends name/email/role/designation/phone/region, isActive true, permissions []) — so demo-mode
+    account creation cannot plant a credential; the created user has an empty permission set,
+    which is a separate usability question logged under L5 (a freshly created officer can see
+    nothing at all until ROLE_PERMISSION_CHANGED is granted by role, and the UI gives no warning).

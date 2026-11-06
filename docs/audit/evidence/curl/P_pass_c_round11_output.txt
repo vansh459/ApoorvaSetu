@@ -1,0 +1,51 @@
+
+================ P-55 sign-in cost, sequential then simultaneous ================
+   server/password.ts:10 uses scryptSync - the KDF blocks the event loop
+-- one sign-in, as the baseline --
+   single #1 (http time): 200 0.396085
+   single #2 (http time): 200 0.255064
+   single #3 (http time): 200 0.214515
+-- 8 sequential sign-ins --
+   8 sequential in 1348 ms
+-- 8 simultaneous sign-ins (8 curl processes, one connection each) --
+   8 concurrent  in 692 ms
+-- 16 simultaneous --
+   16 concurrent in 1348 ms
+   sessions rows now: 101
+-- wrong password costs the same as the right one (no user-enumeration timing leak) --
+   right : 200 0.120479
+   wrong : 401 0.131672
+   no such user: 401 0.098158
+
+================ P-57 fill a throttle bucket, then restart, then try the CORRECT password ================
+   attempt 1: 401 0.095390
+   attempt 2: 401 0.082237
+   attempt 3: 401 0.065571
+   attempt 4: 401 0.071053
+   attempt 5: 401 0.062363
+   attempt 6: 401 0.073951
+   correct password while capped: 200 0.071170
+   audit rows before restart: 139
+apoorvasetu-audit-pg | cpu 0.01% | mem 518.6MiB / 3.505GiB
+apoorvasetu-db-1 | cpu 0.02% | mem 100.9MiB / 3.505GiB
+   docker restart issued
+   /api/ready 200 after 9975 ms (polled once per second from the restart)
+   correct password immediately after restart: 200 0.295174
+   -> 200 means the failed-attempt buckets did not survive the process
+   -> 429 would mean the limiter is persistent
+
+================ P-56 state and cost after the restart ================
+apoorvasetu-audit-pg | cpu 0.00% | mem 83.9MiB / 3.505GiB
+apoorvasetu-db-1 | cpu 0.05% | mem 77.8MiB / 3.505GiB
+   /api/health: {"status":"ok","service":"ApoorvaSetu AI Assistant Backend","database":"connected","storage":"local","timestamp":"2026-11-01T18:46:21.271Z"}
+   rows: apps=10 docs=10 users=5 audit=140 sessions=104
+   seed re-applied? distinct seeded app ids: 10 (10 = not duplicated)
+   SSE rev after restart (is the counter in memory or in the db?):
+     {"error":"UNAUTHENTICATED","text":"Sign in to continue."}
+     (no rev column on system_config - read from source instead)
+   login limiter: distinct buckets in memory are not observable from outside; the restart test above is the evidence
+
+================ P-99 residue after round 11 ================
+   audit rows: 140 | FAILED_LOGIN rows: 17
+   users: 5 | no probe rows were written this round
+ROUND 11 COMPLETE 2026-11-01T18:46:29Z

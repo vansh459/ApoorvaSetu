@@ -1,0 +1,49 @@
+
+================ P-52 a role-permission rewrite, with the role's own current list ================
+   role_permissions[EVC_MEMBER] before: {evc.read,evc.report.submit,institutes.read,documents.read}
+   users of that role            : 1   (USR-EVC-MEMBER={evc.read,evc.report.submit,institutes.read,documents.read} )
+   audit rows before             : 95
+   body sent (identical to the stored list): {"permissions":["evc.read","evc.report.submit","institutes.read","documents.read"]}
+   -> HTTP 200  {"rolePermission":{"role":"EVC_MEMBER","permissions":["evc.read","evc.report.submit","institutes.read","documents.read"]}}
+   audit rows after              : 95   (delta 0)
+   matrix unchanged              : YES
+   user permission arrays same   : YES
+   any audit row naming this action? NONE
+-- contrast: the three user routes in the same file DO audit --
+     admin.ts:140:    await writeAudit(
+     admin.ts:199:    await writeAudit(
+     admin.ts:232:    await writeAudit(
+-- and the role route in full, to show there is no call between 252 and 277 --
+       '/roles/:role/permissions',
+       asyncHandler(async (req: Request, res: Response) => {
+         assertAnyPermission(req, ['roles.manage']);
+         const role = roleField({ role: req.params.role });
+         const body = requireObject(req.body);
+         const value = body.permissions;
+         if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+           throw new HttpError(400, 'INVALID_BODY', 'permissions must be an array of permission names.');
+         }
+         const unknown = (value as string[]).filter((item) => !ALL_PERMISSIONS.includes(item as Permission));
+         if (unknown.length) {
+           throw new HttpError(400, 'INVALID_BODY', `Unknown permissions: ${unknown.join(', ')}.`);
+         }
+         const permissions = Array.from(new Set(value as Permission[]));
+     
+         const prisma = getPrisma();
+         const row = await prisma.rolePermission.upsert({
+           where: { role },
+           create: { role, permissions },
+           update: { permissions }
+         });
+         await prisma.user.updateMany({ where: { role }, data: { permissions } });
+     
+         broadcast(['rolePermissions', 'users']);
+         res.json({ rolePermission: toRolePermissions(row) });
+       })
+-- what the audit screen would have to say about it --
+  most recent audit row: LOG-MVY6H4G9-A3E4A1 | USER_LOGIN_SUCCESS | 01 Nov 2026, 06:43 PM
+
+================ P-98 residue after round 10 ================
+   audit rows: 95 | matrix and users verified unchanged above
+   USER_* rows written by this round: 0 (no user route was called)
+ROUND 10 COMPLETE 2026-11-01T18:43:18Z

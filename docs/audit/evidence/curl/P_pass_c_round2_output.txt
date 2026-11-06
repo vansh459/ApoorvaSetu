@@ -1,0 +1,195 @@
+
+================ P-06(round2) POST /api/users with no password field, then sign in with the printed demo credential ================
+note: round 1 used /api/admin/users, which is not the mounted path (adminRouter paths are /users, mounted at /api).
+{"error":"UNAUTHENTICATED","text":"Sign in to continue."}
+-> 401
+-- sign in with the credential the login screen prints --
+login probe.nopass with Apoorva@2026 -> 401
+-- is the shared constant visible in the browser bundle at all? --
+bundle: /assets/index-BcxMUUtC.js
+literal credential occurrences in the shipped JS: 2
+-- per-user salt check: how many distinct hashes for how many users --
+1|5
+
+================ P-07(round2) password reset does not revoke live sessions ================
+probe user id: MISSING
+live sessions for the probe user before reset: 0
+cookie held: ...  (length 0)
+old cookie before reset -> /api/auth/session = 200
+-- SUPER_ADMIN resets the password (PUT /api/users/:id) --
+{"error":"UNAUTHENTICATED","text":"Sign in to continue."}
+-- replay the OLD session cookie after the reset --
+old cookie AFTER reset -> /api/auth/session = 200
+old cookie AFTER reset -> /api/snapshot      = 401
+{"user":null,"expiresAt":null}
+0
+-- and the old password is now refused? --
+old password login -> 401
+new password login -> 429
+-- deactivate the account; does the live session die with it? --
+POST /api/users//toggle -> 401
+same cookie after isActive=false -> /api/snapshot = 401
+-- restore so the ledger stays tidy --
+toggle back -> 401
+
+================ P-09(round2) forged machine provenance on POST /api/audit (previousState/newState are STRINGS, max 1000) ================
+{"audit":{"id":"LOG-MVY4ILYX-F7CA09","timestamp":"01 Nov 2026, 05:48 PM","userId":"USR-INSTITUTE-ADMIN","userName":"Dr. K. S. Murthy","userRole":"INSTITUTION_ADMIN","action":"APPLICATION_APPROVED","entityType":"Application","entityId":"AICTE/2026/12872","details":"Written by an INSTITUTION_ADMIN but labelled source=cron.","previousState":"{\"stage\":\"Approval (Subject to Undertaking)\"}","newState":"{\"stage\":\"Final Approval\",\"status\":\"Approved\"}","ipAddress":"::ffff:172.19.0.1","eventType":"application.approved","source":"cron"}}
+-> 201
+audit rows before=30 after=31
+LOG-MVY4ILYX-F7CA09|APPLICATION_APPROVED|AICTE/2026/12872|USR-INSTITUTE-ADMIN|INSTITUTION_ADMIN|cron
+-- a second forgery: source=system, action claiming an EVC report, by an INSTITUTION_ADMIN --
+curl: (2) no URL specified
+curl: try 'curl --help' or 'curl --manual' for more information
+-- can a non-auditor read the trail they just forged? (audit.read) --
+INSTITUTION_ADMIN snapshot audit rows -> 200
+institute sees auditLogs=0 rolePermissions=0 config=yes
+evc sees auditLogs=0 rolePermissions=0 escalations=0
+
+================ P-21(round2) generic writes leave no audit trail at all (the L3-01 gap, isolated) ================
+audit rows now: 31
+PUT /api/documents/DOC-501 as REGIONAL_OFFICER (Verified -> Expired) -> 200
+DOC-501|Expired
+PUT /api/alerts/ALRT-PROBE-05 (critical Open -> resolved) -> 400
+audit rows after both writes: 31  (added: 0)
+
+================ P-23(round2) cross-role visibility of the rows Pass C wrote (do alerts/notifications respect targetRole/region?) ================
+-- ALRT-PROBE-05 is region NULL + instituteId NULL (national). NOTIF-PROBE-05 targets SUPER_ADMIN. --
+superadmin   alerts[0]= notifs[0]= escal[0]=
+regional     alerts[0]= notifs[5]=NOTIF-3,NOTIF-5,NOTIF-1,NOTIF-2,NOTIF-4 escal[1]=ESCL-PROBE-12
+institute    alerts[0]= notifs[5]=NOTIF-3,NOTIF-5,NOTIF-1,NOTIF-2,NOTIF-4 escal[0]=
+evc          alerts[0]= notifs[5]=NOTIF-3,NOTIF-5,NOTIF-1,NOTIF-2,NOTIF-4 escal[0]=
+aicteadmin   alerts[0]= notifs[6]=NOTIF-3,NOTIF-PROBE-05,NOTIF-5,NOTIF-1,NOTIF-2,NOTIF-4 escal[1]=ESCL-PROBE-12
+
+================ P-24(round2) audit cap and ordering, from the running server ================
+rows in db: 31
+returned=0
+order ids:  ... 
+[eval]:1
+let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);const a=j.auditLogs||[];console.log("returned="+a.length);console.log("order ids: "+a.slice(0,4).map(x=>x.id).join(" -> ")+" ... "+a.slice(-2).map(x=>x.id).join(" -> "));console.log("timestamps: first="+a[0].timestamp+"  last="+a[a.length-1].timestamp);});
+                                                                                                                                                                                                                                                                                              ^
+
+TypeError: Cannot read properties of undefined (reading 'timestamp')
+    at Socket.<anonymous> ([eval]:1:287)
+    at Socket.emit (node:events:521:24)
+    at endReadableNT (node:internal/streams/readable:1735:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+
+Node.js v24.16.0
+-- proof the ordering is by id, not time: same table ordered two ways --
+by id desc : LOG-MVY4ILYX-F7CA09 | LOG-MVY4II3E-A36019 | LOG-MVY4IHWN-57C420 | LOG-MVY4IHOA-5EDDDE
+by time asc: LOG-MVY4DVDU-CFA3E1 | LOG-MVY4DVLN-E0D51C | LOG-MVY4DWIK-7166F8 | LOG-MVY4DWQL-DE0C9B
+
+================ P-15(round2) CORS: preflight and credentialed POST, both origins, with the URL supplied ================
+--- preflight from a FOREIGN origin ---
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json; charset=utf-8
+Content-Length: 57
+ETag: W/"39-z8C/CutERp0yJ7OT8DIEYuhjRnc"
+Date: Sun, 01 Nov 2026 17:48:24 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"error":"UNAUTHENTICATED","text":"Sign in to continue."}--- preflight from an ALLOWED origin (same host:port) ---
+HTTP/1.1 204 No Content
+Access-Control-Allow-Origin: http://localhost:8081
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+Access-Control-Allow-Headers: Authorization,Content-Type
+Content-Length: 0
+Date: Sun, 01 Nov 2026 17:48:24 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+server/authGuard.ts:172:export function isOriginAllowed(origin: string): boolean {
+server/authGuard.ts-173-  return originAllowed(origin, allowedOrigins());
+server/authGuard.ts-174-}
+server/authGuard.ts-175-
+server/authGuard.ts-176-export function corsHeaders(req: any): Record<string, string> {
+server/authGuard.ts-177-  const origin = req.headers?.origin ?? '';
+server/authGuard.ts-178-  const headers: Record<string, string> = {
+server/authGuard.ts-179-    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+server/authGuard.ts-180-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+server/authGuard.ts-181-    Vary: 'Origin'
+server/authGuard.ts-182-  };
+server/authGuard.ts-183-  if (origin && isOriginAllowed(origin)) {
+server/authGuard.ts-184-    headers['Access-Control-Allow-Origin'] = origin;
+--- credentialed POST with a FOREIGN Origin (CSRF-shaped) ---
+curl: (2) no URL specified
+curl: try 'curl --help' or 'curl --manual' for more information
+--- same POST with NO Origin header (curl/non-browser client) ---
+curl: (2) no URL specified
+curl: try 'curl --help' or 'curl --manual' for more information
+--- oversized body guard (express.json limit) ---
+body bytes: 3145911
+POST /api/alerts with that body -> 413
+12:export const MAX_BODY_BYTES = 64 * 1024;
+30:  return Number.isFinite(length) && length > MAX_BODY_BYTES;
+--- unauthenticated /api/health body (what does it disclose?) ---
+{"status":"ok","service":"ApoorvaSetu AI Assistant Backend","database":"connected","storage":"local","timestamp":"2026-11-01T17:48:25.913Z"}
+--- full response header set on the SPA document ---
+HTTP/1.1 200 OK
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Cache-Control: public, max-age=0
+Content-Type: text/html; charset=utf-8
+
+<!doctype html>
+
+================ P-25(round2) a real Pending document, then the regulated verify endpoint with a machine-sounding authority ================
+DOC-506|Pending|NULL
+DOC-508|Pending|NULL
+curl: (2) no URL specified
+curl: try 'curl --help' or 'curl --manual' for more information
+-- REGIONAL_OFFICER verifies it, claiming the authority is an automated system --
+{"error":"NOT_FOUND","text":"Document was not found."}
+-> 404
+-- is verifiedBy taken from the session or from the body? send a spoofed one --
+curl: (2) no URL specified
+curl: try 'curl --help' or 'curl --manual' for more information
+verify DOC-PROBE-25B -> 404
+-- EVC_MEMBER (no documents.verify) tries the same --
+{"error":"FORBIDDEN","text":"You need one of these permissions: documents.verify."}
+-> 403
+
+================ P-26(round2) session hygiene: concurrent sessions, expiry, logout revocation ================
+15|15|5
+USR-INSTITUTE-ADMIN|3
+USR-SUPERADMIN|3
+USR-AICTEADMIN|3
+USR-REGIONAL-NORTH|3
+USR-EVC-MEMBER|3
+-- logout revokes exactly one session --
+POST /api/auth/logout -> 204
+live sessions 15 -> 14
+the logged-out cookie now -> /api/snapshot = 401
+-- rememberMe vs not: two different lifetimes? --
+no rememberMe : Set-Cookie: apoorvasetu_sid=<REDACTED-SESSION-ID>; Path=/; Expires=Mon, 02 Nov 2026 05:48:29 GMT; HttpOnly; SameSite=Lax
+rememberMe    : Set-Cookie: apoorvasetu_sid=<REDACTED-SESSION-ID>; Path=/; Expires=Tue, 01 Dec 2026 17:48:29 GMT; HttpOnly; SameSite=Lax
+-- cookie Secure flag when served over plain http (expected absent) and SameSite --
+HttpOnly SameSite=Lax 
+
+================ P-27(round2) PUT /api/config is permission-checked (contrast with the unguarded writes) ================
+{"error":"FORBIDDEN","text":"You need one of these permissions: system.config."}
+-> 403
+f
+{"error":"FORBIDDEN","text":"You need one of these permissions: system.config."}
+-> 403
+-- and a role-permission rewrite by a non-admin? --
+PUT /api/roles/EVC_MEMBER/permissions as REGIONAL_OFFICER -> 403
+{evc.read,evc.report.submit,institutes.read,documents.read}
+
+================ P-91(round2) what Pass C wrote (cleanup ledger, both rounds) ================
+alert|ALRT-PROBE-05
+audit-forged|LOG-MVY4ILYX-F7CA09
+doc|DOC-PROBE-18
+escal|ESCL-PROBE-12
+notif|NOTIF-PROBE-05
+-- seeded rows whose values Pass C changed --
+doc DOC-501 -> status=Expired
+app AICTE/2026/12869 -> stage=Scrutiny / Re-scrutiny status=Returned v=1
+app AICTE/2026/12875 -> stage=Expert Visit Committee (EVC) status=In Progress v=2
+evc  EVC-8801 -> status=Scheduled reportSubmitted=false
+evc  EVC-8805 -> status=Completed reportSubmitted=true
+audit_rows_total=34|live_sessions=16
+ROUND 2 COMPLETE 2026-11-01T17:48:33Z

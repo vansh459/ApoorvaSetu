@@ -1,0 +1,29 @@
+=== S-15 wall-clock uses in src/workflow (pure core claim) ===
+src/workflow/alerts.ts:73:  return `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+src/workflow/engine.ts:30:  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+src/workflow/engine.ts:34:  return `COR-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+src/workflow/selectors.ts:337:  const date = new Date(timestamp);
+src/workflow/selectors.ts:338:  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+src/workflow/undertakings.ts:79:  return `UND-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+src/workflow/__tests__/fixtures.ts:48:    now: new Date(2026, 0, 20),
+src/workflow/__tests__/fixtures.ts:78:  return normalizeApplication({ ...base, ...overrides }, new Date(2026, 0, 20));
+
+count:
+8
+=== S-15b wall-clock uses in server/ ===
+15
+server/audit.ts:16:export function formatAuditTimestamp(date: Date = new Date()): string {
+server/audit.ts:30:    id: `LOG-${Date.now().toString(36).toUpperCase()}-${randomBytes(3).toString('hex').toUpperCase()}`,
+server/index.ts:91:    timestamp: new Date().toISOString()
+server/rateLimit.ts:24:  const now = Date.now();
+server/rateLimit.ts:39:  const now = Date.now();
+server/routes/admin.ts:121:        id: `USR-${Date.now().toString(36).toUpperCase()}-${randomBytes(2).toString('hex').toUpperCase()}`,
+server/routes/admin.ts:135:        createdAt: new Date().toISOString(),
+server/routes/assistant.ts:33:      timestamp: optionalString(message.timestamp, 'message.timestamp', 40) ?? new Date().toISOString()
+server/routes/assistant.ts:70:    const base = Date.now();
+server/routes/assistant.ts:83:          createdAt: new Date(base + index)
+server/routes/auth.ts:107:    const lastLogin = new Date().toISOString();
+server/routes/auth.ts:163:            data: { revokedAt: new Date() }
+server/session.ts:44:export function sessionExpiry(rememberMe: boolean, now: Date = new Date()): Date {
+server/session.ts:45:  return new Date(now.getTime() + sessionTtlMs(rememberMe));
+server/session.ts:140:  const now = new Date();

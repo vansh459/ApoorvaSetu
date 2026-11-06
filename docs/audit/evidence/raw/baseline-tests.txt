@@ -1,0 +1,48 @@
+
+> apoorvasetu@0.0.0 test:run
+> vitest run
+
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mC:/Users/Shiva/Downloads/project/ApoorvaSetu[39m
+
+ [32m✓[39m src/services/repositories/postgresRepository.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 1539[2mms[22m[39m
+   [33m[2m✓[22m[39m postgres repository[2m > [22mloads the authenticated snapshot with cookies [33m 1527[2mms[22m[39m
+ [32m✓[39m src/workflow/evc.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/workflow/selectors.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m src/workflow/routes.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/workflow/reports.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m server/storage/keys.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 732[2mms[22m[39m
+   [33m[2m✓[22m[39m local disk storage[2m > [22mwrites, reads and deletes objects under its root [33m 428[2mms[22m[39m
+ [32m✓[39m src/workflow/undertakings.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/workflow/documents.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 2189[2mms[22m[39m
+   [33m[2m✓[22m[39m document alert sweep[2m > [22malerts the original, ignores superseded and renewal records, and stays idempotent [33m 2166[2mms[22m[39m
+ [32m✓[39m src/utils/dates.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 3799[2mms[22m[39m
+   [33m[2m✓[22m[39m date arithmetic[2m > [22mformats display dates [33m 3783[2mms[22m[39m
+ [32m✓[39m src/workflow/templates.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 2175[2mms[22m[39m
+   [33m[2m✓[22m[39m communication templates[2m > [22mlists open deficiencies in a return notice [33m 2150[2mms[22m[39m
+ [32m✓[39m src/workflow/engine.test.ts [2m([22m[2m22 tests[22m[2m)[22m[33m 2225[2mms[22m[39m
+   [33m[2m✓[22m[39m forwarding[2m > [22mmoves to the next route stage and stamps a fresh deadline [33m 2193[2mms[22m[39m
+ [32m✓[39m src/workflow/alerts.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 2231[2mms[22m[39m
+   [33m[2m✓[22m[39m deadline sweep[2m > [22mraises an alert and a level-3 escalation for a long overdue application [33m 2193[2mms[22m[39m
+ [32m✓[39m src/services/aiGuard.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m server/payload.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m server/session.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m src/workflow/notifications.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m src/services/integration/webhookQueue.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 54[2mms[22m[39m
+ [32m✓[39m src/workflow/sla.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m server/scope.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m src/services/rbacService.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m server/mappers/mappers.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 579[2mms[22m[39m
+   [33m[2m✓[22m[39m password hashing[2m > [22mhashes and verifies a password [33m 526[2mms[22m[39m
+ [32m✓[39m src/utils/csv.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m server/validate.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m server/rateLimit.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m src/services/repositories/dataMode.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/services/repositories/localRepository.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m26 passed[39m[22m[90m (26)[39m
+[2m      Tests [22m [1m[32m232 passed[39m[22m[90m (232)[39m
+[2m   Start at [22m 21:13:32
+[2m   Duration [22m 11.26s[2m (transform 13.96s, setup 0ms, collect 45.70s, tests 15.87s, environment 1.98s, prepare 12.98s)[22m
+
+tests exit=0

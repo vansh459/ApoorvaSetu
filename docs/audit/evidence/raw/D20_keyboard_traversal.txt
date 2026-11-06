@@ -1,0 +1,76 @@
+PROBE D-20 (D-10 in the plan's numbering) — keyboard-only traversal on the mobile/desktop
+boundary. Viewport 632x570 CSS px, dpr 1.25, demo mode :8080, /demo-scenarios.
+Lens: L7 (accessibility). Severity: itemised. Confidence: confirmed.
+
+Method (no screenshots available; see the not-run ledger): focus order was computed from the
+document in DOM order — valid here because positive tabindex is absent — and each stop was
+classified by geometry.
+  document.querySelectorAll('a[href],button,input,select,textarea,[tabindex]')
+  filtered by !disabled, tabIndex >= 0 and getClientRects().length > 0
+  -> tabbableTotal = 35, positiveTabindex = []
+
+(1) P1 — the closed mobile drawer keeps its whole contents in the tab order.
+    14 of the 35 stops (stops 0..13) sit inside the navigation panel that is off-canvas:
+      0 "ApoorvaSetu AICTE approvals" (brand link)   x = -240
+      1 "Close navigation" (button)                  x = -49
+      2 "Dashboard"      3 "User management"  4 "Roles & permissions"  5 "Institutions"
+      6 "Regional offices"  7 "Pendency & workload"  8 "Reports"  9 "Alert center10"
+      10 "Notifications17"  11 "Configuration"  12 "Audit logs"  13 "Sign out"  x = -244
+    The first control a sighted keyboard user can actually see is stop 14, "Open navigation"
+    (x = 16). So the very first Tab presses move focus to invisible targets, and the drawer's
+    own "Close navigation" button is reachable while the drawer is closed — pressing Enter there
+    is a no-op the user cannot see.
+    Measured cause (src/components/common/Sidebar.tsx:243-252): the panel is moved off-canvas
+    with a transform/position, not removed from layout. The element chain for a[href="/reports"]:
+      A  x=-244  aria-hidden=null inert=false display=flex  visibility=visible
+      DIV x=-244 aria-hidden=null
+      NAV x=-256 aria-hidden=null
+      ASIDE.fixed.bottom-0.left-0.top-0.z-50.flex.w-64  x=-256  aria-label="Sidebar"
+                                                        aria-hidden=null inert=false
+    The aside is 256 px wide at x = -256, i.e. fully outside the 632 px viewport, yet every
+    descendant is a live tab stop.
+    Fix: when closed on small screens, make the panel inert — `aria-hidden="true"` plus
+    `inert` (or conditional rendering / `visibility: hidden`) — and gate the inner close button.
+    Effort S. WCAG: 2.4.3 Focus Order, 4.1.2 Name/Role/State.
+
+(2) P2 — no skip link and no focusable main landmark.
+    [...document.querySelectorAll('a')].filter(/skip/) -> [] (zero matches on this page).
+    <main> exists and renders an <h1> ("Demo scenarios") but `main.id === ""` and it has no
+    tabindex, so there is nothing to target even if a skip link were added.
+    Combined with (1), a keyboard user must traverse 14 hidden stops before reaching the visible
+    header on every page.
+    Fix: <a href="#main" class="sr-only focus:not-sr-only">Skip to content</a> plus
+    <main id="main" tabIndex={-1}>. Effort S.
+
+(3) P2 — the disclosure control does not expose state.
+    Header.tsx:187 <IconButton aria-label="Open navigation"> has
+      aria-expanded = null, aria-controls = null (measured on the live element).
+    The same component does expose state for its other two popovers:
+      Header.tsx:292 aria-expanded={isNotifOpen}
+      Header.tsx:370 aria-expanded={isProfileOpen}
+    so the drawer is the inconsistent one. Its accessible name is also fixed to "Open
+    navigation" whether the drawer is open or closed.
+    Fix: aria-expanded={isOpen} ariaControls="app-navigation" on the toggle, and give the aside
+    that id (it already carries aria-label="Sidebar"). Effort S.
+
+(4) P3 — badge counts are glued to the link name without a separator.
+    Measured accessible names: "Alert center10" and "Notifications17" (Sidebar.tsx item renderer;
+    the badge is a sibling <span> with no separator, so the concatenation is the name).
+    A screen reader announces "Alert center10, link". Fix: put the count in a
+    <span aria-hidden="true"> and add an sr-only "10 open alerts" (or join with a space and a
+    visually-hidden separator). Effort S.
+
+Checked, no defect
+    - No positive tabindex anywhere in the rendered document (positiveTabindex = []), so focus
+      order is DOM order — nothing is artificially jumping ahead.
+    - The desktop search field is correctly out of the tab order at 632 px: its ancestor carries
+      `relative hidden w-full max-w-md md:block` (display:none), so getClientRects() is empty and
+      it is not a stop. An earlier draft of this probe counted it as a phantom stop because the
+      filter only checked tabIndex; corrected here and recorded as a probe artefact.
+    - Global focus ring is defined for every interactive element (src/index.css:145-149,
+      outline 2px solid var(--color-accent), offset 2px) and contrast of the accent against
+      paper/surface was measured acceptable in the L7 contrast census
+      (docs/audit/evidence/raw/D11_storage_census_and_apply_validation.txt sibling run).
+    - The 12 remaining off-viewport stops on /demo-scenarios are the page's own "Open
+      applications/Open alerts/…" buttons sitting below the fold (positive y), which is normal
+      scrolling behaviour, not a focus defect.

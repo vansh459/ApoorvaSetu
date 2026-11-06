@@ -1,0 +1,17 @@
+=== S-21 localStorage keys ===
+      2 apoorvasetu_audit_v1
+      1 apoorvasetu_users_v1
+      1 apoorvasetu_sih2026_production_hmac_secret_key_84920
+      1 apoorvasetu_session_token
+      1 apoorvasetu_server_sessions_v1
+      1 apoorvasetu_role_permissions_v1
+      1 apoorvasetu_refresh_token
+      1 apoorvasetu_config_v1
+      1 apoorvasetu_auth_session_v1
+      1 apoorvasetu_audit_v4
+      1 apoorvasetu_ai_chat_v2_
+
+=== where each is used ===
+src/services/auditService.ts:7:const LEGACY_AUDIT_KEY = 'apoorvasetu_audit_v1';
+src/services/authService.ts:18:const AUDIT_STORAGE_KEY = 'apoorvasetu_audit_v1';
+src/services/repositories/localRepository.ts:18:export const AUDIT_STORAGE_KEY = 'apoorvasetu_audit_v4';

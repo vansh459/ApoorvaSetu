@@ -1,0 +1,86 @@
+# D-11 — storage census and demo-state probes (browser-use MCP, http://localhost:8080, demo build in container apoorvasetu:local)
+
+Viewport of the automated browser was fixed at 632 x 570 CSS px (dpr 1.25). Captured 2026-11-01 ~16:20 UTC.
+
+## 1. Keys present immediately after clearing `apoorvasetu_*` and reloading
+
+Cleared 7 keys: config_v1, audit_v1, users_v1, server_sessions_v1, auth_session_v1, role_permissions_v1, audit_v4.
+After that the app booted to /login with no entity keys visible under the `apoorvasetu_` prefix, which briefly
+looked like "demo mutations do not persist". That hypothesis was WRONG and is recorded here so it is not repeated.
+
+## 2. Full key census after signing in as INSTITUTION_ADMIN and submitting one application
+
+Total keys: 17. Two unrelated namespaces coexist:
+
+```
+aicte_approval_system_data_v4_institutes   4453
+aicte_approval_system_data_v4_apps        16654   <- regulated entities
+aicte_approval_system_data_v4_notifs       8408
+aicte_approval_system_data_v4_alerts       5449
+aicte_approval_system_data_v4_docs         3699
+aicte_approval_system_data_v4_evc          3214
+aicte_approval_system_data_v4_undertakings 2799
+aicte_approval_system_data_v4_escalations  2178
+aicte_approval_system_data_v4_compliance   1147
+aicte_approval_system_data_v4_user          106
+apoorvasetu_config_v1                       214
+apoorvasetu_audit_v1                       1905   <- legacy store, see L2-04
+apoorvasetu_audit_v4                       2926   <- grew by 610 B after the submit
+apoorvasetu_users_v1                       3261
+apoorvasetu_server_sessions_v1              414
+apoorvasetu_auth_session_v1                 827
+apoorvasetu_role_permissions_v1            1424
+```
+
+Keys containing the string `APP2026-1225` (the application created during this probe):
+`aicte_approval_system_data_v4_apps`, `aicte_approval_system_data_v4_notifs`, `apoorvasetu_audit_v4`.
+`sessionStorage` is empty and `indexedDB.databases()` returns `[]` — all demo state is in localStorage.
+
+Consequence: any documented "clear the apoorvasetu_* keys to reset" step (including the one written into this
+audit's own plan) leaves the regulated entity data, and therefore the demo scenario state, intact.
+
+## 3. Hard case: submit the application wizard with step 2 emptied
+
+Steps: selected nothing (the radios are controlled; the pre-selected default EoA stayed, see note below),
+cleared `Proposed total intake` and `Offered programs`, pressed "Review declaration", then "Submit application"
+with the statutory declaration unticked, then ticked and submitted.
+
+* Unticked declaration -> refused: toast `Agree to the statutory undertaking before submitting.` and the wizard
+  stayed on step 3. The one real gate works (`SubmitApplication.tsx:40`).
+* Ticked declaration -> accepted, two toasts for one action:
+  `Application APP2026-1225 registered and routed via Scrutiny + EVC.` and
+  `Application APP2026-1225 successfully submitted to AICTE National Portal` (one from AppContext.addNewApplication,
+  one from `SubmitApplication.tsx:69`).
+* Persisted record after the write (`aicte_approval_system_data_v4_apps`, 11 applications):
+
+```json
+{"id":"APP2026-1225","instituteId":"INST-101","instituteName":"ABC Institute of Tech",
+ "type":"Extension of Approval (EoA)","routeId":"ROUTE_SCRUTINY_EVC","region":"Northern","state":"Uttar Pradesh",
+ "stage":"Submitted","status":"In Progress","lastUpdated":"01 Nov 2026","appliedDate":"01 Nov 2026",
+ "stageEnteredAt":"2026-11-01","stageDueAt":"2026-11-03","category":"Engineering & Technology",
+ "intakeProposed":540,"programs":[""],"contactEmail":"institute@apoorvasetu.demo","contactPhone":"+91 98765 43210",
+ "remarks":"New Extension of Approval application submitted with complete fees and affidavits.",
+ "documents":[{"name":"Application Form","type":"PDF","status":"Pending","uploadedOn":"01 Nov 2026"}],
+ "timeline":[{"stage":"Submitted","date":"01 Nov 2026","status":"current","enteredAt":"2026-11-01","dueAt":"2026-11-03",
+   "notes":"Application filed through the institutional portal."},{"stage":"Scrutiny / Re-scrutiny","date":"Pending","status":"pending"},
+   {"stage":"Expert Visit Committee (EVC)","date":"Pending","status":"pending"},
+   {"stage":"Approval (Subject to Undertaking)","date":"Pending","status":"pending"},
+   {"stage":"Final Approval","date":"Pending","status":"pending"}],
+ "version":1,"slaTier":"On Track","deficiencies":[],"returns":[]}
+```
+
+Against the source (`src/pages/institution/SubmitApplication.tsx:61-65`, `src/context/AppContext.tsx:774`):
+
+* `intakeProposed: Number(proposedIntake) || 540` — an emptied field silently becomes **540 seats**, i.e. the
+  system invents a number the institution never entered. Proven above: the field was blanked, the stored value is 540.
+* `programs: programList.split(',').map(p => p.trim())` — an emptied textarea yields `[""]`, stored verbatim and
+  later rendered in the officer's table and in reports.
+* `remarks` is a fixed sentence asserting "complete fees and affidavits" for every application of this type,
+  entered by no one.
+* `documents` is pre-populated with an `Application Form` row stamped `uploadedOn` today
+  (`AppContext.tsx:774`) although no file was attached — in a product whose differentiator is document verification,
+  the record claims an upload that did not happen.
+
+Note on the radio selection: the step-1 cards are React-controlled radios. `checked` set through the native
+property + a `change` event did not move React state, so the default `Extension of Approval (EoA)` was submitted.
+That is a limitation of this probe, not a defect in the app — `.click()` is the correct driver.

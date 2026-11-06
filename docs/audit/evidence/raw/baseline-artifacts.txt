@@ -1,0 +1,29 @@
+=== dist asset bytes (raw / gzip) ===
+dist/assets/index-C_JiYy3N.css 54210 10363
+dist/assets/index-Cd-UkX3f.js 1268336 340596
+dist/index.html 896 486
+
+=== public dir served ===
+200420 public/screenshots/dashboard.png
+132714 public/stat-cards-reference-full.png
+92439 public/stat-cards-reference.png
+34310 public/aicte-banner.png
+24532 public/fonts/manrope-latin.woff2
+21710 public/apoorvasetu-full.png
+17159 public/aicte-logo.png
+15160 public/fonts/manrope-latin-ext.woff2
+9522 public/favicon.svg
+8854 public/apoorvasetu-icon.png
+5055 public/icons.svg
+875 public/apoorvasetu-logo.svg
+
+=== docker images ===
+apoorvasetu:local 1.07GB ID c25b5f905cd8
+apoorvasetu:p14-postgres 1.07GB ID feac33ad5875
+
+=== compose ps ===
+NAME                IMAGE               COMMAND                  SERVICE   CREATED             STATUS                       PORTS
+apoorvasetu-app-1   apoorvasetu:local   "docker-entrypoint.s…"   app       About an hour ago   Up About an hour (healthy)   0.0.0.0:8080->3001/tcp, [::]:8080->3001/tcp
+
+=== docker stats (no-stream) ===
+apoorvasetu-app-1 0.00% 65.89MiB / 3.505GiB 1.84%

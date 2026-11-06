@@ -1,0 +1,74 @@
+login aicteadmin -> 200
+login institute  -> 200
+captured ids: UND-2602 CMP-101 DOC-508
+
+================ P-62 UND-2602: move the deadline, raise the level, then send the row back without them ================
+   before: UND-2602|2026-11-05|L0|Submitted|evid=Faculty_Retention_Bond_2026.pdf|subBy=Registrar, Techno Institute
+   (a) PUT as AICTE_ADMIN, dueDate +30d and escalationLevel 0->4 -> 200
+        UND-2602|2026-12-05|L4|Submitted|evid=Faculty_Retention_Bond_2026.pdf|subBy=Registrar, Techno Institute  audit 148 -> 148
+   (b) PUT the same row WITHOUT escalationLevel/evidenceDocumentIds -> 200
+        UND-2602|2026-12-05|L0|Submitted|evid=|subBy=Registrar, Techno Institute  audit 148 -> 148
+   (c) scope control: INSTITUTION_ADMIN(Northern) on the Eastern row -> 403
+        {"error":"SCOPE_DENIED","text":"This record belongs to another institution."}
+
+================ P-63 no INST-101 undertaking is seeded, so create one as the institution and move its own deadline ================
+   (a) POST /api/undertakings as the institution (status Submitted) -> 409
+        {"error":"ALREADY_EXISTS","text":"Undertaking UND-PROBE-63 already exists."}
+        UND-PROBE-63|2027-11-20|L0|Pending|evid=|subBy=Dr. K. S. Murthy
+   (b) PUT its own dueDate 2026-11-20 -> 2027-11-20 by that institution -> 200
+        UND-PROBE-63|2027-11-20|L0|Submitted|evid=|subBy=Dr. K. S. Murthy  audit 148 -> 148
+   (c) PUT it back to status Pending (un-submit) by the same session      -> 200
+        UND-PROBE-63|2027-11-20|L0|Pending|evid=|subBy=Dr. K. S. Murthy  audit 148 -> 148
+
+================ P-64 DOC-508 (renewal of DOC-504, Submitted): can renewalStatus become Verified off-endpoint? ================
+   before: DOC-508|Pending|renewal=Submitted|expires=2028-03-15|verifiedBy=NULL
+   (a) PUT renewalStatus=Verified as AICTE_ADMIN (central scope) -> 200
+        {"entity":{"id":"DOC-508","title":"State Government University Affiliation Extension (renewal)","category":"Affiliation","instituteName":"Global Institute","instituteId":"INST-103","region":"Southern"
+        DOC-508|Pending|renewal=Verified|expires=2028-03-15|verifiedBy=NULL  audit 148 -> 148
+   (b) same body with status=Verified too (the guard only reads status) -> 403
+        {"error":"REGULATED_FIELD","text":"Documents are verified through the verification endpoint."}  audit 148 -> 148
+   (c) the applicant path: institution creates its own renewal, then verifies it
+        POST /api/documents as INSTITUTION_ADMIN -> 201
+        after create : DOC-PROBE-64|Pending|renewal=Submitted|expires=2027-11-01|verifiedBy=NULL
+        PUT renewalStatus=Verified, expiryDate 2036 by the SAME institution -> 200
+        after self-verify: DOC-PROBE-64|Pending|renewal=Verified|expires=2036-11-01|verifiedBy=NULL  audit 148 -> 148
+
+================ P-65 CMP-101 (INST-101's own): the institution moves its own compliance deadline and level ================
+   before: CMP-101|2026-11-08|L-NULL|Pending|verifiedBy=NULL
+   (a) PUT dueDate +9 months, escalationLevel 5 as the owning institution -> 200
+        CMP-101|2027-08-01|L5|Pending|verifiedBy=NULL  audit 148 -> 148
+   (b) PUT again with escalationLevel omitted (does compliance reset too?) -> 200
+        CMP-101|2027-08-01|L-NULL|Pending|verifiedBy=NULL  audit 148 -> 148
+
+================ P-66 what the audit trail actually holds: previous/new state and correlation IDs ================
+   rows with a non-empty previousState: 11
+   rows with a non-empty newState     : 11
+   rows with a correlationId          : 1
+   total rows                         : 148
+   of the rows this round wrote (none by design), the write path is:
+        39:    previousState: draft.previousState,
+        40:    newState: draft.newState,
+        43:    correlationId: draft.correlationId,
+        LOG sample: LOG-MVY57C27-F88A17 | VERIFY_DOCUMENT | prev={"status":"Pending"} | new={"status":"Verified","verifiedBy":"Dr. R. K. Sharma"} | corr=NULL
+        LOG sample: LOG-MVY4VO75-F627AF | VERIFY_DOCUMENT | prev={"status":"Pending"} | new={"status":"Verified","verifiedBy":"Dr. R. K. Sharma"} | corr=NULL
+
+================ P-67 restore the three captured rows by primary key and delete the two probe rows ================
+   generated restore.sql:
+        update undertakings set "applicationId"='AICTE/2026/12873', "instituteId"='INST-104', "instituteName"='Techno Institute', "region"='Eastern', 
+        update compliance_records set "title"='Lease Documents (expiring < 3 months)', "category"='Lease Documents', "instituteName"='ABC Institute of
+        update document_items set "title"='State Government University Affiliation Extension (renewal)', "category"='Affiliation', "instituteName"='Gl
+        delete from undertakings where id='UND-PROBE-63';
+        delete from document_items where id='DOC-PROBE-64';
+   restore + probe deletes executed
+   UND-2602 : UND-2602|2026-11-05|L0|Submitted|evid=Faculty_Retention_Bond_2026.pdf|subBy=Registrar, Techno Institute
+   CMP-101  : CMP-101|2026-11-08|L-NULL|Pending|verifiedBy=NULL
+   DOC-508  : DOC-508|Pending|renewal=Submitted|expires=2028-03-15|verifiedBy=NULL
+
+================ P-68 field-by-field equality against the capture ================
+   rows compared: 3 | total field differences: 0
+
+================ P-69 residue ================
+   probe rows left: 0 undertaking, 0 document
+   audit rows: 148 | sessions: 112
+   counts: apps=10 und=7 cmp=5 docs=10 users=5 alerts=0 notifs=5 escl=0 files=0
+ROUND 13 COMPLETE 2026-11-01T19:05:43Z

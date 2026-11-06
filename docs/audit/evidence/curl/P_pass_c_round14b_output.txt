@@ -1,0 +1,96 @@
+
+================ 0. the exact README quickstart a newcomer follows ================
+        1	---
+        2	
+        3	## Quick start
+        4	
+        5	Requirements: Node.js 20+ and npm.
+        6	
+        7	```bash
+        8	npm install
+        9	cp .env.example .env   # optional; demo mode runs with no configuration
+       10	npm run dev            # http://localhost:5173
+       11	```
+       12	
+       13	The app starts in **demo mode** with seeded institutions, applications, EVC visits, compliance
+       14	records and documents — no backend required.
+       15	
+       16	### Run with Docker
+       17	
+       18	One container serves the built SPA, the Express back end and the assistant APIs on a single
+       19	origin. Demo mode needs no `.env` and no database.
+
+================ 1. clone + npm ci, with lifecycle scripts visible ================
+   clone exit=0 HEAD=794e54c
+   npm ci exit=0 | lines=29
+   did anything mention prisma generate?  0 hit(s)
+     > prisma@6.19.3 preinstall
+     > @prisma/client@6.19.3 postinstall
+     > @prisma/engines@6.19.3 postinstall
+
+================ 2. the state of the generated client after npm ci ================
+   node_modules/.prisma/client exists?  yes
+   .prisma/client/index.d.ts size:      3989 B (the stub is ~1-2 KB; a real client is MB)
+   @prisma/client default.d.ts exports: 1 line(s)
+     @prisma/client version 6.19.3 | scripts.postinstall = node scripts/postinstall.js
+   prisma schema present in clone?      yes
+   package.json postinstall / prepare:  {"postinstall":null,"prepare":null,"build":"tsc -b && vite build"}
+
+================ 3. npm run build BEFORE generate (the documented order) — expect exit 1 ================
+   exit=1 | TS error lines=64
+     server/domain.ts(38,40): error TS7006: Parameter 'row' implicitly has an 'any' type.
+     server/mappers/admin.ts(2,3): error TS2305: Module '"@prisma/client"' has no exported member 'RolePermission'.
+     server/mappers/admin.ts(3,3): error TS2305: Module '"@prisma/client"' has no exported member 'SystemConfig'.
+     server/mappers/admin.ts(4,3): error TS2305: Module '"@prisma/client"' has no exported member 'User'.
+     server/mappers/admin.ts(47,11): error TS2694: Namespace '"C:/Users/Shiva/AppData/Local/Temp/audit-freshclone14b/clone/node_modules/.prisma/client/default".Prisma' has no exported member 'SystemConfigUncheckedCreateInput'.
+     server/mappers/admin.ts(59,48): error TS2694: Namespace '"C:/Users/Shiva/AppData/Local/Temp/audit-freshclone14b/clone/node_modules/.prisma/client/default".Prisma' has no exported member 'InputJsonValue'.
+   distinct error codes: error TS2305 error TS2339 error TS2694 error TS7006 error TS7053 
+   dist/ produced?  NO - so npm run server would serve a 404 at /
+
+================ 4. the one missing step, run explicitly ================
+   prisma generate exit=0 | ✔ Generated Prisma Client (v6.19.3) to .\node_modules\@prisma\client in 1.00s
+   .prisma/client/index.d.ts now 960171 B
+
+================ 5. npm run build AFTER generate — same commit, same node_modules, one step added ================
+   exit=0 | TS error lines=0
+     [33m[plugin builtin:vite-reporter] 
+     (!) Some chunks are larger than 500 kB after minification. Consider:
+     - Using dynamic import() to code-split the application
+     - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+     - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+     [32m✓ built in 1.97s[39m
+   dist/ now: 1881
+
+================ 6. does the built clone then serve the SPA with no configuration? ================
+   boot log:
+     ◇ injected env (0) from .env
+     ◇ injected env (0) from .env
+     [ApoorvaSetu AI Backend] Serving SPA from C:\Users\Shiva\AppData\Local\Temp\audit-freshclone14b\clone\dist
+     [ApoorvaSetu AI Backend] Running on http://localhost:8091
+     [ApoorvaSetu AI Backend] WARNING: GEMINI_API_KEY is not set in .env! Configure it to enable live AI responses.
+   /api/ready -> 503 (503 is correct for demo mode: no DATABASE_URL)
+   GET /            -> 200 896B  (round 14 got 404 139B because dist/ was missing)
+   GET /applications-> 200
+   GET /api/nope    -> 503 body={"error":"DATABASE_UNCONFIGURED","text":"The database is not configured."}
+   GET /assets      -> index-C_JiYy3N.css index-Cd-UkX3f.js 
+   server stopped
+
+================ 7. is the Docker path immune? (the image runs generate inside the build) ================
+   18:RUN --mount=type=cache,target=/root/.npm npm ci
+   31:COPY prisma ./prisma
+   35:RUN npx prisma generate
+   36:RUN npm run build
+   42:RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
+   43:COPY prisma ./prisma
+   44:RUN npx prisma generate
+   ^ if the Dockerfile generates before building, the shipped demo works and only the HOST
+     quickstart in README.md:16-26 is broken — which is exactly what a judge on a laptop hits.
+
+================ 8. teardown ================
+rm: cannot remove '/tmp/audit-freshclone14b/clone': Device or resource busy
+   clone deleted from TEMP: FAILED
+apoorvasetu-audit-pg | cpu 0.00% | mem 130.1MiB / 3.505GiB
+apoorvasetu-db-1 | cpu 0.00% | mem 78.11MiB / 3.505GiB
+   audited DB: apps=10 docs=10 und=7 audit=149 sessions=113
+   repo entries outside docs/audit: 1
+ROUND 14B COMPLETE 2026-11-01T19:31:59Z

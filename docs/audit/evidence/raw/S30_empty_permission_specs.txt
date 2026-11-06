@@ -1,0 +1,51 @@
+=== S-30 specs with permissions: [] (no permission gate) ===
+351:  permissions: [],
+--
+382:  permissions: [],
+--
+405:  permissions: [],
+
+351:  permissions: [],
+352-  parse: parseNotification,
+353-  idOf: (notification) => notification.id,
+354-  scopeOf: (notification) => ({
+355-    region: notification.targetRegion,
+356-    instituteId: notification.targetInstituteId
+357-  }),
+--
+382:  permissions: [],
+383-  parse: parseSystemAlert,
+384-  idOf: (alert) => alert.id,
+385-  scopeOf: (alert) => ({ region: alert.region, instituteId: alert.instituteId }),
+386-  scopeMode: 'present',
+387-  find: async (id) => {
+388-    const row = await prisma().systemAlert.findUnique({ where: { id } });
+--
+405:  permissions: [],
+406-  parse: parseEscalation,
+407-  idOf: (escalation) => escalation.id,
+408-  scopeOf: (escalation) => ({ region: escalation.region }),
+409-  find: async (id) => {
+410-    const row = await prisma().escalationItem.findUnique({ where: { id } });
+411-    return row ? toEscalation(row) : null;
+
+=== saveHandler gate line ===
+  return asyncHandler(async (req: Request, res: Response) => {
+    const user =
+      spec.permissions.length > 0 ? assertAnyPermission(req, spec.permissions) : requireUser(req);
+    const body = requireObject(req.body);
+    const data = spec.parse(body);
+
+=== assertPresentScope ===
+
+/** Scope check for broadcast-style records that may carry no jurisdiction at all. */
+export function assertPresentScope(user: User, entity: ScopedEntity): void {
+  if (isCentral(user)) return;
+  if (entity.region != null && !canAccessRegion(user, entity.region)) {
+    throw new HttpError(403, 'SCOPE_DENIED', 'This record is outside your regional jurisdiction.');
+  }
+  if (entity.instituteId != null && !canAccessInstitute(user, entity.instituteId)) {
+    throw new HttpError(403, 'SCOPE_DENIED', 'This record belongs to another institution.');
+  }
+}
+

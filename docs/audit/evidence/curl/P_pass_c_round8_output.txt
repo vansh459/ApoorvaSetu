@@ -1,0 +1,84 @@
+seed day in the container: 2026-11-01 | live DB day: 2026-11-01
+seed.json bytes: 26291
+
+== applications (10 seeded rows compared, 10 live rows) ==
+   AICTE/2026/12875.remarks:
+      seed="Re-scrutiny requested for revised master plan and floor area calculations."
+      db  ="audit probe P-04a"
+   left in place (real audited transition): AICTE/2026/12875.stage seed="Scrutiny / Re-scrutiny" db="Expert Visit Committee (EVC)"
+   left in place (real audited transition): AICTE/2026/12875.stageEnteredAt seed="2026-10-06" db="2026-11-01"
+   left in place (real audited transition): AICTE/2026/12875.stageDueAt seed="2026-11-05" db="2026-11-22"
+   left in place (real audited transition): AICTE/2026/12875.lastUpdated seed="31 Oct 2026" db="01 Nov 2026"
+   left in place (real audited transition): AICTE/2026/12875.timeline seed=[{"date":"01 Oct 2026","enteredAt":"2026-10-01","notes":"Ini db=[{"date":"01 Oct 2026","dueAt":"2026-11-22","enteredAt":"202
+
+== evc_visits (6 seeded rows compared, 6 live rows) ==
+   identical to the seed on every field the seed specifies
+
+== compliance_records (5 seeded rows compared, 5 live rows) ==
+   CMP-101.status:
+      seed="Pending"
+      db  ="Submitted"
+
+== document_items (10 seeded rows compared, 10 live rows) ==
+   DOC-507.verifiedBy:
+      seed="Dr. R. K. Sharma (Northern RO)"
+      db  ="Dr. R. K. Sharma"
+
+== undertakings (7 seeded rows compared, 7 live rows) ==   [6 seed-time-of-day artefacts ignored]
+   identical to the seed on every field the seed specifies
+
+== notification_items (5 seeded rows compared, 5 live rows) ==
+   NOTIF-3.description:
+      seed="Barrier-free environment affidavit is past due. Awaiting resubmission."
+      db  ="Rewritten by an EVC member through the generic API."
+   NOTIF-3.read:
+      seed=false
+      db  =true
+   NOTIF-3.priority:
+      seed="medium"
+      db  ="low"
+
+total field differences: 6  (restore statements written: 6)
+
+-- restore statements --
+update applications set "remarks" = 'Re-scrutiny requested for revised master plan and floor area calculations.' where id = 'AICTE/2026/12875';
+update compliance_records set "status" = 'Pending' where id = 'CMP-101';
+update document_items set "verifiedBy" = 'Dr. R. K. Sharma (Northern RO)' where id = 'DOC-507';
+update notification_items set "description" = 'Barrier-free environment affidavit is past due. Awaiting resubmission.' where id = 'NOTIF-3';
+update notification_items set "read" = false where id = 'NOTIF-3';
+update notification_items set "priority" = 'medium' where id = 'NOTIF-3';
+-- applying, then re-running the comparison --
+
+== applications (10 seeded rows compared, 10 live rows) ==
+   identical to the seed on every field the seed specifies
+   left in place (real audited transition): AICTE/2026/12875.stage seed="Scrutiny / Re-scrutiny" db="Expert Visit Committee (EVC)"
+   left in place (real audited transition): AICTE/2026/12875.stageEnteredAt seed="2026-10-06" db="2026-11-01"
+   left in place (real audited transition): AICTE/2026/12875.stageDueAt seed="2026-11-05" db="2026-11-22"
+   left in place (real audited transition): AICTE/2026/12875.lastUpdated seed="31 Oct 2026" db="01 Nov 2026"
+   left in place (real audited transition): AICTE/2026/12875.timeline seed=[{"date":"01 Oct 2026","enteredAt":"2026-10-01","notes":"Ini db=[{"date":"01 Oct 2026","dueAt":"2026-11-22","enteredAt":"202
+
+== evc_visits (6 seeded rows compared, 6 live rows) ==
+   identical to the seed on every field the seed specifies
+
+== compliance_records (5 seeded rows compared, 5 live rows) ==
+   identical to the seed on every field the seed specifies
+
+== document_items (10 seeded rows compared, 10 live rows) ==
+   identical to the seed on every field the seed specifies
+
+== undertakings (7 seeded rows compared, 7 live rows) ==   [6 seed-time-of-day artefacts ignored]
+   identical to the seed on every field the seed specifies
+
+== notification_items (5 seeded rows compared, 5 live rows) ==
+   identical to the seed on every field the seed specifies
+
+total field differences: 0  (restore statements written: 0)
+-- rows this Pass left that are NOT in the seed (probe rows) --
+  live ids not in the seed: NONE
+-- remaining Pass C residue anywhere: --
+  probe ids : NONE
+  audit     : 92 rows | sources: - ui
+  audit actions: APPLICATION_FORWARDED x1, DOCUMENT_VERIFIED x1, FAILED_LOGIN_BAD_PASSWORD x10, FORWARD x1, INSPECTION_REPORT_SUBMITTED x1, SYSTEM_CONFIG_UPDATED x1, UNDERTAKING_SUBMITTED x1, USER_ACTIVATED x1, USER_CREATED x2, USER_DEACTIVATED x1, USER_LOGIN_SUCCESS x65, USER_LOGOUT x1, USER_UPDATED x1, VERIFY_DOCUMENT x5
+  users     : USR-REGIONAL-NORTH,USR-INSTITUTE-ADMIN,USR-EVC-MEMBER,USR-AICTEADMIN,USR-SUPERADMIN  count=5
+  files on disk in the volume: 0
+ROUND 8 COMPLETE 2026-11-01T18:25:57Z

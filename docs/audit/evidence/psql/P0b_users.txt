@@ -1,0 +1,39 @@
+--- users (quoted camelCase columns; note: Prisma keeps JS casing, no snake_case mapping) ---
+         id          |            email            |       role        | isActive | hash_prefix  
+---------------------+-----------------------------+-------------------+----------+--------------
+ USR-AICTEADMIN      | aicteadmin@apoorvasetu.demo | AICTE_ADMIN       | t        | scrypt$eea76
+ USR-EVC-MEMBER      | evc@apoorvasetu.demo        | EVC_MEMBER        | t        | scrypt$eea76
+ USR-INSTITUTE-ADMIN | institute@apoorvasetu.demo  | INSTITUTION_ADMIN | t        | scrypt$eea76
+ USR-REGIONAL-NORTH  | regional@apoorvasetu.demo   | REGIONAL_OFFICER  | t        | scrypt$eea76
+ USR-SUPERADMIN      | superadmin@apoorvasetu.demo | SUPER_ADMIN       | t        | scrypt$eea76
+(5 rows)
+
+                       Table "public.users"
+    Column     |  Type   | Collation | Nullable |     Default     
+---------------+---------+-----------+----------+-----------------
+ id            | text    |           | not null | 
+ email         | text    |           | not null | 
+ name          | text    |           | not null | 
+ role          | text    |           | not null | 
+ roleTitle     | text    |           | not null | 
+ permissions   | text[]  |           |          | ARRAY[]::text[]
+ avatar        | text    |           |          | 
+ initials      | text    |           | not null | 
+ phone         | text    |           |          | 
+ designation   | text    |           |          | 
+ region        | text    |           |          | 
+ instituteId   | text    |           |          | 
+ instituteName | text    |           |          | 
+ committeeName | text    |           |          | 
+ isActive      | boolean |           | not null | true
+ createdAt     | text    |           | not null | 
+ lastLogin     | text    |           |          | 
+ passwordHash  | text    |           | not null | 
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+    "users_email_key" UNIQUE, btree (email)
+    "users_isActive_idx" btree ("isActive")
+    "users_role_idx" btree (role)
+Referenced by:
+    TABLE "sessions" CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+

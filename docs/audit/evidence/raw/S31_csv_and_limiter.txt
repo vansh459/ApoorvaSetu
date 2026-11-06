@@ -1,0 +1,25 @@
+=== S-31 CSV escape: any formula-injection guard? ===
+10:  return `"${String(value).replace(/"/g, '""')}"`;
+NO FORMULA GUARD
+
+=== who calls buildCsv (user-controlled fields?) ===
+src/components/modals/GenerateReportModal.tsx:65:    const csv = buildCsv(table.columns, table.rows);
+src/pages/Reports.tsx:120:    const csv = buildCsv(selectedTable.columns, selectedTable.rows);
+src/utils/csv.test.ts:28:    const csv = buildCsv(columns, [{ id: 'AICTE/2026/1', region: 'Northern' }]);
+src/utils/csv.test.ts:35:    expect(buildCsv(columns, [])).toBe('\uFEFF"Application ID","Region"\r\n');
+src/utils/csv.test.ts:39:    const csv = buildCsv(columns, [{ region: 'Southern', id: 'AICTE/2026/2', extra: 'ignored' }]);
+src/utils/csv.test.ts:43:    const withGap = buildCsv(columns, [{ id: 'AICTE/2026/3' }]);
+src/utils/csv.ts:13:export function buildCsv(columns: CsvColumn[], rows: CsvRow[]): string {
+
+=== S-32 login limiter Map pruning ===
+11:const buckets = new Map<string, Bucket>();
+25:  const bucket = buckets.get(key);
+40:  const bucket = buckets.get(key);
+42:    buckets.set(key, { count: 1, resetAt: now + WINDOW_MS });
+49:  buckets.delete(key);
+53:  buckets.clear();
+(no size cap / no sweep of expired buckets; compare src/services/aiGuard.ts:96-101 which does prune)
+
+=== S-33 session revocation on password/role change ===
+server/routes/auth.ts:160:        if (session && !session.revokedAt) {
+server/routes/auth.ts:163:            data: { revokedAt: new Date() }

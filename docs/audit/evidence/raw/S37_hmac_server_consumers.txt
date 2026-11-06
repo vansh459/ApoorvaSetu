@@ -1,0 +1,12 @@
+=== S-37 is the HMAC secret or token ever used by the server? ===
+NONE: no server-side consumer
+
+=== who sets Authorization: Bearer in the client ===
+src/services/assistantService.ts:10:  return token ? { Authorization: `Bearer ${token}` } : {};
+src/services/authService.ts:529:  // --- Backend Authorization Middleware ---
+
+=== authService consumers of the token (client only) ===
+345:    const token = getCookie(SESSION_COOKIE_NAME) || this.getStoredToken();
+418:    const token = getCookie(SESSION_COOKIE_NAME) || this.getStoredToken();
+500:    const token = getCookie(SESSION_COOKIE_NAME) || this.getStoredToken() || '';
+518:  private getStoredToken(): string | null {

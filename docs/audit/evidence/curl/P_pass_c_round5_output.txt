@@ -1,0 +1,116 @@
+
+================ P-31 INSTITUTION_ADMIN on its OWN verified document (documents.upload passes the spec check) ================
+seed/now: DOC-507 Verified verifiedBy=Dr. R. K. Sharma (Northern RO)
+{"entity":{"id":"DOC-507","title":"Registered Land Lease Deed (30-year tenure)","category":"Land & Building","instituteName":"ABC Institute of Tech","instituteId":"INST-101","region":"Northern","uploadDate":"2025-09-27","expiryDate":"2026-11-08","status":"Pending","fileSize":"6.1 MB","fileType":"PDF","documentTypeCode":"LAND_LEASE_DEED","verifiedBy":"Dr. R. K. Sharma (Northern RO)"}}
+-> 200
+ERROR:  column "verifiedAt" does not exist
+LINE 1: ...ce("verifiedBy",'NULL')||' verifiedAt='||coalesce("verifiedA...
+                                                             ^
+HINT:  Perhaps you meant to reference the column "document_items.verifiedBy".
+after : 
+audit rows 61 -> 61
+   ^ the applicant moved its own verified document back to Pending; the human attribution survived,
+     the verification outcome did not, and nothing was recorded.
+-- and the reverse direction is blocked (the guard only points one way) --
+{"error":"REGULATED_FIELD","text":"Documents are verified through the verification endpoint."}
+-> 403
+-- out-of-scope control: the same institution touching INST-102s document --
+PUT /api/documents/DOC-503 (Western, INST-102) as INST-101 admin -> 403
+
+================ P-32 compliance and undertaking one-way doors ================
+CMP-104: Expired verifiedBy=NULL
+PUT /api/compliance/CMP-104 status Verified -> 403
+CMP-101: Pending verifiedBy=NULL
+PUT /api/compliance/CMP-101 (Northern, Pending -> Submitted) -> 200
+CMP-101|Submitted|NULL
+CMP-104|Expired|NULL
+-- undertakings: can a Submitted one be pushed back to Pending (un-submitted) by the institution? --
+UND-2602 (Eastern, owned by Techno Institute): Submitted submittedBy=Registrar, Techno Institute
+PUT /api/undertakings/UND-2602 status Pending as INSTITUTION_ADMIN(Northern user, Eastern record) -> 403
+   (institute user is INST-101/Northern, so a 403 here means scope held; a 200 means it did not)
+
+================ P-33 the EVC visit door is open on both sides (no guard, full-row update) ================
+EVC-8805 now: Completed reportSubmitted=true
+REGIONAL_OFFICER permissions: evc.read evc.schedule 
+   ^ note evc.report.submit is ABSENT - the spec check is any-of [evc.schedule, evc.report.submit] and the officer holds evc.schedule.
+PUT /api/evc-visits/EVC-8803 (Central, out of region) -> 403
+{"entity":{"id":"EVC-8805","applicationId":"AICTE/2026/12876","instituteId":"INST-101","instituteName":"ABC Institute of Tech","stateRegion":"Uttar Pradesh (Northern Region)","region":"Northern","date":"2026-11-07","displayDate":{"day":"07","month":"Nov"},"staEVC-8805 after the restore attempt: Scheduled reportSubmitted=false committee=Committee North-D (Prof. S. Banerjee, Dr. O. P. Singh)
+audit rows 61 -> 61
+   ^ the same endpoint that let an officer file a committee report is now used to un-file one.
+
+================ P-34 escalation dedupeKey: can a caller pre-poison the key a real escalation would use? ================
+POST /api/escalations with dedupeKey=<case>|SLA_BREACH (EVC member) -> 400
+-- now the "real" escalation for the same case+rule arrives: does it create a row or silently merge? --
+{"entity":{"id":"ESCL-PROBE-34B","applicationId":"AICTE/2026/12876","instituteName":"ABC Institute of Tech","region":"Northern","raisedBy":"Amit Sharma","raisedDate":"01 Nov 2026","urgency":"Critical","reason":"the genuine SLA breach","status":"Open","level":3,"slaBreachDays":40,"dedupeKey":"AICTE/2026/12876|SLA_BREACHescalation rows 1 -> 2  (34B inserted? 1)
+ERROR:  column "applicationid" does not exist
+LINE 1: ...eachDays", "raisedBy" from escalation_items where applicatio...
+                                                             ^
+HINT:  Perhaps you meant to reference the column "escalation_items.applicationId".
+   ^ if only the placeholder exists, the genuine critical escalation was swallowed by a row the
+     lowest-privileged persona in the system was allowed to write.
+
+================ P-35 notifications: who may mark whom's notification read, and rewrite it ================
+NOTIF-1|NULL|f|EVC Report Overdue for NIT Rourkela
+NOTIF-2|NULL|f|Lease Documents Expiring Within 90 Days
+NOTIF-3|NULL|f|Techno Institute Undertaking Overdue
+NOTIF-4|NULL|t|Western Region Scrutiny Target 90% Completed
+NOTIF-5|NULL|t|Annual EoA Letters Ready for Final Dispatch
+NOTIF-PROBE-05|SUPER_ADMIN|f|Issued by an EVC member
+EVC member PUT /api/notifications/NOTIF-3 (targetRole NULL, application category) -> 200
+NOTIF-3|Techno Institute Undertaking Overdue|t|low
+-- and does the rewrite reach the institution that was expecting it? --
+institute sees NOTIF-3: {"title":"Techno Institute Undertaking Overdue","read":true,"priority":"low"}
+
+================ P-36 where did the machine-sounding competentAuthority go? (DOC-PROBE-25 was verified in round 4) ================
+LOG-MVY4QYG9-244FFD|VERIFY_DOCUMENT|REGIONAL_OFFICER|ui
+Document verified by Dr. R. K. Sharma.
+ERROR:  column "new_state" does not exist
+LINE 1: select coalesce(new_state,'') from audit_logs where "entityI...
+                        ^
+HINT:  Perhaps you meant to reference the column "audit_logs.newState".
+-- the verifiedBy the server stamped: --
+ERROR:  column "verifiedAt" does not exist
+LINE 1: select "verifiedBy", coalesce("verifiedAt"::text,'NULL') fro...
+                                      ^
+HINT:  Perhaps you meant to reference the column "document_items.verifiedBy".
+-- does the verify endpoint accept an EMPTY / machine-shaped competentAuthority, or a missing one? --
+POST /api/documents (DOC-PROBE-36, Northern, Pending) -> 201
+{"ok":true,"entity":{"id":"DOC-PROBE-36","title":"Probe fire NOC C","category":"Fire Safety","instituteName":"XYZ College of Engg.","instituteId":"INST-102","region":"Northern","uploadDate":"2026-11-01","expiryDate":"2029-11-01","status":"VPOST /api/documents (DOC-PROBE-36B, Northern, Pending) -> 201
+{"ok":true,"entity":{"id":"DOC-PROBE-36B","title":"Probe fire NOC D","category":"Fire Safety","instituteName":"XYZ College of Engg.","instituteId":"INST-102","region":"Northern","uploadDate":"2026-11-01","expiryDate":"2029-11-01","status":"DOC-PROBE-36|Verified|Dr. R. K. Sharma
+DOC-PROBE-36B|Verified|Dr. R. K. Sharma
+
+================ P-37 the assistant's role comes from the session, not the body (postgres mode) ================
+institute  Hello, **Institution Admin**! How can I assist you with ApoorvaSetu toda
+evc        Hello, **Evc Member**! How can I assist you with ApoorvaSetu today?
+regional   Hello, **Regional Officer**! How can I assist you with ApoorvaSetu today
+-- and with NO session at all? --
+{"error":"UNAUTHENTICATED","text":"Sign in to use the assistant."}
+-> 401
+-- unauthenticated /api/assistant/status --
+{"isConfigured":false,"provider":"gemini","model":"gemini-3-flash-preview"}
+
+================ P-94(round5) ledger and restores ================
+-- DOC-507 must go back through the REGULATED endpoint, because the generic API refuses status=Verified --
+POST /api/documents/DOC-507/verify (Northern officer) -> 200
+DOC-507|Verified|Dr. R. K. Sharma
+deleted: DELETE 2
+NOTIF-3|t|Techno Institute Undertaking Overdue
+-- full inventory of everything Pass C left in the database --
+users     USR-MVY4M8L8-190E
+users     USR-MVY4M9CX-27CB
+alerts    ALRT-PROBE-05
+alerts    ALRT-PROBE-15B
+notifs    NOTIF-PROBE-05
+docs      DOC-PROBE-18
+docs      DOC-PROBE-25
+docs      DOC-PROBE-36
+docs      DOC-PROBE-36B
+files     u-USR-INSTITUTE-ADMIN/73aa2b24-842f-499e-98a6-5cfac172015c/probe-fire-noc.pdf
+files     u-USR-INSTITUTE-ADMIN/a6f48edf-49ae-4e0e-a618-70cdf5ac2212/probe-fire-noc.pdf
+audit     LOG-MVY4ILYX-F7CA09 src=cron
+audit     LOG-MVY4MCHX-3903C3 src=system
+apps      AICTE/2026/12869 Scrutiny / Re-scrutiny/Returned v1
+apps      AICTE/2026/12875 Expert Visit Committee (EVC)/In Progress v2
+evc       EVC-8803 Completed submitted=true
+evc       EVC-8805 Scheduled submitted=false
+ROUND 5 COMPLETE 2026-11-01T17:58:36Z

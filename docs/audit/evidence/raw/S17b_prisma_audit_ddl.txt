@@ -1,0 +1,33 @@
+=== triggers/GRANT in prisma migrations ===
+prisma/migrations/20261101000000_init/migration.sql:304:    "revokedAt" TIMESTAMP(3),
+(none above = no db-level enforcement)
+=== audit_logs table DDL ===
+prisma/migrations/20261101000000_init/migration.sql:CREATE TABLE "audit_logs" (
+prisma/migrations/20261101000000_init/migration.sql-    "id" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "timestamp" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "userId" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "userName" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "userRole" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "action" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "entityType" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "entityId" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "details" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "previousState" TEXT,
+prisma/migrations/20261101000000_init/migration.sql-    "newState" TEXT,
+prisma/migrations/20261101000000_init/migration.sql-    "ipAddress" TEXT NOT NULL,
+prisma/migrations/20261101000000_init/migration.sql-    "eventType" TEXT,
+prisma/migrations/20261101000000_init/migration.sql-    "correlationId" TEXT,
+prisma/migrations/20261101000000_init/migration.sql-    "source" TEXT,
+prisma/migrations/20261101000000_init/migration.sql-
+prisma/migrations/20261101000000_init/migration.sql-    CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
+prisma/migrations/20261101000000_init/migration.sql-);
+prisma/migrations/20261101000000_init/migration.sql-
+prisma/migrations/20261101000000_init/migration.sql--- CreateTable
+prisma/migrations/20261101000000_init/migration.sql-CREATE TABLE "system_config" (
+prisma/migrations/20261101000000_init/migration.sql-    "id" TEXT NOT NULL DEFAULT 'default',
+=== indexes on audit_logs ===
+prisma/migrations/20261101000000_init/migration.sql:222:CREATE TABLE "audit_logs" (
+prisma/migrations/20261101000000_init/migration.sql:239:    CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
+prisma/migrations/20261101000000_init/migration.sql:445:CREATE INDEX "audit_logs_timestamp_idx" ON "audit_logs"("timestamp");
+prisma/migrations/20261101000000_init/migration.sql:448:CREATE INDEX "audit_logs_userId_idx" ON "audit_logs"("userId");
+prisma/migrations/20261101000000_init/migration.sql:451:CREATE INDEX "audit_logs_entityType_entityId_idx" ON "audit_logs"("entityType", "entityId");

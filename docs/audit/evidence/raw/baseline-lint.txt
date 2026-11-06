@@ -1,0 +1,254 @@
+
+> apoorvasetu@0.0.0 lint
+> oxlint
+
+
+  ! eslint(no-unused-vars): Type 'Institute' is imported but never used.
+   ,-[src/services/repositories/localRepository.ts:8:3]
+ 7 |   EVCVisit,
+ 8 |   Institute,
+   :   ^^^^|^^^^
+   :       `-- 'Institute' is imported here
+ 9 |   NotificationItem,
+   `----
+  help: Consider removing this import.
+
+  ! react(refs): Cannot access refs during render
+    ,-[src/components/ui/useDialogFocus.ts:9:13]
+  8 |   const onCloseRef = useRef(onClose);
+  9 |   onCloseRef.current = onClose;
+    :   ^^^^^|^^^^^^^^|^^^
+    :        |        `-- Cannot update ref value during render
+    :        `-- This value is a ref
+ 10 | 
+    `----
+  help: React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/refs
+
+  ! eslint(no-unused-vars): Identifier 'DocumentItem' is imported but never used.
+   ,-[src/services/dbService.ts:7:3]
+ 6 |   ComplianceRecord,
+ 7 |   DocumentItem,
+   :   ^^^^^^|^^^^^
+   :         `-- 'DocumentItem' is imported here
+ 8 |   NotificationItem,
+   `----
+  help: Consider removing this import.
+
+  ! eslint(no-unused-vars): Identifier 'NotificationItem' is imported but never used.
+   ,-[src/services/dbService.ts:8:3]
+ 7 |   DocumentItem,
+ 8 |   NotificationItem,
+   :   ^^^^^^^^|^^^^^^^
+   :           `-- 'NotificationItem' is imported here
+ 9 |   AuditLog
+   `----
+  help: Consider removing this import.
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+    ,-[src/pages/evc/InspectionChecklist.tsx:33:5]
+ 31 | 
+ 32 |   useEffect(() => {
+    :   ^^^^|^^^^
+    :       `-- This is the containing effect
+ 33 |     setMarks(visit?.checklist ?? []);
+    :     ^^^^|^^^
+    :         `-- Avoid calling setState() directly within an effect
+ 34 |   }, [visitId, visit?.checklist]);
+    `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+  ! eslint(no-unused-vars): Variable 'setCode' is declared but never used. Unused variables should start with a '_'.
+    ,-[src/pages/institution/InstitutionProfile.tsx:20:16]
+ 19 |   const [name, setName] = useState('ABC Institute of Technology');
+ 20 |   const [code, setCode] = useState('1-102938475');
+    :                ^^^|^^^
+    :                   `-- 'setCode' is declared here
+ 21 |   const [pid, setPid] = useState('INST-101');
+    `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'setPid' is declared but never used. Unused variables should start with a '_'.
+    ,-[src/pages/institution/InstitutionProfile.tsx:21:15]
+ 20 |   const [code, setCode] = useState('1-102938475');
+ 21 |   const [pid, setPid] = useState('INST-101');
+    :               ^^^|^^
+    :                  `-- 'setPid' is declared here
+ 22 |   const [category, setCategory] = useState('Engineering & Technology');
+    `----
+  help: Consider removing this declaration.
+
+  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+    ,-[src/components/ui/Button.tsx:24:17]
+ 23 | 
+ 24 | export function buttonClass(options: {
+    :                 ^^^^^^^^^^^
+ 25 |   variant?: ButtonVariant;
+    `----
+
+  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+     ,-[src/context/AuthContext.tsx:206:14]
+ 205 | 
+ 206 | export const useAuth = (): AuthContextType => {
+     :              ^^^^^^^
+ 207 |   const context = useContext(AuthContext);
+     `----
+
+  ! eslint(no-unused-vars): Variable 'setDueDate' is declared but never used. Unused variables should start with a '_'.
+    ,-[src/components/modals/UploadComplianceModal.tsx:14:19]
+ 13 |   const [title, setTitle] = useState('Faculty Cadre Ratio & Form 16 Affidavit');
+ 14 |   const [dueDate, setDueDate] = useState('2025-11-20');
+    :                   ^^^^^|^^^^
+    :                        `-- 'setDueDate' is declared here
+ 15 |   const [urgency, setUrgency] = useState<'high' | 'medium' | 'low'>('medium');
+    `----
+  help: Consider removing this declaration.
+
+  ! eslint(no-unused-vars): Variable 'setFileName' is declared but never used. Unused variables should start with a '_'.
+    ,-[src/components/modals/UploadComplianceModal.tsx:16:20]
+ 15 |   const [urgency, setUrgency] = useState<'high' | 'medium' | 'low'>('medium');
+ 16 |   const [fileName, setFileName] = useState('Affidavit_Stamped_2025.pdf');
+    :                    ^^^^^|^^^^^
+    :                         `-- 'setFileName' is declared here
+ 17 | 
+    `----
+  help: Consider removing this declaration.
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+    ,-[src/components/modals/ScheduleEVCModal.tsx:37:20]
+ 31 | 
+ 32 |   useEffect(() => {
+    :   ^^^^|^^^^
+    :       `-- This is the containing effect
+ 33 |     if (activeModal !== 'schedule-evc') return;
+ 34 |     const preferred = candidates.some((app) => app.id === selectedApplication?.id)
+ 35 |       ? selectedApplication!.id
+ 36 |       : candidates[0]?.id || '';
+ 37 |     if (preferred) setApplicationId(preferred);
+    :                    ^^^^^^^^|^^^^^^^
+    :                            `-- Avoid calling setState() directly within an effect
+ 38 |   }, [activeModal, selectedApplication, candidates]);
+    `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+  ! eslint(no-unused-vars): Identifier 'Card' is imported but never used.
+    ,-[src/pages/AlertCenter.tsx:20:3]
+ 19 |   Button,
+ 20 |   Card,
+    :   ^^|^
+    :     `-- 'Card' is imported here
+ 21 |   EmptyState,
+    `----
+  help: Consider removing this import.
+
+  ! react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: activeModal
+    ,-[src/components/modals/GenerateReportModal.tsx:39:39]
+ 38 |   const config = resolveWorkflowConfig(authService.getSystemConfig());
+ 39 |   const now = useMemo(() => getNow(), [activeModal]);
+    :                                       ^^^^^^^^^^^^^
+ 40 | 
+    `----
+  help: Either include it or remove the dependency array.
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+    ,-[src/pages/Applications.tsx:45:5]
+ 40 |   // Synchronize state with URL parameters when navigating with browser back/forward buttons
+ 41 |   React.useEffect(() => {
+    :   ^^^^^^^|^^^^^^^
+    :          `-- This is the containing effect
+ 42 |     const stage = searchParams.get('stage') || 'All';
+ 43 |     const status = searchParams.get('status') || 'All';
+ 44 |     const region = searchParams.get('region') || 'All';
+ 45 |     setSelectedStage(stage);
+    :     ^^^^^^^^|^^^^^^^
+    :             `-- Avoid calling setState() directly within an effect
+ 46 |     setSelectedStatus(status);
+    `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+  ! react-hooks(exhaustive-deps): React Hook useMemo has unnecessary dependency: app.id
+    ,-[src/components/modals/CaseSummaryDrawer.tsx:47:39]
+ 46 |   const config = resolveWorkflowConfig(authService.getSystemConfig());
+ 47 |   const now = useMemo(() => getNow(), [app?.id]);
+    :                                       ^^^^^^^^^
+ 48 | 
+    `----
+  help: Either include it or remove the dependency array.
+
+  ! eslint(no-unused-vars): Identifier 'regionalOffices' is imported but never used.
+    ,-[src/context/AppContext.tsx:26:3]
+ 25 |   initialUndertakings,
+ 26 |   regionalOffices
+    :   ^^^^^^^|^^^^^^^
+    :          `-- 'regionalOffices' is imported here
+ 27 | } from '../data/initialData';
+    `----
+  help: Consider removing this import.
+
+  ! react(only-export-components): Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.
+      ,-[src/context/AppContext.tsx:2349:14]
+ 2348 | 
+ 2349 | export const useApp = () => {
+      :              ^^^^^^
+ 2350 |   const context = useContext(AppContext);
+      `----
+
+  ! react(purity): Cannot call impure function during render
+     ,-[src/context/AppContext.tsx:396:16]
+ 395 |   const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
+ 396 |     const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
+     :                ^^^^^|^^^^
+     :                     `-- Cannot call impure function
+ 397 |     setToasts((prev) => [...prev, { id, message, type }]);
+     `----
+  help: `Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component re-renders
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/purity
+
+  ! react(purity): Cannot call impure function during render
+     ,-[src/context/AppContext.tsx:396:40]
+ 395 |   const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
+ 396 |     const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
+     :                                        ^^^^^^|^^^^^^
+     :                                              `-- Cannot call impure function
+ 397 |     setToasts((prev) => [...prev, { id, message, type }]);
+     `----
+  help: `Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component re-renders
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/purity
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+     ,-[src/context/AppContext.tsx:277:32]
+ 274 |   // Hydrate from the configured data source. Demo mode resolves synchronously above.
+ 275 |   useEffect(() => {
+     :   ^^^^|^^^^
+     :       `-- This is the containing effect
+ 276 |     if (!repository.isRemote || !remoteUserId) {
+ 277 |       if (repository.isRemote) setRemoteReady(false);
+     :                                ^^^^^^^|^^^^^^
+     :                                       `-- Avoid calling setState() directly within an effect
+ 278 |       return;
+     `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+  ! react(set-state-in-effect): Calling setState synchronously within an effect can trigger cascading renders
+     ,-[src/context/AppContext.tsx:391:5]
+ 387 |   // Legacy seed visits predate the application link; repair the association once.
+ 388 |   useEffect(() => {
+     :   ^^^^|^^^^
+     :       `-- This is the containing effect
+ 389 |     const linked = linkLegacyVisits(applications, evcVisits);
+ 390 |     if (!linked.changed) return;
+ 391 |     setApplications(linked.applications);
+     :     ^^^^^^^|^^^^^^^
+     :            `-- Avoid calling setState() directly within an effect
+ 392 |     setEvcVisits(linked.visits);
+     `----
+  help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+  note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+
+Found 22 warnings and 0 errors.
+Finished in 283ms on 188 files with 116 rules using 12 threads.
+lint exit=0

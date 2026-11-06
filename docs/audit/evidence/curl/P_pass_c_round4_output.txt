@@ -1,0 +1,112 @@
+UPLOAD_DIR in the container: /app/data/uploads
+
+================ P-28(round4) storage end-to-end on the local driver ================
+{"key":"u-USR-INSTITUTE-ADMIN/73aa2b24-842f-499e-98a6-5cfac172015c/probe-fire-noc.pdf","uploadUrl":"/api/files/object?key=u-USR-INSTITUTE-ADMIN%2F73aa2b24-842f-499e-98a6-5cfac172015c%2Fprobe-fire-noc.pdf","method":"PUT","headers":{"Content-Type":"application/octet-stream"},"maxBytes":26214400}
+PDF magic bytes written: %PDF-1.4 probe body
+AAAA (size 2068)
+PUT    /api/files/object (owner)                       -> 204
+GET    /api/files/object (owner)                       -> 200 bytes=2068
+GET    /api/files/object (REGIONAL_OFFICER, has documents.verify) -> 200
+GET    /api/files/object (AICTE_ADMIN, has documents.verify)      -> 200
+GET    /api/files/object (EVC_MEMBER, no documents.verify)        -> 403
+GET    /api/files/object (unauthenticated)                        -> 401
+PUT    /api/files/object (another account overwrites)             -> 403
+--- response headers on a real download (nosniff / private / no-store) ---
+HTTP/1.1 200 OK
+Content-Type: application/pdf
+X-Content-Type-Options: nosniff
+Cache-Control: private, max-age=0, no-store
+Content-Length: 2068
+--- signed-url path (local driver returns a relative URL) ---
+{"url":"/api/files/object?key=u-USR-INSTITUTE-ADMIN%2F73aa2b24-842f-499e-98a6-5cfac172015c%2Fprobe-fire-noc.pdf","expiresInSeconds":60}
+-> 200
+u-USR-INSTITUTE-ADMIN/a6f48edf-49ae-4e0e-a618-70cdf5ac2212/probe-fire-noc.pdf|USR-INSTITUTE-ADMIN|document|application/pdf|2048|DOC-506
+u-USR-INSTITUTE-ADMIN/73aa2b24-842f-499e-98a6-5cfac172015c/probe-fire-noc.pdf|USR-INSTITUTE-ADMIN|document|application/pdf|2068|DOC-PROBE-25
+--- traversal and absolute-path keys ---
+GET ?key=[../etc/passwd]                  -> 400
+PUT ?key=[../etc/passwd]                  -> 400
+GET ?key=[..%2F..%2Fetc%2Fpasswd]         -> 400
+PUT ?key=[..%2F..%2Fetc%2Fpasswd]         -> 400
+GET ?key=[u-USR-SUPERADMIN/x/y.pdf]       -> 404
+PUT ?key=[u-USR-SUPERADMIN/x/y.pdf]       -> 404
+GET ?key=[/app/etc/passwd]                -> 400
+PUT ?key=[/app/etc/passwd]                -> 400
+GET ?key=[]                               -> 400
+PUT ?key=[]                               -> 400
+--- a file written on disk inside the container (is it on the named volume?) ---
+/app/data/uploads:
+total 4
+drwxr-xr-x 3 node node 4096 Nov  1 17:54 u-USR-INSTITUTE-ADMIN
+
+/app/data/uploads/u-USR-INSTITUTE-ADMIN:
+total 4
+drwxr-xr-x 2 node node 4096 Nov  1 17:54 73aa2b24-842f-499e-98a6-5cfac172015c
+
+/app/data/uploads/u-USR-INSTITUTE-ADMIN/73aa2b24-842f-499e-98a6-5cfac172015c:
+total 4
+-rw-r--r-- 1 node node 2068 Nov  1 17:54 probe-fire-noc.pdf
+--- oversize PUT against the raw body limit (25 MB) ---
+PUT 27 MB -> 413
+--- empty body ---
+PUT 0 bytes -> 400
+file_objects now (was 1): 2
+
+================ P-25b(round4) the regulated verify endpoint inside the officer's own region ================
+-- create a Northern Pending document (superadmin, generic POST) --
+POST /api/documents DOC-PROBE-25 (Northern, Pending) -> 201
+DOC-PROBE-25|Northern|Pending|NULL
+-- (a) the Northern officer verifies it, TYPING A MACHINE NAME as the competent authority --
+{"ok":true,"entity":{"id":"DOC-PROBE-25","title":"Probe fire NOC awaiting verification","category":"Fire Safety","instituteName":"XYZ College of Engg.","instituteId":"INST-102","region":"Northern","uploadDate":"2026-11-01","expiryDate":"2029-11-01","status":"Verified","fileSize":"1.0 MB","fileType":"PDF","documentTypeCode":"FIRE_SAFETY_NOC","verifiedBy":"Dr. R. K. Sharma"},"audit":{"id":"LOG-MVY4QDOC-PROBE-25|Verified|Dr. R. K. Sharma
+-- (b) does the endpoint take the human identity from the session or from the body? send both --
+curl: (2) no URL specified
+curl: try 'curl --help' or 'curl --manual' for more information
+{"error":"REGULATED_FIELD","text":"verifiedBy is stamped from the authenticated session and cannot be supplied."}
+-> 403
+-- (c) the generic write API on an IN-REGION document: can the body set status + verifiedBy directly? --
+PUT /api/documents/DOC-502 (Northern, in-region) with status=Expired verifiedBy=spoof -> 200
+DOC-502|Expired|Dr. R. K. Sharma (Northern RO)
+audit rows before=55 after=55
+   (seed had DOC-502 Verified / verifiedBy "Dr. R. K. Sharma (Northern RO)" - restored below)
+-- (d) same trick on an application row inside the region: stage + decision by generic PUT --
+PUT /api/applications/12869 (Northern, in-region) stage=Final Approval status=Approved -> 403
+AICTE/2026/12869|Scrutiny / Re-scrutiny|Returned|1
+55
+   ^ this is the L3-01 / L9 case: REGIONAL_OFFICER has no applications.approve permission
+     (role_permissions above) yet the generic PUT wrote stage=Final Approval status=Approved.
+
+================ P-30(round4) what the assistant surface exposes with no key configured ================
+{"isConfigured":false,"provider":"gemini","model":"gemini-3-flash-preview"}
+-> 200
+{"text":"Hello, **Super Admin**! How can I assist you with ApoorvaSetu today?","actionLinks":[{"label":"Applications","path":"/applications"},{"label":"Workflow","path":"/workflow"}]}
+-> 200
+-- userRole is taken from the body in demo mode, from the session otherwise (authGuard.ts:159-162) --
+chat with a spoofed userRole=REGIONAL_OFFICER -> 200
+-- oversized chat body (MAX_BODY_BYTES = 64 KB) --
+POST /api/assistant/chat with a 200 KB body -> 413
+-- SSE: does a write reach a live listener? --
+events seen while listening: 2
+event: ready
+data: {"rev":3}
+
+event: change
+data: {"tables":["auditLogs"],"rev":4}
+
+
+================ P-93(round4) restore every seeded row this pass touched ================
+restore DOC-502 -> 403
+restore application 12869 -> 200
+-- final state of everything this pass wrote or changed --
+DOC-501|Northern|Expired|NULL
+DOC-502|Northern|Expired|Dr. R. K. Sharma (Northern RO)
+DOC-506|Eastern|Pending|NULL
+DOC-508|Southern|Pending|NULL
+AICTE/2026/12869|Scrutiny / Re-scrutiny|Returned|1
+AICTE/2026/12875|Expert Visit Committee (EVC)|In Progress|2
+EVC-8801|Scheduled|f
+EVC-8805|Completed|t
+audit=56 forged(cron|system)=2
+live sessions=29 of 30
+probe users=2
+probe alerts=2
+file_objects=2
+ROUND 4 COMPLETE 2026-11-01T17:55:00Z

@@ -1,0 +1,46 @@
+
+================ P-50 UPDATE and DELETE on the running audit_logs table, rolled back ================
+   target row: LOG-MVY63LQI-6C3C32
+   before    : USER_LOGIN_SUCCESS | User Dr. K. S. Murthy authenticated successfully with role Institution Administrator (Session: d9aeecff-3e54-431e-9bdb-5c83d15a1eb4).
+   triggers on audit_logs: NONE - no INSERT/UPDATE/DELETE trigger exists
+   rules     : NONE
+   grants to the app role: DELETE INSERT REFERENCES SELECT TRIGGER TRUNCATE UPDATE 
+  -- rewriting the history of a regulated decision, as the table owner:
+  -- the row the audit screen would now show:
+                                                   ?column?                                                   
+--------------------------------------------------------------------------------------------------------------
+ LOG-MVY63LQI-6C3C32 | APPLICATION_REJECTED | src=cron | REWRITTEN BY THIS PROBE: the officer never said this
+(1 row)
+
+  -- and deleting it outright:
+                      ?column?                      
+----------------------------------------------------
+   rows after the DELETE inside the transaction: 93
+(1 row)
+
+   after ROLLBACK: USER_LOGIN_SUCCESS | User Dr. K. S. Murthy authenticated successfully with role Institution Administrator (Session: d9aeecff-3e54-431e-9bdb-5c83d15a1eb4).
+   rows now      : 94
+   is the target row still there: 1 (1 = the rollback held, nothing persisted)
+
+================ P-50b the guard that exists, and where it lives ================
+   Prisma migrations - create trigger anywhere (case-insensitive):
+     none - the running schema has no trigger of any kind
+   Supabase migration - the append-only guard (NOT the running schema):
+     259:create trigger on_auth_user_created
+     644:      raise exception 'Only a super administrator may change a profile role or scope.';
+     652:create trigger profiles_scope_guard
+     663:      raise exception 'Approval or rejection requires the competent authority.';
+     671:create trigger applications_decision_guard
+     685:      raise exception 'Only the competent officer may record verification.';
+     693:create trigger documents_verification_guard
+     698:create trigger undertakings_verification_guard
+     703:create trigger compliance_verification_guard
+     713:  raise exception 'Audit records are append-only and cannot be changed.';
+     718:create trigger audit_logs_immutable
+     722:revoke update, delete, truncate on public.audit_logs from anon, authenticated;
+   hash-chain columns anywhere in the schema:
+     none - nothing can detect silent rewriting after the fact
+
+================ P-51 residue check ================
+   audit rows: 94 | probe actions surviving: NONE
+ROUND 9B COMPLETE 2026-11-01T18:34:14Z

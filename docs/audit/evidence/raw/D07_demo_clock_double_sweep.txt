@@ -1,0 +1,138 @@
+# D-07 / D-07b — Demo clock advance runs the deadline sweep twice and loses alert rows
+
+Mode: demo build at `http://localhost:8080`, persona `SUPER_ADMIN` (Dr. Ramesh Pokhriyal).
+The sweep only runs for `SUPER_ADMIN` by design (`src/context/AppContext.tsx:2021`), so this is the
+one role where the probe is meaningful.
+
+## Actions taken, in order
+
+1. `/alerts` baseline read: `alerts: 10` (Open 9, Resolved 1) — `critical 5, high 2, medium 3`;
+   KPI strip rendered "Open 9 / Acknowledged 0 / Critical severity 5 / High severity 2".
+2. Profile menu -> **Demo clock -> +14d** (`title="Third tier for long breaches"`,
+   `aria-pressed` correctly flips; presets are Today/+3d/+7d/+14d from
+   `src/data/seedScenarios.ts:30-35`).
+3. `/alerts` after: `alerts: 20`, `critical 11, high 2, medium 7`, escalations `5 -> 13`,
+   notifications `-> 58`. Alert `createdAt` moved to `2026-11-15T16:46:47.796Z` and the list renders
+   "15 Nov 2026, 22:16" — the clock correctly drives the rules engine.
+4. **Run deadline sweep** clicked 3x in one task (the button is visible at the top of `/alerts`).
+5. Returned `AICTE/2026/12876` with `FIRE_SAFETY` and note `=cmd|' /c calc' !A1` (DDE payload for
+   the CSV probe — see `S31_csv_and_limiter.txt`).
+6. Hard reload of `/alerts`.
+
+## Measured state, verbatim from `localStorage['aicte_approval_system_data_v4_alerts']`
+
+20 rows. `id | status | dedupeKey | title`:
+
+```text
+MVY2BHPD-CHMK | Resolved | application.stage:Application:AICTE/2026/12876:Approaching | Approaching: …12876 at EVC
+MVY2BHPD-SA1H | Resolved | application.stage:Application:AICTE/2026/12874:Breached     | Breached: …12874 at SAC / SHC
+MVY2BHPE-4I8D | Resolved | application.stage:Application:AICTE/2026/12871:Breached     | Breached: …12871 at EVC
+MVY2BHPE-Z1GY | Resolved | application.stage:Application:AICTE/2026/12870:Approaching  | Approaching: …12870
+MVY2BHPE-QXC8 | Resolved | application.stage:Application:AICTE/2026/12868:Approaching  | Approaching: …12868
+MVY2BHPE-7C00 | Resolved | evc.report:EVC:EVC-8802:Breached                            | EVC report overdue: IIIT Hyderabad
+MVY2BHPE-B8H0 | Resolved | evc.report:EVC:EVC-8805:Breached                            | EVC report overdue: ABC Institute
+MVY2BHPE-KH3I | Resolved | undertaking.due:Undertaking:UND-2602:Overdue                | Undertaking overdue: Faculty retention
+MVY2BHPE-TSQC | Resolved | undertaking.due:Undertaking:UND-2605:Approaching            | Undertaking due in 28 day(s)
+MVY2BHPE-97ZT | Resolved | document.expiry:Document:DOC-507:Expired                    | Document expired: Registered Land Lease Deed
+MVXMH5YY-G0FE | Resolved | application.stage:Application:AICTE/2026/12875:Approaching  | Approaching: …12875
+MVXMH5YY-7EHF | Resolved | application.stage:Application:AICTE/2026/12874:Due Today    | Due Today: …12874 at SAC / SHC
+MVXMH5YY-TE68 | Open     | application.stage:Application:AICTE/2026/12873:Breached     | Breached: …12873
+MVXMH5YY-5ACW | Open     | application.stage:Application:AICTE/2026/12867:Breached     | Breached: …12867
+MVXMH5YY-UMNR | Open     | evc.report:EVC:EVC-8801:Breached                            | EVC report overdue: NIT Rourkela
+MVXMH5YY-LT73 | Open     | undertaking.due:Undertaking:UND-2601:Overdue                | Undertaking overdue: Barrier-free …
+MVXMH5YY-RMUL | Resolved | undertaking.due:Undertaking:UND-2602:Approaching            | Undertaking due in 4 day(s)
+MVXMH5YZ-F8Z8 | Open     | document.expiry:Document:DOC-501:Expired                    | Document expired: Registered Land Deed
+MVXMH5YZ-BVY5 | Open     | document.expiry:Document:DOC-506:Expiring Soon              | Barrier-Free Environment … Affidavit
+MVXMH5YZ-AO0Q | Resolved | document.expiry:Document:DOC-507:Critical                   | Registered Land Lease Deed … expires in 7 day(s)
+```
+
+**Three generations of alert ids were created by one clock advance**
+(`MVXMH5YY/YZ` = today, `MVY2BHNM` = +14d sweep pass 1, `MVY2BHPE` = +14d sweep pass 2) and the
+middle generation `ALT-MVY2BHNM-*` is **absent from the store** while the audit trail contains
+`ALERT_RAISED` rows for all ten of them (captured verbatim in the exported CSV below).
+
+Escalations after the run: 13 rows, 8 `Resolved`, 5 `Open`.
+
+## Audit trail for the same second (from `Export CSV` on `/admin/audit-logs`, blob captured by
+## monkey-patching `HTMLAnchorElement.prototype.click`; file
+## `ApoorvaSetu_Audit_Logs_2026-11-01.csv`, 14 columns incl. Previous/New State, Correlation ID,
+## Source, IP)
+
+Two full sweep batches, 60 ms apart, both stamped "15 Nov 2026, 10:16 PM" (= one action):
+
+```text
+…1607845-854  ALERT_RAISED   x10  ALT-MVY2BHNL-*/NM-*
+…1607852-854  ALERT_AUTO_RESOLVED x3 ALT-MVXMH5YZ-AO0Q / RMUL / 7EHF
+…1607863-866  ESCALATION_RAISED  x8 ESC-MVY2BHNL-*/NM-*
+…1607907-926  ALERT_RAISED   x10  ALT-MVY2BHPE-*      <- second sweep, same second
+…1607911-935  ALERT_AUTO_RESOLVED x10 ALT-MVY2BHNM-*  <- resolves the first sweep's own rows
+```
+
+and a third batch at "01 Nov 2026, 10:18 PM" (my 3 sweep clicks) that resolved all ten
+`MVY2BHPE-*` rows and five escalations, raising nothing new.
+
+False statements now permanently in the trail — verbatim `Details` cells:
+
+```text
+Alert "Breached: AICTE/2026/12874 at SAC / SHC" closed because the underlying deadline condition cleared.
+Alert "Document expired: Registered Land Lease Deed (30-year tenure)" closed because the underlying deadline condition cleared.
+Escalation for AICTE/2026/12874 closed because the underlying deadline condition cleared.
+```
+
+`AICTE/2026/12874` in the store at the same moment is
+`{stage:'SAC / SHC', status:'Pending', stageDueAt:'2026-11-01'}` — the condition did **not** clear,
+it got *worse* (its `Due Today` tier moved to `Breached`, and the `Breached` row was then resolved too).
+
+## After a hard reload (step 6)
+
+```json
+{ "kpi": "Open 6 Acknowledged 0 Critical severity …",
+  "open": ["Breached: …12873 at Approval (Subject to …","Breached: …12867 at Scrutiny / Re-scruti…",
+           "EVC report overdue: NIT Rourkela","Undertaking overdue: Barrier-free environment affi…",
+           "Document expired: Registered Land Deed & Possessio…","Barrier-Free Environment & Ramp Compliance Affidav…"],
+  "a74": { "stage": "SAC / SHC", "status": "Pending", "due": "2026-11-01" } }
+```
+
+The +14d cascade is gone: Open dropped `16 -> 6` and the six survivors are the *today-clock*
+generation. `demoClockOffsetDays` is plain `useState` (`AppContext.tsx:270`) and is not written to
+`apoorvasetu_config_v1` or any storage key, so a reload silently resets the presenter's clock while
+every timestamp already written keeps the advanced date.
+
+## Root cause (static, matches the observation)
+
+* `AppContext.tsx:2244` — `setDemoClockOffset` schedules `runSweepRef.current()` itself, and
+  `AppContext.tsx:2096-2099` re-runs the sweep on every `applications` change. Advancing the clock
+  calls `setApplications(...)` **and** schedules a sweep, so two sweeps execute in the same tick.
+* `AppContext.tsx:2022` `const state = sweepStateRef.current;` + `AppContext.tsx:2032`
+  `setAlerts(result.alerts)` — the second sweep reads a snapshot whose `alerts` array does not yet
+  contain the first sweep's rows, then *replaces* state with `[...createdAlerts, ...workingAlerts]`
+  (`src/workflow/alerts.ts:437`). The first generation is dropped from the repository
+  (`repository.upsertAlert` at `AppContext.tsx:2038` had already written it), so the write is lost
+  but its audit rows are not.
+* `src/workflow/alerts.ts:426-433` — an Open alert is auto-resolved whenever its `dedupeKey` is not
+  in the current candidate set, and `alertKey` includes the **tier**. Any tier progression
+  (`Approaching -> Due Today -> Breached -> Expired`), any `autoEscalationDays` change in
+  `/admin/system-config`, or any clock change therefore emits
+  `ALERT_AUTO_RESOLVED … "closed because the underlying deadline condition cleared"` for a case that
+  is still, and more, overdue.
+* The 60 s interval at `AppContext.tsx:2102` re-runs the same non-idempotent pass unattended, so the
+  churn continues during a demo without anyone clicking.
+
+## Impact
+
+* Integrity: the audit trail references alert ids that no longer exist (`ALT-MVY2BHNM-*`), and
+  asserts "condition cleared" for cases that are breached. The trail is the artefact a regulator
+  would read; `/admin/audit-logs` and its CSV export present it as fact.
+* Demo path: the +14d escalation story the presenter demonstrates disappears after one sweep pass or
+  one reload, and `Open` silently changes 16 -> 6.
+* Not affected: approval/rejection correctness. `runSweep` cannot change a decision
+  (`alerts.ts` never writes stage/status; the Alert Center notice "They never approve, reject or
+  alter an application" holds).
+
+## Reproduction steps for the fix wave (deterministic)
+
+1. Sign in as Super Admin, open `/alerts`, note `All` and `Open`.
+2. Profile -> Demo clock -> **+14d**.
+3. Open `/admin/audit-logs`: two `ALERT_RAISED` generations in the same second, and
+   `ALERT_AUTO_RESOLVED` rows naming the first generation.
+4. Reload `/alerts`: Open count falls back and the advanced-clock alerts are gone.

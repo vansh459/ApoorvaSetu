@@ -1,0 +1,77 @@
+12:model Application {
+44:  @@index([region])
+45:  @@index([stage])
+46:  @@index([status])
+47:  @@index([instituteId])
+48:  @@map("applications")
+51:model Institute {
+70:  @@index([region])
+71:  @@index([status])
+72:  @@map("institutes")
+75:model EVCVisit {
+98:  @@index([applicationId])
+99:  @@index([instituteId])
+100:  @@index([region])
+101:  @@index([status])
+102:  @@map("evc_visits")
+105:model ComplianceRecord {
+122:  @@index([instituteId])
+123:  @@index([region])
+124:  @@index([status])
+125:  @@index([dueDate])
+126:  @@map("compliance_records")
+129:model DocumentItem {
+149:  @@index([instituteId])
+150:  @@index([region])
+151:  @@index([status])
+152:  @@index([expiryDate])
+153:  @@map("document_items")
+156:model Undertaking {
+174:  @@index([applicationId])
+175:  @@index([instituteId])
+176:  @@index([region])
+177:  @@index([status])
+178:  @@index([dueDate])
+179:  @@map("undertakings")
+182:model NotificationItem {
+198:  @@index([dedupeKey])
+199:  @@index([targetRole])
+200:  @@index([targetUserId])
+201:  @@index([targetRegion])
+202:  @@index([targetInstituteId])
+203:  @@map("notification_items")
+206:model SystemAlert {
+223:  @@index([status])
+224:  @@index([region])
+225:  @@index([entityType, entityId])
+226:  @@map("system_alerts")
+229:model EscalationItem {
+248:  @@index([applicationId])
+249:  @@index([dedupeKey])
+250:  @@index([region])
+251:  @@index([status])
+252:  @@map("escalation_items")
+255:model AuditLog {
+272:  @@index([timestamp])
+273:  @@index([userId])
+274:  @@index([entityType, entityId])
+275:  @@map("audit_logs")
+278:model SystemConfig {
+295:  @@map("system_config")
+298:model RolePermission {
+302:  @@map("role_permissions")
+305:model User {
+326:  @@index([role])
+327:  @@index([isActive])
+328:  @@map("users")
+331:model Session {
+344:  @@index([userId])
+345:  @@index([expiresAt])
+346:  @@map("sessions")
+349:model AssistantMessage {
+358:  @@index([userId, createdAt])
+359:  @@map("assistant_messages")
+362:model FileObject {
+372:  @@index([uploaderId])
+373:  @@index([documentId])
+374:  @@map("file_objects")

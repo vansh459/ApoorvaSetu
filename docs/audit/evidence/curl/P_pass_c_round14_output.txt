@@ -1,0 +1,147 @@
+host: node v24.16.0 | npm 11.13.0 | git version 2.54.0.windows.1
+docker stats before:
+apoorvasetu-audit-pg | cpu 0.00% | mem 129.6MiB / 3.505GiB
+apoorvasetu-db-1 | cpu 8.18% | mem 77.63MiB / 3.505GiB
+
+================ 1. git clone . into an empty directory ================
+
+-- git clone --quiet /c/Users/Shiva/Downloads/project/ApoorvaSetu /c/Users/Shiva/Downloads/project/ApoorvaSetu/docs/audit/evidence/freshclone/clone
+   exit=0
+   cloned HEAD : 794e54c feat(storage): add file storage, assistant history and container readiness
+   parent HEAD : 794e54c
+   clone is clean: 0 modified/untracked entries
+   tracked files : 237
+   dist/ in the clone? no - a build is required
+   node_modules?       no
+   .env in the clone?  no - so step 6 tests the no-configuration boot
+
+================ 2. npm ci (README.md:19 says npm install; ci is the stricter test of the lockfile) ================
+
+-- npm ci --no-audit --no-fund
+     npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+     npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+     
+     added 367 packages in 1m
+   exit=0 | total output lines=4
+   wall time: 79236 ms | node_modules: 567 MB
+
+================ 3. npm run build (tsc -b && vite build) - README never says this is needed before npm run server ================
+
+-- npm run build
+     server/mappers/operations.ts(5,3): error TS2305: Module '"@prisma/client"' has no exported member 'SystemAlert'.
+     server/mappers/operations.ts(37,11): error TS2694: Namespace '"C:/Users/Shiva/Downloads/project/ApoorvaSetu/docs/audit/evidence/freshclone/clone/node_modules/.prisma/client/default".Prisma' has no exported member 'NotificationItemUncheckedCreateInput'.
+     server/mappers/operations.ts(78,63): error TS2694: Namespace '"C:/Users/Shiva/Downloads/project/ApoorvaSetu/docs/audit/evidence/freshclone/clone/node_modules/.prisma/client/default".Prisma' has no exported member 'SystemAlertUncheckedCreateInput'.
+     server/mappers/operations.ts(120,70): error TS2694: Namespace '"C:/Users/Shiva/Downloads/project/ApoorvaSetu/docs/audit/evidence/freshclone/clone/node_modules/.prisma/client/default".Prisma' has no exported member 'EscalationItemUncheckedCreateInput'.
+     server/mappers/operations.ts(162,55): error TS2694: Namespace '"C:/Users/Shiva/Downloads/project/ApoorvaSetu/docs/audit/evidence/freshclone/clone/node_modules/.prisma/client/default".Prisma' has no exported member 'AuditLogUncheckedCreateInput'.
+     server/routes/assistant.ts(52,27): error TS7006: Parameter 'row' implicitly has an 'any' type.
+     server/routes/auth.ts(25,15): error TS2305: Module '"@prisma/client"' has no exported member 'User'.
+     server/routes/data.ts(508,14): error TS7006: Parameter 'item' implicitly has an 'any' type.
+     server/routes/data.ts(516,26): error TS7006: Parameter 'row' implicitly has an 'any' type.
+     server/routes/workflow.ts(83,54): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+     server/routes/workflow.ts(119,9): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Record<TransitionDenialCode, number>'.
+     server/routes/workflow.ts(166,54): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+     server/routes/workflow.ts(214,54): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+     server/routes/workflow.ts(280,54): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+     server/session.ts(3,15): error TS2305: Module '"@prisma/client"' has no exported member 'Session'.
+     server/session.ts(3,38): error TS2305: Module '"@prisma/client"' has no exported member 'User'.
+   exit=1 | total output lines=68
+   wall time: 5329 ms
+   dist/: 
+
+================ 4. npm run lint ================
+
+-- npm run lint
+      387 |   // Legacy seed visits predate the application link; repair the association once.
+      388 |   useEffect(() => {
+          :   ^^^^|^^^^
+          :       `-- This is the containing effect
+      389 |     const linked = linkLegacyVisits(applications, evcVisits);
+      390 |     if (!linked.changed) return;
+      391 |     setApplications(linked.applications);
+          :     ^^^^^^^|^^^^^^^
+          :            `-- Avoid calling setState() directly within an effect
+      392 |     setEvcVisits(linked.visits);
+          `----
+       help: Effects should synchronize React with external systems. Calling setState synchronously inside an effect starts another render and is usually unnecessary. Derive the value during render, initialize state directly, or update it from the event that caused the change. Use an effect only when synchronizing with an external system.
+       note: React Compiler skipped optimizing this component or hook. Additional guidance: https://react.dev/reference/eslint-plugin-react-hooks/lints/set-state-in-effect
+     
+     Found 22 warnings and 0 errors.
+     Finished in 264ms on 188 files with 116 rules using 12 threads.
+   exit=0 | total output lines=253
+
+================ 5. npm run test:run ================
+
+-- npm run test:run
+        [33m[2m✓[22m[39m password hashing[2m > [22mhashes and verifies a password [33m 433[2mms[22m[39m
+      [32m✓[39m src/workflow/routes.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+      [32m✓[39m src/workflow/templates.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 100[2mms[22m[39m
+      [32m✓[39m server/storage/keys.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 92[2mms[22m[39m
+      [32m✓[39m src/utils/csv.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+      [32m✓[39m server/session.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+      [32m✓[39m server/rateLimit.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+      [32m✓[39m server/validate.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+      [32m✓[39m src/services/repositories/dataMode.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+      [32m✓[39m src/services/repositories/localRepository.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 28[2mms[22m[39m
+     
+     [2m Test Files [22m [1m[32m26 passed[39m[22m[90m (26)[39m
+     [2m      Tests [22m [1m[32m232 passed[39m[22m[90m (232)[39m
+     [2m   Start at [22m 00:49:32
+     [2m   Duration [22m 7.08s[2m (transform 9.34s, setup 0ms, collect 17.55s, tests 1.96s, environment 1.32s, prepare 12.58s)[22m
+     
+   exit=0 | total output lines=40
+
+================ 6. demo boot with NO configuration at all (README.md:17-26: demo mode needs no .env) ================
+   boot log (first 14 lines):
+     ◇ injected env (0) from .env
+     ◇ injected env (0) from .env
+     [ApoorvaSetu AI Backend] dist/ not found - serving API only.
+     [ApoorvaSetu AI Backend] Running on http://localhost:8090
+     [ApoorvaSetu AI Backend] WARNING: GEMINI_API_KEY is not set in .env! Configure it to enable live AI responses.
+   /api/ready -> 503 after 25s of polling
+   /api/health -> {"status":"ok","service":"ApoorvaSetu AI Assistant Backend","database":"unconfigured","storage":"local","timestamp":"2026-11-01T19:20:09.590Z"}
+   GET /               -> 404 139B text/html; charset=utf-8
+   GET /applications   -> 404 text/html; charset=utf-8  (SPA fallback)
+   GET /api/nope       -> 503 body={"error":"DATABASE_UNCONFIGURED","text":"The database is not configured."}
+   GET /api/snapshot   -> 503 (no session)
+   POST /api/auth/login-> 400 (unknown user, demo mode)
+
+================ 7. the Node-version claim ================
+   README.md:17 says 'Requirements: Node.js 20+ and npm'. In the clone:
+     engines field = null
+     server script = node --experimental-strip-types server/index.ts
+   nothing in server/ reads a version and package.json declares no engines, so on Node 20
+   'npm run server' reaches --experimental-strip-types. NOT measured: this host only has
+   node v24.16.0; the Node-20 failure is inferred from the flag, and the README line is
+   the finding either way (Stage 0 captured it in raw/baseline-build.txt notes).
+
+================ 8. is the built SPA actually the demo build? (VITE_DATA_MODE is inlined at build time) ================
+   README.md:41-43 warns mode changes are a rebuild, not an env change. In the clone:
+     occurrences of the literal "demo" in the entry chunk: 0
+     occurrences of the literal "supabase" in the entry chunk: 0
+     occurrences of the literal "postgres" in the entry chunk: 0
+   ^ a plain 'npm run build' with no .env emits whatever getDataMode() defaults to;
+     check src/services/dataMode.ts for the default rather than guessing from the grep.
+
+================ 9. why the Postgres leg of the README is not runnable from a host clone ================
+   docker-compose.postgres.yml db service: ports mapping -> 0 occurrence(s)
+   published host ports on the running audited db container: (empty = host-internal only)
+   so 'npm run db:migrate' / 'db:studio' / 'db:seed' from the clone, with DATABASE_URL
+   pointed at localhost:5432 as docs/POSTGRES-DATA-LAYER.md:100-115 implies, has no listener.
+   the container entrypoint (server/entrypoint.sh) is the path that does run migrations -
+   measured in Stage 0 and in rounds 11-12 restarts - so this is a documentation gap, not a
+   broken migration.
+
+================ 10. teardown and proof the audited stack is untouched ================
+   clone server stopped
+   port 8090 answering? 200
+apoorvasetu-audit-pg | cpu 0.00% | mem 129.7MiB / 3.505GiB
+apoorvasetu-db-1 | cpu 2.47% | mem 77.36MiB / 3.505GiB
+   audited DB: apps=10 docs=10 und=7 audit=149 sessions=113
+rm: cannot remove '/c/Users/Shiva/Downloads/project/ApoorvaSetu/docs/audit/evidence/freshclone/clone': Device or resource busy
+   clone deleted: FAILED - still present
+   repo entries outside docs/audit after teardown:
+?? coverage/
+?? tmp.3VxMDwpW9V/
+?? tmp.oOTJHPHvNU/
+   (none listed above = the only writes this audit makes are under docs/audit/)
+ROUND 14 COMPLETE 2026-11-01T19:20:38Z

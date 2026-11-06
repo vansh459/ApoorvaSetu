@@ -1,0 +1,38 @@
+=== PASS C boot snapshot, 2026-11-01T17:36:28Z ===
+container: apoorvasetu-audit-pg (image apoorvasetu:audit-pg, VITE_DATA_MODE=postgres) on :8081 -> 3001
+db: apoorvasetu-db-1 (postgres:17-alpine, volume apoorvasetu_apoorvasetu_postgres)
+
+--- entrypoint log (migrations + seed) ---
+[entrypoint] applying database migrations
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "apoorvasetu", schema "public" at "db:5432"
+
+3 migrations found in prisma/migrations
+
+Applying migration `20261101000000_init`
+Applying migration `20261101134635_assistant_message_created_at`
+Applying migration `20261101134803_file_object_scope`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20261101000000_init/
+    └─ migration.sql
+  └─ 20261101134635_assistant_message_created_at/
+    └─ migration.sql
+  └─ 20261101134803_file_object_scope/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+[entrypoint] seeding the demo dataset if the database is empty
+
+--- users ---
+--- row counts ---
+ apps | institutes | docs | evc | alerts | notifs | escalations | audit | sessions 
+------+------------+------+-----+--------+--------+-------------+-------+----------
+   10 |         10 |   10 |   6 |      0 |      5 |           0 |     5 |        0
+(1 row)
+

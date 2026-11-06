@@ -1,0 +1,133 @@
+
+================ P-38 the document verify endpoint is verify-only: what happens to decision=Rejected? ================
+audit rows in: 69
+POST /api/documents (DOC-PROBE-38, Northern, Pending) -> 201
+-- an officer asks for REJECTION through the regulated verify endpoint (full body, no truncation) --
+{"ok":true,"entity":{"id":"DOC-PROBE-38","title":"Probe fire NOC for round 6","category":"Fire Safety","instituteName":"XYZ College of Engg.","instituteId":"INST-102","region":"Northern","uploadDate":"2026-11-01","expiryDate":"2029-11-01","status":"Verified","fileSize":"1.0 MB","fileType":"PDF","documentTypeCode":"FIRE_SAFETY_NOC","verifiedBy":"Dr. R. K. Sharma"},"audit":{"id":"LOG-MVY57C27-F88A17","timestamp":"01 Nov 2026, 06:07 PM","userId":"USR-REGIONAL-NORTH","userName":"Dr. R. K. Sharma","userRole":"REGIONAL_OFFICER","action":"VERIFY_DOCUMENT","entityType":"Document","entityId":"DOC-PROBE-38","details":"Document verified by Dr. R. K. Sharma.","previousState":"{\"status\":\"Pending\"}","newState":"{\"status\":\"Verified\",\"verifiedBy\":\"Dr. R. K. Sharma\"}","ipAddress":"::ffff:172.19.0.1","eventType":"document.verified","source":"ui"}}
+-> 200
+-- is there any reject route for documents? --
+{"error":"NOT_FOUND","text":"Unknown API endpoint."}
+-> 404
+-- the same question on the undertaking endpoint, which DOES branch on outcome (2 non-mutating probes): --
+{"error":"INVALID_STATE","text":"Evidence must be submitted before the undertaking can be decided."}
+-> 409
+{"error":"INVALID_BODY","text":"reason must be a string."}
+-> 400
+   ^ 400 "reason is required" = the reject arm is live and reads the body;
+     the document endpoint returned 200 and ignored its body entirely.
+-- verify is not repeatable: the row is Verified now, so a second verify is refused --
+{"error":"INVALID_STATE","text":"Only documents pending verification can be verified."}
+-> 409
+-- protected-field guard refuses a caller-supplied verifiedAt, which no column can store --
+{"error":"REGULATED_FIELD","text":"verifiedAt is stamped from the authenticated session and cannot be supplied."}
+-> 403
+-- columns on document_items that could hold who/when verified vs undertakings: --
+document_items : uploadDate,expiryDate,renewalNote,verifiedBy
+undertakings   : verifiedAt,verifiedBy,rejectionReason
+DOC-PROBE-38 row: DOC-PROBE-38|Verified|verifiedBy=Dr. R. K. Sharma
+  audit for it  : VERIFY_DOCUMENT src=ui
+audit rows out: 70
+
+================ P-39 the reject the UI actually performs: generic PUT + a browser-authored audit row ================
+AppContext.tsx:1917-1953   rejectDocument() -> repository.upsertDocument(status:"Rejected")
+postgresRepository.ts:228  appendAudit()    -> POST /api/audit with the browser action/details/states
+POST /api/documents (DOC-PROBE-39, Northern, Pending) -> 201
+-- step 1: the write the client makes when the officer clicks Reject --
+{"entity":{"id":"DOC-PROBE-39","title":"Probe fire NOC for round 6","category":"Fire Safety","instituteName":"XYZ College of Engg.","instituteId":"INST-102","region":"Northern","uploadDate":"2026-11-01","expiryDate":"2029-11-01","status":"Rejected","fileSize":"1.0 MB","fileType":"PDF","documentTypeCode":"FIRE_SAFETY_NOC"}}
+-> 200
+after the PUT only : DOC-PROBE-39|Rejected   audit rows 70 -> 70
+-- step 2: the audit row the browser then sends about its own action, fields verbatim from the client --
+{"audit":{"id":"LOG-MVY57G3X-31674C","timestamp":"01 Nov 2026, 06:07 PM","userId":"USR-REGIONAL-NORTH","userName":"Dr. R. K. Sharma","userRole":"REGIONAL_OFFICER","action":"REJECT_DOCUMENT","entityType":"Document","entityId":"DOC-PROBE-39","details":"Document rejected by Dr. R. K. Sharma: wording invented by the client","previousState":"{\"status\":\"Pending\"}","newState":"{\"status\":\"Rejected\"}","ipAddress":"::ffff:172.19.0.1","eventType":"document.rejected","source":"ui"}}
+-> 201
+after the audit POST: DOC-PROBE-39|Rejected   audit rows 70 -> 71
+  stored as    : REJECT_DOCUMENT by REGIONAL_OFFICER src=ui | Document rejected by Dr. R. K. Sharma: wording invented by the client
+   ^ the server recorded an outcome it never validated, in words it never generated.
+-- the same generic PUT by the applicant itself (documents.upload only, no documents.verify) --
+INSTITUTION_ADMIN PUT DOC-PROBE-39 status Rejected -> 403
+INSTITUTION_ADMIN PUT DOC-PROBE-39 status Expired  -> 403
+  audit rows unchanged: 71 -> 71
+
+================ P-40 escalation dedupe squatting, retry with bodies that pass the parser ================
+parseEscalation (payload.ts:355-375): urgency in Medium|High|Critical, status in Open|Under Review|Resolved
+-- (a) the round-5 body again, printing WHY it was refused --
+{"error":"INVALID_BODY","text":"urgency must be one of: Medium, High, Critical."}
+-> 400
+-- (b) a valid placeholder from the least-privileged persona, squatting the SLA_BREACH key --
+{"entity":{"id":"ESCL-PROBE-40","applicationId":"AICTE/2026/12876","instituteName":"ABC Institute of Tech","region":"Northern","raisedBy":"Prof. S. Banerjee","raisedDate":"01 Nov 2026","urgency":"Medium","reason":"probe placeholder squatting the SLA breach key","status":"Open","level":1,"slaBreachDays":1,"dedupeKey":"AICTE/2026/12876|SLA_BREACH"}}
+-> 201
+  raisedBy stored: Prof. S. Banerjee   (data.ts:423 stamps it from the session unless it is the automaton)
+-- (c) now the genuine Critical escalation for the same case+rule arrives --
+{"entity":{"id":"ESCL-PROBE-40","applicationId":"AICTE/2026/12876","instituteName":"ABC Institute of Tech","region":"Northern","raisedBy":"Prof. S. Banerjee","raisedDate":"01 Nov 2026","urgency":"Medium","reason":"probe placeholder squatting the SLA breach key","status":"Open","level":1,"slaBreachDays":1,"dedupeKey":"AICTE/2026/12876|SLA_BREACH"}}
+-> 201
+escalation rows 0 -> 1   ESCL-PROBE-40B inserted: 0
+  key holder: ESCL-PROBE-40|Medium|L1|breachDays=1|by Prof. S. Banerjee
+   ^ the response carried ESCL-PROBE-40 and 21 rows were NOT created: the genuine escalation
+     was merged into the placeholder the lowest-privileged persona wrote, with no rejection and no audit.
+-- (d) reverse order: does a late placeholder overwrite a row that already holds the key? --
+POST genuine Critical first (aicteadmin)   -> 201
+{"entity":{"id":"ESCL-PROBE-40C","applicationId":"AICTE/2026/12876","instituteName":"ABC Institute of Tech","region":"Northern","raisedBy":"Amit Sharma","raisedDate":"01 Nov 2026","urgency":"Critical","reason":"genuine, created before any placeholder","status":"Open","level":3,"slaBreachDays":40,"dedupeKey":"AICTE/2026/12876|GENUINE_FIRST"}}
+-> 201
+  rows for K2: ESCL-PROBE-40C(Critical)
+-- (e) may the least-privileged persona resolve an escalation another role raised? --
+EVC_MEMBER PUT ESCL-PROBE-40C status Resolved (in region) -> 200
+  now: ESCL-PROBE-40C|Resolved|resolvedAt=01 Nov 2026, 06:07 PM
+-- (f) out-of-region control --
+EVC_MEMBER(Northern) POST escalation region=Eastern -> 403
+
+================ P-41 the audit feed is a capped view over a queue any session may write ================
+data.ts:465-538 snapshot: hasPermission(user,"audit.read") ? findMany(orderBy id desc, take:200) : []
+data.ts:566-592 POST /api/audit: requireUser only; action free text <=200; source chosen by the caller
+rows in db before: 71
+P_pass_c_round6.sh: line 128: /c/Program Files/nodejs/node: Argument list too long
+-- a signed-in EVC member (no audit permission required) writes 210 filler rows --
+  210 POSTs in 20s; rows in db 71 -> 281
+P_pass_c_round6.sh: line 139: /c/Program Files/nodejs/node: Argument list too long
+  real events still in the database but not reachable through the feed: 71
+  cleanup: DELETE 210
+P_pass_c_round6.sh: line 144: /c/Program Files/nodejs/node: Argument list too long
+-- every persona gets the same 13-table payload shape; size per role: --
+  institute: 6.9KB | arrays: 12 | auditLogs: 0 | users: 1
+  evc: 8.4KB | arrays: 12 | auditLogs: 0 | users: 1
+  regional: 11.4KB | arrays: 12 | auditLogs: 0 | users: 1
+  aicteadmin: 63.3KB | arrays: 12 | auditLogs: 71 | users: 1
+  superadmin: 68.7KB | arrays: 12 | auditLogs: 71 | users: 7
+
+================ P-95(round6) ledger, restores and residue ================
+escalations deleted: DELETE 2
+documents deleted:   DELETE 2
+-- DOC-502 has been sitting at Expired since round 4 (its seed state was Verified).
+   No sanctioned path can put it back: /verify requires status Pending. --
+curl: (2) no URL specified
+curl: try 'curl --help' or 'curl --manual' for more information
+   so the restore is done with psql - the data is only reversible by whoever holds
+   the database, not through the application own API.
+restored: UPDATE 1
+DOC-501|Expired|NULL
+DOC-502|Verified|Dr. R. K. Sharma (Northern RO)
+DOC-507|Verified|Dr. R. K. Sharma
+escalations left : NONE
+probe docs left  : DOC-PROBE-18,DOC-PROBE-25,DOC-PROBE-36,DOC-PROBE-36B
+audit inventory  : APPLICATION_APPROVED src=cron x1
+audit inventory  : APPLICATION_FORWARDED src=- x1
+audit inventory  : DOCUMENT_VERIFIED src=- x1
+audit inventory  : EVC_REPORT_SUBMITTED_BY_AUTOMATION src=system x1
+audit inventory  : FAILED_LOGIN_BAD_PASSWORD src=ui x10
+audit inventory  : FORWARD src=ui x1
+audit inventory  : INSPECTION_REPORT_SUBMITTED src=- x1
+audit inventory  : PROBE_SSE_TRIGGER src=ui x1
+audit inventory  : REJECT_DOCUMENT src=ui x1
+audit inventory  : SYSTEM_CONFIG_UPDATED src=- x1
+audit inventory  : UNDERTAKING_SUBMITTED src=- x1
+audit inventory  : USER_ACTIVATED src=ui x1
+audit inventory  : USER_CREATED src=ui x2
+audit inventory  : USER_DEACTIVATED src=ui x1
+audit inventory  : USER_LOGIN_SUCCESS src=ui x40
+audit inventory  : USER_LOGOUT src=ui x1
+audit inventory  : USER_UPDATED src=ui x1
+audit inventory  : VERIFY_DOCUMENT src=ui x5
+audit rows total : 71
+apps             : AICTE/2026/12869 Scrutiny / Re-scrutiny/Returned v1
+apps             : AICTE/2026/12875 Expert Visit Committee (EVC)/In Progress v2
+evc              : EVC-8803 Completed submitted=true
+evc              : EVC-8805 Scheduled submitted=false
+ROUND 6 COMPLETE 2026-11-01T18:08:13Z

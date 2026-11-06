@@ -1,0 +1,20 @@
+=== S-22b: strings in the SERVED bundle (container /app/dist/assets/index-Coh4Rwc6.js) ===
+image created 2026-11-01T14:20:14Z; HEAD commit 2026-11-01T14:21:54Z (image predates the commit by ~40 s, same tree)
+
+-- local dist vs container dist differ in hash:
+index-C_JiYy3N.css
+index-Cd-UkX3f.js
+ls: cannot access 'C:/Program Files/Git/app/dist/assets/': No such file or directory
+
+-- grep in container dist:
+1
+2
+1
+0
+1268336
+
+-- same greps on local dist:
+1
+2
+1
+1268336

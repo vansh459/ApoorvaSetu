@@ -1,0 +1,86 @@
+P-01	output.txt	unauthenticated surface
+P-02	output.txt	login as SUPER_ADMIN: raw headers, Set-Cookie, session shape
+P-02b	output.txt	cookie flags for every persona
+P-03	output.txt	snapshot scoping: what each persona is handed
+P-19	output.txt	audit rows handed to the client, and text-vs-time ordering
+P-04	output.txt	transition replay — the D-08 double-audit question
+P-05	output.txt	field-level authority on the generic write API (L4-03 / L3-01)
+P-06	output.txt	admin user created without a password, then signed in with the demo constant (L4-02)
+P-07	output.txt	password reset does not revoke live sessions (L4-09)
+P-09	output.txt	forged machine provenance on POST /api/audit (L3-01 / L4-03)
+P-12	output.txt	escalation raisedBy is caller-supplied (L4-03)
+P-17	output.txt	REGIONAL_OFFICER overwriting EVC evidence (D-18 item 3, runtime-suspected until now)
+P-18	output.txt	unparsable expiryDate stored on a document row
+P-15	output.txt	response headers on :8081 (SPA document + API) and CORS
+P-14	output.txt	login throttling: bucket key, Retry-After, cost per attempt, memory delta
+P-20	output.txt	SSE smoke
+P-22	output.txt	regulated verification endpoints still demand a human (invariant check)
+P-90	output.txt	what Pass C wrote (cleanup ledger)
+P-06(round2)	round2	POST /api/users with no password field, then sign in with the printed demo credential
+P-07(round2)	round2	password reset does not revoke live sessions
+P-09(round2)	round2	forged machine provenance on POST /api/audit (previousState/newState are STRINGS, max 1000)
+P-21(round2)	round2	generic writes leave no audit trail at all (the L3-01 gap, isolated)
+P-23(round2)	round2	cross-role visibility of the rows Pass C wrote (do alerts/notifications respect targetRole/region?)
+P-24(round2)	round2	audit cap and ordering, from the running server
+P-15(round2)	round2	CORS: preflight and credentialed POST, both origins, with the URL supplied
+P-25(round2)	round2	a real Pending document, then the regulated verify endpoint with a machine-sounding authority
+P-26(round2)	round2	session hygiene: concurrent sessions, expiry, logout revocation
+P-27(round2)	round2	PUT /api/config is permission-checked (contrast with the unguarded writes)
+P-91(round2)	round2	what Pass C wrote (cleanup ledger, both rounds)
+P-06(round3)	round3	POST /api/users with NO password field -> admin.ts:112 falls back to DEMO_PASSWORD
+P-07(round3)	round3	password reset / deactivation do not revoke a live session
+P-09b(round3)	round3	a second forged machine-provenance row, and who can read the trail
+P-15b(round3)	round3	CORS / CSRF: the two POSTs round 2 sent without a URL
+P-25(round3)	round3	the regulated verify endpoint on a real Pending document
+P-28(round3)	round3	storage: presign -> put -> read, and cross-account authorization
+P-29(round3)	round3	restore the seeded rows Pass C mutated, so the demo dataset stays the demo dataset
+P-92(round3)	round3	ledger
+P-28(round4)	round4	storage end-to-end on the local driver
+P-25b(round4)	round4	the regulated verify endpoint inside the officer's own region
+P-30(round4)	round4	what the assistant surface exposes with no key configured
+P-93(round4)	round4	restore every seeded row this pass touched
+P-31	round5	INSTITUTION_ADMIN on its OWN verified document (documents.upload passes the spec check)
+P-32	round5	compliance and undertaking one-way doors
+P-33	round5	the EVC visit door is open on both sides (no guard, full-row update)
+P-34	round5	escalation dedupeKey: can a caller pre-poison the key a real escalation would use?
+P-35	round5	notifications: who may mark whom's notification read, and rewrite it
+P-36	round5	where did the machine-sounding competentAuthority go? (DOC-PROBE-25 was verified in round 4)
+P-37	round5	the assistant's role comes from the session, not the body (postgres mode)
+P-94(round5)	round5	ledger and restores
+P-38	round6	the document verify endpoint is verify-only: what happens to decision=Rejected?
+P-39	round6	the reject the UI actually performs: generic PUT + a browser-authored audit row
+P-40	round6	escalation dedupe squatting, retry with bodies that pass the parser
+P-41	round6	the audit feed is a capped view over a queue any session may write
+P-95(round6)	round6	ledger, restores and residue
+P-42	round7	the 200-row audit cap, and whether any other path can reach past it
+P-43	round7	index inventory (strength) then EXPLAIN of the twelve snapshot reads at seed volume
+P-43b	round7	the same plans with applications/documents/users/audit inflated ~200x
+P-44	round7	memory, load and a quiet soak with one live SSE listener
+P-45	round7	what each persona snapshot carries now
+P-96(round7)	round7	cleanup: every artefact this Pass wrote, listed as it is removed
+P-50	round9b	UPDATE and DELETE on the running audit_logs table, rolled back
+P-50b	round9b	the guard that exists, and where it lives
+P-51	round9b	residue check
+P-46	round9	the notification order a browser actually gets - no writes at all
+P-47	round9	what the two TEXT time columns actually hold (format census over live rows)
+P-48	round9	the mechanism, inside a transaction that is rolled back
+P-49	round9	the id-ordering claim, re-tested and corrected
+P-97	round9	residue check after round 9 (this round writes nothing that persists)
+P-52	round10	a role-permission rewrite, with the role's own current list
+P-98	round10	residue after round 10
+P-55	round11	sign-in cost, sequential then simultaneous
+P-57	round11	fill a throttle bucket, then restart, then try the CORRECT password
+P-56	round11	state and cost after the restart
+P-99	round11	residue after round 11
+P-58	round12	the limiter as written
+P-59	round12	constant header reaches the cap, rotating header never does
+P-60	round12	the same header is stored as the audit trail's ipAddress
+P-61	round12	cleanup: restart so no bucket survives, then re-verify the demo state
+P-62	round13	UND-2602: move the deadline, raise the level, then send the row back without them
+P-63	round13	no INST-101 undertaking is seeded, so create one as the institution and move its own deadline
+P-64	round13	DOC-508 (renewal of DOC-504, Submitted): can renewalStatus become Verified off-endpoint?
+P-65	round13	CMP-101 (INST-101's own): the institution moves its own compliance deadline and level
+P-66	round13	what the audit trail actually holds: previous/new state and correlation IDs
+P-67	round13	restore the three captured rows by primary key and delete the two probe rows
+P-68	round13	field-by-field equality against the capture
+P-69	round13	residue

@@ -1,0 +1,47 @@
+
+================ P-58 the limiter as written ================
+   rateLimit.ts:3:const WINDOW_MS = 15 * 60 * 1000;
+   rateLimit.ts:4:const MAX_ATTEMPTS = 8;
+   rateLimit.ts:11:const buckets = new Map<string, Bucket>();
+   rateLimit.ts:14:  const forwarded = req.headers['x-forwarded-for'];
+   rateLimit.ts:16:  return first || req.socket.remoteAddress || 'local';
+   rateLimit.ts:25:  const bucket = buckets.get(key);
+   -> key = clientIp(req) + ':' + email; window 15 min; MAX_ATTEMPTS 8
+   -> clientIp() prefers the FIRST x-forwarded-for element from any client, with no proxy trust list
+   -> clearLoginRate(rateKey) runs on success (auth.ts:100), and DUMMY_PASSWORD_HASH keeps unknown emails
+      on the same scrypt path - both correct designs.
+   correction to round 1 (P-14): that transcript shows try1-5=401, try6=429. The cap is 8, so the
+   bucket already held 3 failures from the P-06/P-07 probes earlier in the same round. The 429 and
+   Retry-After: 889 were real; the apparent threshold was not.
+
+================ P-59 constant header reaches the cap, rotating header never does ================
+   constant XFF 203.0.113.9, same unknown address, 10 attempts:
+     401 401 401 401 401 401 401 401 429 429 
+   (expect the first 8 as 401 and the last two as 429 - the cap exists and works)
+   rotating XFF 203.0.113.1 .. .10, same unknown address, 10 attempts:
+     401 401 401 401 401 401 401 401 401 401 
+   (expect ten 401s: every attempt is a brand-new bucket, so guessing has no rate cost at all)
+   and a fresh identity with the same spoofed IP also starts clean:
+     401
+   rows this created anywhere: users=0 (0 - no account is created for a failed login)
+
+================ P-60 the same header is stored as the audit trail's ipAddress ================
+   server response: {"audit":{"id":"LOG-MVY6NCV2-DF51FA","timestamp":"01 Nov 2026, 06:47 PM","userId":"USR-SUPERADMIN","userName":"Dr. Ramesh Pokhriyal","userRole":"SUPER_ADMIN","action":"PROBE_XFF_IP","entityType":"System","entityId":"PROBE-XFF","details":"written to see which IP the server keeps","ipAddress":"198.51.
+   stored row: LOG-MVY6NCV2-DF51FA | ipAddress=198.51.100.7
+   sent:       X-Forwarded-For: 198.51.100.7, 203.0.113.99   (first element is the client-supplied one)
+   the address every earlier probe really arrived from: ::ffff:172.19.0.1 (docker bridge),
+   recorded in rounds 1-9 - so the stored value above replaced the true one.
+   cleanup: DELETE 1
+   audit rows: before=140 after=141
+
+================ P-61 cleanup: restart so no bucket survives, then re-verify the demo state ================
+   restarted
+   /api/ready 200 after 5071 ms
+   the throttled identity now signs in (unknown email, so 401 is expected, not 429): 401
+   real superadmin sign-in: 200
+   /api/health: {"status":"ok","service":"ApoorvaSetu AI Assistant Backend","database":"connected","storage":"local","timestamp":"2026-11-01T18:48:12.871Z"}
+apoorvasetu-audit-pg | cpu 0.00% | mem 99.9MiB / 3.505GiB
+apoorvasetu-db-1 | cpu 0.03% | mem 78.04MiB / 3.505GiB
+   rows: apps=10 users=5 audit=142 sessions=106
+   probe audit actions left: NONE
+ROUND 12 COMPLETE 2026-11-01T18:48:17Z
